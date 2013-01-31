@@ -8,6 +8,8 @@
  *       groups that are created in the system
  *
  */
+ 
+ //It seems that all that needs done is a group list save process similar to the userlist
 
 import java.net.ServerSocket;
 import java.net.Socket;

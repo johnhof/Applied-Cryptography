@@ -21,6 +21,7 @@ import java.util.*;
 			list.remove(username);
 		}
 		
+		//This checks if user: username exists
 		public synchronized boolean checkUser(String username)
 		{
 			if(list.containsKey(username))
@@ -33,6 +34,7 @@ import java.util.*;
 			}
 		}
 		
+		//These are all calls to the User subclass
 		public synchronized ArrayList<String> getUserGroups(String username)
 		{
 			return list.get(username).getGroups();

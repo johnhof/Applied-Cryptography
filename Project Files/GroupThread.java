@@ -11,6 +11,7 @@ public class GroupThread extends Thread
 	private final Socket socket;
 	private GroupServer my_gs;
 	
+	//These get spun off from GroupServer
 	public GroupThread(Socket _socket, GroupServer _gs)
 	{
 		socket = _socket;
