@@ -9,6 +9,7 @@ import java.io.FileOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
+//These threads are spun off by FileServer.java
 public class FileThread extends Thread
 {
 	private final Socket socket;
@@ -40,6 +41,27 @@ public class FileThread extends Thread
 				
 				if(e.getMessage().equals("LFILES"))
 				{
+					//Files should be within the "shared_files" directory
+					File dir = new File("shared_files");
+					File[] files = dir.listFiles();//listFiles() denotes the files 	in the directory calling the function
+					
+					if(files.length > 0)//if there are files to send
+					{
+						response = new Envelope("READY");//success
+						for(int file = 0; file < files.length; file++)
+						{
+							response.addObject(files[file]);
+							//We add all of the files to the response envelope
+						}
+						//Now we send this envelope to the user
+						output.writeObject(response);
+					}
+					else//No files in the directory
+					{
+						response = new Envelope("FAIL-NOFILES");
+						output.writeObject(response);
+						//We let the user know no files exist to be listed
+					}
 //--TODO: Write this handler-------------------------------------------------------------------------------------------
 				}
 //--UPLOAD FILE--------------------------------------------------------------------------------------------------------
