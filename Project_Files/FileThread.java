@@ -64,6 +64,7 @@ public class FileThread extends Thread
 					}
 //--TODO: Test/Finish this handler-------------------------------------------------------------------------------------------
 //TODO Pass File names as strings and not files as objects
+//TODO Use FileList.java not java's built in File class
 				}
 //--UPLOAD FILE--------------------------------------------------------------------------------------------------------
 				
