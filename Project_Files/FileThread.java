@@ -41,30 +41,21 @@ public class FileThread extends Thread
 				
 				if(e.getMessage().equals("LFILES"))
 				{
-					//Files should be within the "shared_files" directory
-					File dir = new File("shared_files");
-					File[] files = dir.listFiles();//listFiles() denotes the files 	in the directory calling the function
-					
-					if(files.length > 0)//if there are files to send
+					ArrayList<ShareFile> theFiles = FileServer.fileList.getFiles();
+					if(theFiles.size() > 0)
 					{
 						response = new Envelope("OK");//success (check FileClient line 140 to see why this is the message
-						for(int file = 0; file < files.length; file++)
-						{
-							response.addObject(files[file]);
-							//We add all of the files to the response envelope
-						}
-						//Now we send this envelope to the user
+						response.addObject(theFiles);//See FileClient for protocol
+						
 						output.writeObject(response);
 					}
-					else//No files in the directory
+					else//no files exist
 					{
 						response = new Envelope("FAIL-NOFILES");
 						output.writeObject(response);
-						//We let the user know no files exist to be listed
 					}
+					
 //--TODO: Test/Finish this handler-------------------------------------------------------------------------------------------
-//TODO Pass File names as strings and not files as objects
-//TODO Use FileList.java not java's built in File class
 				}
 //--UPLOAD FILE--------------------------------------------------------------------------------------------------------
 				
