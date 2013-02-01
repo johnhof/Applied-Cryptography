@@ -1,5 +1,4 @@
-/* T
- * his list represents the files on the server */
+/* This list represents the files on the server */
 import java.util.*;
 
 

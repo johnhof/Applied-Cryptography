@@ -47,7 +47,7 @@ public class FileThread extends Thread
 					
 					if(files.length > 0)//if there are files to send
 					{
-						response = new Envelope("READY");//success
+						response = new Envelope("OK");//success (check FileClient line 140 to see why this is the message
 						for(int file = 0; file < files.length; file++)
 						{
 							response.addObject(files[file]);
@@ -63,6 +63,7 @@ public class FileThread extends Thread
 						//We let the user know no files exist to be listed
 					}
 //--TODO: Test/Finish this handler-------------------------------------------------------------------------------------------
+//TODO Pass File names as strings and not files as objects
 				}
 //--UPLOAD FILE--------------------------------------------------------------------------------------------------------
 				
