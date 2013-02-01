@@ -62,7 +62,7 @@ public class FileThread extends Thread
 						output.writeObject(response);
 						//We let the user know no files exist to be listed
 					}
-//--TODO: Write this handler-------------------------------------------------------------------------------------------
+//--TODO: Test/Finish this handler-------------------------------------------------------------------------------------------
 				}
 //--UPLOAD FILE--------------------------------------------------------------------------------------------------------
 				
