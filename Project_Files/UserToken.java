@@ -1,51 +1,63 @@
-
 import java.util.List;
 
-/**
- * A simple interface to the token data structure that will be
- * returned by a group server.  
- *
- * You will need to develop a class that implements this interface so
- * that your code can interface with the tokens created by your group
- * server.
- *
- */
-public interface UserToken
+public class UserToken implements UserTokenInterface
 {
-    /**
-     * This method should return a string describing the issuer of
-     * this token.  This string identifies the group server that
-     * created this token.  For instance, if "Alice" requests a token
-     * from the group server "Server1", this method will return the
-     * string "Server1".
-     *
-     * @return The issuer of this token
-     *
-     */
-    public String getIssuer();
+	private String issuer; 
+	private String subject; 
+    private List<String> groups;
+
+	public UserToken(String Issuer, String Subject)
+	{
+		issuer = Issuer; 
+		subject = Subject; 
+	}
+
+    public UserToken(String Issuer, String Subject, List<String> Groups)
+    {
+        issuer = Issuer; 
+        subject = Subject; 
+        groups = Groups;
+    }
+
+    public String getIssuer()
+    {
+    	return issuer; 
+    }
+
+    public String getSubject()
+    {
+    	return subject;
+    }
+
+    public List<String> getGroups()
+    {
+        return groups; 
+    }
+
+    public Boolean addGroup(String group)
+    {
+        return groups.add(group);
+    }
+
+    public Boolean inGroup(String group)
+    {
+        return groups.contains(group);
+    }
+
+    public Boolean removeGroup(String group)
+    {
+        return groups.remove(group);
+    }
+
+    public int groupCount()
+    {
+        return groups.size();
+    }
+
+    public void clearGroups()
+    {
+        groups.clear();
+    }
 
 
-    /**
-     * This method should return a string indicating the name of the
-     * subject of the token.  For instance, if "Alice" requests a
-     * token from the group server "Server1", this method will return
-     * the string "Alice".
-     *
-     * @return The subject of this token
-     *
-     */
-    public String getSubject();
-
-
-    /**
-     * This method extracts the list of groups that the owner of this
-     * token has access to.  If "Alice" is a member of the groups "G1"
-     * and "G2" defined at the group server "Server1", this method
-     * will return ["G1", "G2"].
-     *
-     * @return The list of group memberships encoded in this token
-     *
-     */
-    public List<String> getGroups();
-
-}   //-- end interface UserToken
+}

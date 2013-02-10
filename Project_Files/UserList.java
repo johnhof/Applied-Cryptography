@@ -2,13 +2,15 @@
 import java.util.*;
 
 
-	public class UserList implements java.io.Serializable {
+
+	public class UserList implements java.io.Serializable 
+	{
 	
 		/**
 		 * 
 		 */
-		private static final long serialVersionUID = 7600343803563417992L;
 		private Hashtable<String, User> list = new Hashtable<String, User>();
+		private static final long serialVersionUID = 7600343803563417992L;
 		
 		public synchronized void addUser(String username)
 		{
@@ -64,7 +66,6 @@ import java.util.*;
 		{
 			list.get(user).removeOwnership(groupname);
 		}
-		
 	
 	class User implements java.io.Serializable {
 
@@ -122,7 +123,7 @@ import java.util.*;
 				}
 			}
 		}
-		
 	}
+
 	
 }	

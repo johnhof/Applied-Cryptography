@@ -117,7 +117,28 @@ public class GroupThread extends Thread
 //--CREATE GOUP---------------------------------------------------------------------------------------------------------
 				else if(message.getMessage().equals("CGROUP")) //Client wants to create a group
 				{
-	//--TODO: Write this handler-------------------------------------------------------------------------------------------
+					//if the message is too short, return failure
+					response = new Envelope("FAIL");
+					if(message.getObjContents().size() > 1)
+					{
+						
+						if(message.getObjContents().get(0) != null)
+						{
+							if(message.getObjContents().get(1) != null)
+							{
+								String groupName = (String)message.getObjContents().get(0); //Extract the group name
+								UserToken yourToken = (UserToken)message.getObjContents().get(1); //Extract the token
+								
+								//create the user if the username/token allow it
+								if(createGroup(groupName, yourToken))
+								{
+									response = new Envelope("OK"); //Success
+								}
+							}
+						}
+					}
+					
+					output.writeObject(response);
 				}
 //--DELETE GROUP--------------------------------------------------------------------------------------------------------
 				else if(message.getMessage().equals("DGROUP")) //Client wants to delete a group
@@ -166,7 +187,7 @@ public class GroupThread extends Thread
 		if(my_gs.userList.checkUser(username))
 		{
 			//Issue a new token with server's name, user's name, and user's groups
-			UserToken yourToken = new Token(my_gs.name, username, my_gs.userList.getUserGroups(username));
+			UserToken yourToken = new UserToken(my_gs.name, username, my_gs.userList.getUserGroups(username));
 			return yourToken;
 		}
 		else
@@ -239,7 +260,8 @@ public class GroupThread extends Thread
 					//If user is the owner, removeMember will automatically delete group!
 					for(int index = 0; index < deleteFromGroups.size(); index++)
 					{
-						my_gs.groupList.removeMember(username, deleteFromGroups.get(index));
+//NOTE: removed due to compiling error... waht happened to this function, should we add it? - jmh 2/10
+						//my_gs.groupList.removeMember(username, deleteFromGroups.get(index));
 					}
 					
 					//If groups are owned, they must be deleted
@@ -254,8 +276,8 @@ public class GroupThread extends Thread
 					//Delete owned groups
 					for(int index = 0; index < deleteOwnedGroup.size(); index++)
 					{
-						//Use the delete group method. Token must be created for this action
-						deleteGroup(deleteOwnedGroup.get(index), new Token(my_gs.name, username, deleteOwnedGroup));
+						//Use the delete group method. UserToken must be created for this action
+						deleteGroup(deleteOwnedGroup.get(index), new UserToken(my_gs.name, username, deleteOwnedGroup));
 					}
 					
 					//Delete the user from the user list
@@ -279,5 +301,58 @@ public class GroupThread extends Thread
 			return false; //requester does not exist
 		}
 	}
-	
+
+//----------------------------------------------------------------------------------------------------------------------
+//-- UTILITY FUNCITONS
+//----------------------------------------------------------------------------------------------------------------------
+	private boolean createGroup(String groupName, UserToken yourToken)
+	{
+		String requester = yourToken.getSubject();
+		
+		//Check if group exists
+		if(!my_gs.groupExists(groupName))
+		{/*
+			my_gs.addGroup(groupName);
+			my_gs.userList.addGroup(yourToken, groupName);
+			my_gs.userList.addOwnership(yourToken, groupName);*/
+			return true;
+		}
+		else
+		{
+			return false; //requester does not exist
+		}
+	}
+
+	private boolean deleteGroup(String groupname, UserToken yourToken)
+	{/*
+		if(my_gs.groupExists(groupname))
+		{
+			if(yourToken.getSubject().equals(my_gs.getAdmin(groupname)))
+			{
+				my_gs.deleteGroup(groupname);
+			}
+		}*/
+		return false;
+	}
+
+	private void listMembers(String groupname, UserToken yourToken)
+	{
+		
+	}
+
+	private boolean addToGroup(String username, String groupname, UserToken yourToken)
+	{
+		return false;
+	}
+
+	private boolean removeFromGroup(String username, UserToken yourToken)
+	{
+		return false;
+	}
+
+	private boolean disconnect(String username, UserToken yourToken)
+	{
+		return false;
+	}
+
 }

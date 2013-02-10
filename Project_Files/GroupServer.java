@@ -16,11 +16,19 @@ import java.net.Socket;
 import java.io.*;
 import java.util.*;
 
+/*ADDED ELEMENTS:
+-groupList: string to easily check group existence
+-groupExists: return true if the group exists
+
+NOTE: this is probably not the right way to do this, but I'm at a loss for alternatives
+*/
 
 public class GroupServer extends Server {
 
 	public static final int SERVER_PORT = 8765;
 	public UserList userList;
+	public ArrayList<String> groupList;
+
     
 	public GroupServer() 
 	{
@@ -37,14 +45,44 @@ public class GroupServer extends Server {
 		// Overwrote server.start() because if no user file exists, initial admin account needs to be created
 		
 		String userFile = "UserList.bin";
+		String groupFile = "GroupList.bin";
 		Scanner console = new Scanner(System.in);
 		ObjectInputStream userStream;
 		ObjectInputStream groupStream;
-		
+
 		//This runs a thread that saves the lists on program exit
 		Runtime runtime = Runtime.getRuntime();
 		runtime.addShutdownHook(new ShutDownListener(this));
-		
+
+//----------------------------------------------------------------------------------------------------------------------
+//--ADDED: groupList setup
+//----------------------------------------------------------------------------------------------------------------------
+		try
+		{
+			FileInputStream fis = new FileInputStream(groupFile);
+			groupStream = new ObjectInputStream(fis);
+			groupList = (ArrayList<String>)groupStream.readObject();
+		}
+		catch(FileNotFoundException e)
+		{
+			System.out.println("groupList File Does Not Exist. Creating groupList...");
+			System.out.println("No groups currently exist");
+
+			groupList = new ArrayList<String>();
+		}
+		catch(IOException e)
+		{
+			System.out.println("Error reading from groupList file");
+			System.exit(-1);
+		}
+		catch(ClassNotFoundException e)
+		{
+			System.out.println("Error reading from groupList file");
+			System.exit(-1);
+		}
+//----------------------------------------------------------------------------------------------------------------------
+
+
 		//Open user file to get user list
 		try
 		{
@@ -64,6 +102,7 @@ public class GroupServer extends Server {
 			userList.addUser(username);
 			userList.addGroup(username, "ADMIN");
 			userList.addOwnership(username, "ADMIN");
+			groupList.add("ADMIN");
 		}
 		catch(IOException e)
 		{
@@ -75,6 +114,7 @@ public class GroupServer extends Server {
 			System.out.println("Error reading from UserList file");
 			System.exit(-1);
 		}
+
 		
 		//Autosave Daemon. Saves lists every 5 minutes
 		AutoSave aSave = new AutoSave(this);
@@ -107,7 +147,22 @@ public class GroupServer extends Server {
 
 	}
 	
+//----------------------------------------------------------------------------------------------------------------------
+//--UTILITY FUNCITONS
+//----------------------------------------------------------------------------------------------------------------------
+	public boolean groupExists(String groupName)
+	{
+		return groupList.contains(groupName);
+	}
+
+	public void addGroup(String groupName)
+	{
+		groupList.add(groupName);
+	}
 }
+
+//----------------------------------------------------------------------------------------------------------------------
+
 
 //This thread saves the user list
 class ShutDownListener extends Thread
@@ -127,6 +182,13 @@ class ShutDownListener extends Thread
 		{
 			outStream = new ObjectOutputStream(new FileOutputStream("UserList.bin"));
 			outStream.writeObject(my_gs.userList);
+
+//----------------------------------------------------------------------------------------------------------------------
+//-- ADDED: groupList storage
+//----------------------------------------------------------------------------------------------------------------------
+			outStream = new ObjectOutputStream(new FileOutputStream("GroupList.bin"));
+			outStream.writeObject(my_gs.groupList);
+//----------------------------------------------------------------------------------------------------------------------
 		}
 		catch(Exception e)
 		{
@@ -158,13 +220,20 @@ class AutoSave extends Thread
 				{
 					outStream = new ObjectOutputStream(new FileOutputStream("UserList.bin"));
 					outStream.writeObject(my_gs.userList);
+
+//----------------------------------------------------------------------------------------------------------------------
+//-- ADDED: groupList storage
+//----------------------------------------------------------------------------------------------------------------------
+					outStream = new ObjectOutputStream(new FileOutputStream("GroupList.bin"));
+					outStream.writeObject(my_gs.groupList);
+//----------------------------------------------------------------------------------------------------------------------
 				}
 				catch(Exception e)
 				{
 					System.err.println("Error: " + e.getMessage());
 					e.printStackTrace(System.err);
 				}
-
+			}
 			catch(Exception e)
 			{
 				System.out.println("Autosave Interrupted");

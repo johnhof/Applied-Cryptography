@@ -2,7 +2,8 @@ import java.net.Socket;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
-public abstract class Client {
+public abstract class Client 
+{
 
 	/* protected keyword is like private but subclasses have access
 	 * Socket and input/output streams
@@ -11,24 +12,29 @@ public abstract class Client {
 	protected ObjectOutputStream output;
 	protected ObjectInputStream input;
 
-	public boolean connect(final String server, final int port) {
+	public boolean connect(final String server, final int port) 
+	{
 		System.out.println("attempting to connect");
 
 		/* TODO: Write this method */
-
+		return false;
 	}
 
 	public boolean isConnected() {
-		if (sock == null || !sock.isConnected()) {
+		if (sock == null || !sock.isConnected()) 
+		{
 			return false;
 		}
-		else {
+		else 
+		{
 			return true;
 		}
 	}
 
-	public void disconnect()	 {
-		if (isConnected()) {
+	public void disconnect()	 
+	{
+		if (isConnected()) 
+		{
 			try
 			{
 				Envelope message = new Envelope("DISCONNECT");

@@ -1,4 +1,5 @@
-public class ShareFile implements java.io.Serializable, Comparable<ShareFile> {
+public class ShareFile implements java.io.Serializable, Comparable<ShareFile> 
+{
 
 	/**
 	 * 
@@ -8,7 +9,8 @@ public class ShareFile implements java.io.Serializable, Comparable<ShareFile> {
 	private String path;
 	private String owner;
 	
-	public ShareFile(String _owner, String _group, String _path) {
+	public ShareFile(String _owner, String _group, String _path) 
+	{
 		group = _group;
 		owner = _owner;
 		path = _path;

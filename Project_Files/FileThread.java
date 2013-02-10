@@ -3,6 +3,7 @@
 import java.lang.Thread;
 import java.net.Socket;
 import java.util.List;
+import java.util.ArrayList;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -139,7 +140,7 @@ public class FileThread extends Thread
 				{
 					//retrieve the contents of the envelope, and attampt to access the requested file
 					String remotePath = (String)e.getObjContents().get(0);
-					Token t = (Token)e.getObjContents().get(1);
+					UserToken t = (UserToken)e.getObjContents().get(1);
 					ShareFile sf = FileServer.fileList.getFile("/"+remotePath);
 
 					if (sf == null) 
@@ -234,7 +235,7 @@ public class FileThread extends Thread
 				{
 					//retrieve the contents of the envelope, and attampt to access the requested file
 					String remotePath = (String)e.getObjContents().get(0);
-					Token t = (Token)e.getObjContents().get(1);
+					UserToken t = (UserToken)e.getObjContents().get(1);
 					ShareFile sf = FileServer.fileList.getFile("/"+remotePath);
 
 					if (sf == null) 
