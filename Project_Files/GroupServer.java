@@ -113,7 +113,13 @@ public class GroupServer extends Server {
 			System.exit(-1);
 		}
 
-		
+		//check for null values just in case
+		if(userList == null || groupList == null)
+		{
+			System.out.println("File reading error, data could not be recovered");
+			System.exit(-1);
+		}
+
 		//Autosave Daemon. Saves lists every 5 minutes
 		AutoSave aSave = new AutoSave(this);
 		aSave.setDaemon(true);
