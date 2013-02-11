@@ -163,7 +163,37 @@ public class GroupThread extends Thread
 //--LIST MEMBERS--------------------------------------------------------------------------------------------------------
 				else if(message.getMessage().equals("LMEMBERS")) //Client wants a list of members in a group
 				{
-	//--TODO: Write this handler-------------------------------------------------------------------------------------------
+					//if the message is too short, return failure
+					response = new Envelope("FAIL");
+					if(message.getObjContents().size() > 1)
+					{
+						//get the elements of the message
+						if(message.getObjContents().get(0) != null && message.getObjContents().get(1) != null)
+						{
+							String groupName = (String)message.getObjContents().get(0); //Extract the group name
+							UserToken yourToken = (UserToken)message.getObjContents().get(1); //Extract the token
+
+							if(my_gs.groupList.getGroupOwners(groupName).contains(yourToken.getSubject()))
+							{
+								ArrayList<String> users = my_gs.groupList.getGroupMembers(groupName);
+								if(users.size() > 0)
+								{
+									response = new Envelope("OK");//success (check FileClient line 140 to see why this is the message
+									response.addObject(users);//See FileClient for protocol
+									
+									output.writeObject(response);
+								}
+								else//no files exist
+								{
+									response = new Envelope("FAIL-NOUSERS");
+									output.writeObject(response);
+								}
+							}
+					
+						}
+					}
+					
+					output.writeObject(response);
 				}
 //--ADD TO GROUP--------------------------------------------------------------------------------------------------------
 				else if(message.getMessage().equals("AUSERTOGROUP")) //Client wants to add user to a group
