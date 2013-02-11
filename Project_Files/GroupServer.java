@@ -25,7 +25,7 @@ NOTE: this is probably not the right way to do this, but I'm at a loss for alter
 
 public class GroupServer extends Server {
 
-	public static final int SERVER_PORT = 8765;
+	public static final int SERVER_PORT = 8766;
 	public UserList userList;
 	public GroupList groupList;
 	//^^^^This should really be a database...

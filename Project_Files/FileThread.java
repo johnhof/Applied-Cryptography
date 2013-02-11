@@ -30,7 +30,7 @@ public class FileThread extends Thread
 			final ObjectInputStream input = new ObjectInputStream(socket.getInputStream());
 			final ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
 			Envelope response;
-
+			
 			//handle messages from the input stream(ie. socket)
 			do
 			{
