@@ -27,8 +27,8 @@ public class GroupServer extends Server {
 
 	public static final int SERVER_PORT = 8765;
 	public UserList userList;
-	public ArrayList<String> groupList;
-
+	public GroupList groupList;
+	//^^^^This should really be a database...
     
 	public GroupServer() 
 	{
@@ -61,14 +61,14 @@ public class GroupServer extends Server {
 		{
 			FileInputStream fis = new FileInputStream(groupFile);
 			groupStream = new ObjectInputStream(fis);
-			groupList = (ArrayList<String>)groupStream.readObject();
+			groupList = (GroupList)groupStream.readObject();
 		}
 		catch(FileNotFoundException e)
 		{
 			System.out.println("groupList File Does Not Exist. Creating groupList...");
 			System.out.println("No groups currently exist");
 
-			groupList = new ArrayList<String>();
+			groupList = new GroupList();
 		}
 		catch(IOException e)
 		{
@@ -100,9 +100,7 @@ public class GroupServer extends Server {
 			//Create a new list, add current user to the ADMIN group. They now own the ADMIN group.
 			userList = new UserList();
 			userList.addUser(username);
-			userList.addGroup(username, "ADMIN");
-			userList.addOwnership(username, "ADMIN");
-			groupList.add("ADMIN");
+			createGroup("ADMIN", username);
 		}
 		catch(IOException e)
 		{
@@ -146,23 +144,93 @@ public class GroupServer extends Server {
 		}
 
 	}
+
+
+//----------------------------------------------------------------------------------------------------------------------
+//-- UTILITY FUNCITONS
+//-- !!!!!ALWAYS USE THESE TO ADD AND REMOVE GROUPS AND USERS. THESE LISTS MUST BE SYNCHRONIZED!!!!!
+//-- also note that these assume data integrity is pure. do checks before calling them
+//----------------------------------------------------------------------------------------------------------------------
+
+	//does not check if group exists
+	public void createGroup(String groupName, String creator)
+	{
+		userList.addGroup(creator, groupName);
+		userList.addOwnership(creator, groupName);
+
+		groupList.addGroup(groupName);
+		groupList.addMember(groupName, creator);
+		groupList.addOwner(groupName, creator);
+	}
+
+	//does not check if group exists
+	public void deleteGroup(String groupName)
+	{
+		//remove ownership for each owner in the group
+		ArrayList<String> owners = groupList.getGroupOwners(groupName);
+		for(String owner : owners)
+		{
+			userList.removeOwnership(owner, groupName);
+		}
+
+		//remove membership for each user in the group
+		ArrayList<String> members = groupList.getGroupMembers(groupName);
+		for(String member : members)
+		{
+			userList.removeGroup(member, groupName);
+		}
+
+		groupList.deleteGroup(groupName);
+	}
+
+	//does not check if the group or user exists
+	public void addUserToGroup(String groupName, String user)
+	{
+		userList.addGroup(user, groupName);
+		groupList.addMember(groupName, user);
+	}
+
+	//does not check if group or user exists, or if user is in group, or if user is the owner
+	public void removeUserFromGroup(String groupName, String user)
+	{
+		userList.removeGroup(user, groupName);
+		groupList.removeMember(groupName, user);
+	}
+
+	//does not check if group or user exists, or if user is in group, or if user is the owner
+	public void removeOwnerFromGroup(String groupName, String owner)
+	{
+		userList.removeOwnership(owner, groupName);
+		groupList.removeOwner(groupName, owner);
+	}
 	
-//----------------------------------------------------------------------------------------------------------------------
-//--UTILITY FUNCITONS
-//----------------------------------------------------------------------------------------------------------------------
-	public boolean groupExists(String groupName)
+	//does not check if group or user exists, or if user is in group, or if user is the owner
+	public void addOwnerToGroup(String groupName, String owner)
 	{
-		return groupList.contains(groupName);
+		userList.addOwnership(owner, groupName);
+		groupList.addOwner(groupName, owner);
 	}
 
-	public void addGroup(String groupName)
+	public void deleteUser(String user)
 	{
-		groupList.add(groupName);
+		//remove ownership for each owner in the group
+		ArrayList<String> ownedGroups = userList.getUserOwnership(user);
+		for(String ownedGroup : ownedGroups)
+		{
+			groupList.removeOwner(ownedGroup, user);
+		}
+
+		//remove membership for each user in the group
+		ArrayList<String> groups = userList.getUserGroups(user);
+		for(String group : groups)
+		{
+			groupList.removeMember(group, user);
+		}
+
+		userList.deleteUser(user);
 	}
+//----------------------------------------------------------------------------------------------------------------------
 }
-
-//----------------------------------------------------------------------------------------------------------------------
-
 
 //This thread saves the user list
 class ShutDownListener extends Thread

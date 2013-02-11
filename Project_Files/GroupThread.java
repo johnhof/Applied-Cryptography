@@ -114,26 +114,23 @@ public class GroupThread extends Thread
 					
 					output.writeObject(response);
 				}
-//--CREATE GOUP---------------------------------------------------------------------------------------------------------
+//--CREATE GROUP---------------------------------------------------------------------------------------------------------
 				else if(message.getMessage().equals("CGROUP")) //Client wants to create a group
 				{
 					//if the message is too short, return failure
 					response = new Envelope("FAIL");
 					if(message.getObjContents().size() > 1)
 					{
-						
-						if(message.getObjContents().get(0) != null)
+						//get the elements of the message
+						if(message.getObjContents().get(0) != null && message.getObjContents().get(1) != null)
 						{
-							if(message.getObjContents().get(1) != null)
-							{
-								String groupName = (String)message.getObjContents().get(0); //Extract the group name
-								UserToken yourToken = (UserToken)message.getObjContents().get(1); //Extract the token
+							String groupName = (String)message.getObjContents().get(0); //Extract the group name
+							UserToken yourToken = (UserToken)message.getObjContents().get(1); //Extract the token
 								
-								//create the user if the username/token allow it
-								if(createGroup(groupName, yourToken))
-								{
-									response = new Envelope("OK"); //Success
-								}
+							//create the group if the it doesn't already exist
+							if(createGroup(groupName, yourToken))
+							{
+								response = new Envelope("OK"); //Success
 							}
 						}
 					}
@@ -143,7 +140,25 @@ public class GroupThread extends Thread
 //--DELETE GROUP--------------------------------------------------------------------------------------------------------
 				else if(message.getMessage().equals("DGROUP")) //Client wants to delete a group
 				{
-	//--TODO: Write this handler-------------------------------------------------------------------------------------------
+					//if the message is too short, return failure
+					response = new Envelope("FAIL");
+					if(message.getObjContents().size() > 1)
+					{
+						//get the elements of the message
+						if(message.getObjContents().get(0) != null && message.getObjContents().get(1) != null)
+						{
+							String groupName = (String)message.getObjContents().get(0); //Extract the group name
+							UserToken yourToken = (UserToken)message.getObjContents().get(1); //Extract the token
+								
+							//create the group if the it doesn't already exist
+							if(deleteGroup(groupName, yourToken))
+							{
+								response = new Envelope("OK"); //Success
+							}
+						}
+					}
+					
+					output.writeObject(response);
 				}
 //--LIST MEMBERS--------------------------------------------------------------------------------------------------------
 				else if(message.getMessage().equals("LMEMBERS")) //Client wants a list of members in a group
@@ -307,50 +322,42 @@ public class GroupThread extends Thread
 //----------------------------------------------------------------------------------------------------------------------
 	private boolean createGroup(String groupName, UserToken yourToken)
 	{
-		String requester = yourToken.getSubject();
-		
 		//Check if group exists
-		if(!my_gs.groupExists(groupName))
-		{/*
-			my_gs.addGroup(groupName);
-			my_gs.userList.addGroup(yourToken, groupName);
-			my_gs.userList.addOwnership(yourToken, groupName);*/
+		if(!my_gs.groupList.checkGroup(groupName))
+		{
+			my_gs.createGroup(groupName, yourToken.getSubject());
 			return true;
 		}
-		else
-		{
-			return false; //requester does not exist
-		}
+		return false; //requester does not exist
 	}
 
-	private boolean deleteGroup(String groupname, UserToken yourToken)
-	{/*
-		if(my_gs.groupExists(groupname))
+	private boolean deleteGroup(String groupName, UserToken yourToken)
+	{
+		//verify that the group exists, and that the user is an owner
+		if(my_gs.groupList.checkGroup(groupName) && my_gs.groupList.getGroupOwners(groupName).contains(yourToken.getSubject()))
 		{
-			if(yourToken.getSubject().equals(my_gs.getAdmin(groupname)))
-			{
-				my_gs.deleteGroup(groupname);
-			}
-		}*/
+			my_gs.deleteGroup(groupName);
+			return true;
+		}
 		return false;
 	}
 
-	private void listMembers(String groupname, UserToken yourToken)
+	private void listMembers(String groupName, UserToken yourToken)
 	{
 		
 	}
 
-	private boolean addToGroup(String username, String groupname, UserToken yourToken)
+	private boolean addToGroup(String userName, String groupName, UserToken yourToken)
 	{
 		return false;
 	}
 
-	private boolean removeFromGroup(String username, UserToken yourToken)
+	private boolean removeFromGroup(String userName, UserToken yourToken)
 	{
 		return false;
 	}
 
-	private boolean disconnect(String username, UserToken yourToken)
+	private boolean disconnect(String userName, UserToken yourToken)
 	{
 		return false;
 	}
