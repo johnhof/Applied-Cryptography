@@ -14,6 +14,7 @@ public class UI
 		//gUser.connect(null, 8766);
 		FileClient fUser = new FileClient();
 		fUser.connect(null, 4321);
+		boolean connected = true;
 		//UI is connecting to localhost. May change with cmd line options later
 		
 		
@@ -31,7 +32,8 @@ public class UI
 		//confirmed that this token is correct
 		do{	
 			System.out.println("What would you like to do now?");//Queries the user
-			System.out.println("Type F for File Server operations or G for Group Server operations.");
+			System.out.print("Type F for File Server operations or G for Group Server operations");
+			System.out.println("or D to disconnect.");
 			String input = in.nextLine();
 			
 			if(input.equals("F") || input.equals("f"))
@@ -173,6 +175,12 @@ public class UI
 					gUser.deleteUserFromGroup(input, input2, token);
 				}
 			}
-		} while(true);//forever
+			else if(input.equals("D") || input.equals("d"))
+			{
+				gUser.disconnect();
+				fUser.disconnect();
+				connected == false;
+			}
+		} while(connected == true);//forever
 	}
 }
