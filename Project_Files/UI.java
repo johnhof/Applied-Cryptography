@@ -26,7 +26,7 @@ public class UI
 		do{	
 			System.out.println("What would you like to do now?");//Queries the user
 			System.out.println("Type F for File Server operations or G for Group Server operations.");
-			String input = n.nextLine();
+			String input = in.nextLine();
 			if(input.equals("F") || input.equals("f"))
 			{
 				System.out.println("");
@@ -37,7 +37,53 @@ public class UI
 				System.out.print("3-Create a Group\n4-Delete a Group\n5-List a Group's Members");
 				System.out.print("\n6-Add to a Group\n7-Delete from a Group\nPlease enter your selection's");
 				System.out.print("numeric value.\n");
-				input = n.nextLine();
+				input = in.nextLine();
+				if(input.equals("1"))
+				{
+					System.out.println("What user would you like to create?");
+					input = in.nextLine();
+					gUser.createUser(input, token);
+				}
+				else if(input.equals("2"))
+				{
+					System.out.println("What user would you like to delete?");
+					input = in.nextLine();
+					gUser.deleteUser(input, token);
+				}
+				else if(input.equals("3"))
+				{
+					System.out.println("What group would you like to create?");
+					input = in.nextLine();
+					gUser.createGroup(input, token);
+				}
+				else if(input.equals("4"))
+				{
+					System.out.println("What group would you like to delete?");
+					input = in.nextLine();
+					gUser.deleteGroup(input, token);
+				}
+				else if(input.equals("5"))
+				{
+					System.out.println("What group would you like to know the members of?");
+					input = in.nextLine();
+					gUser.listMembers(input, token);
+				}
+				else if(input.equals("6"))
+				{
+					System.out.println("What user would you like to add to a group?");
+					input = in.nextLine();
+					System.out.println("To which group?");
+					String input2 = in.nextLine();
+					gUser.addUserToGroup(input, input2, token);
+				}
+				else if(input.equals("7"))
+				{
+					System.out.println("What user would you like to delete from a group?");
+					input = in.nextLine();
+					System.out.println("From which group?");
+					String input2 = in.nextLine();
+					gUser.deleteUserFromGroup(input, input2, token);
+				}
 			}
 		} while(true);//forever
 	}
