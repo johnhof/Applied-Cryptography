@@ -152,7 +152,7 @@ public class GroupClient extends Client implements GroupClientInterface {
 			{
 				return true;
 			}
-				
+			else System.out.println(response.getMessage());
 			return false;
 		}
 		catch(Exception e)

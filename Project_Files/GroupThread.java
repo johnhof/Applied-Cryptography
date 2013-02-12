@@ -155,6 +155,7 @@ public class GroupThread extends Thread
 							{
 								response = new Envelope("OK"); //Success
 							}
+							else response = new Envelope("You could not delete the group.");
 						}
 					}
 					
