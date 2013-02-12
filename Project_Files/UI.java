@@ -11,7 +11,7 @@ public class UI
 
 		System.out.println("Attempting to connect to GroupServer.");
 		GroupClient gUser = new GroupClient();
-		//gUser.connect(null, 8766);
+		gUser.connect(null, 8766);
 		FileClient fUser = new FileClient();
 		fUser.connect(null, 4321);
 		boolean connected = true;
