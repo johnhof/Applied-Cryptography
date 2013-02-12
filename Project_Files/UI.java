@@ -36,7 +36,7 @@ public class UI
 				System.out.print("Would you like to:\n1-Create a User\n2-Delete a User\n");
 				System.out.print("3-Create a Group\n4-Delete a Group\n5-List a Group's Members");
 				System.out.print("\n6-Add to a Group\n7-Delete from a Group\nPlease enter your selection's");
-				System.out.print("numeric value.\n");
+				System.out.print(" numeric value.\n");
 				input = in.nextLine();
 				if(input.equals("1"))
 				{
@@ -66,7 +66,11 @@ public class UI
 				{
 					System.out.println("What group would you like to know the members of?");
 					input = in.nextLine();
-					gUser.listMembers(input, token);
+					ArrayList<String> members = (ArrayList<String>)gUser.listMembers(input, token);
+					for(int i = 0; i<members.size(); i++)
+					{
+						System.out.println(members.get(i));
+					}
 				}
 				else if(input.equals("6"))
 				{
