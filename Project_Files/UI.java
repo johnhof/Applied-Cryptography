@@ -16,20 +16,26 @@ public class UI
 		fUser.connect(null, 4321);
 		boolean connected = true;
 		//UI is connecting to localhost. May change with cmd line options later
+		boolean proceed = true;
 		
-		
-		System.out.println("Please enter a username.");
-		Scanner in = new Scanner(System.in);
+		while(proceed)
+		{
+			System.out.println("Please enter a username.");
+			Scanner in = new Scanner(System.in);
 
-		String username = in.nextLine();
+			String username = in.nextLine();
 
-		//for fileserver testing purposes:
-		//List<String> groups = new List<String>();
-		//UserToken token = null;
+			//for fileserver testing purposes:
+			//List<String> groups = new List<String>();
+			//UserToken token = null;
 
-		UserToken token = gUser.getToken(username);
-		
-		//confirmed that this token is correct
+			UserToken token = gUser.getToken(username);
+			if (token == null)
+			{
+				proceed = false;
+				System.out.println("Invalid Username");
+			}
+		}
 		do{	
 			System.out.println("What would you like to do now?");//Queries the user
 			System.out.print("Type F for File Server operations or G for Group Server operations");

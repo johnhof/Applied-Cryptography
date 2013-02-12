@@ -40,7 +40,7 @@ public class GroupThread extends Thread
 				if(message.getMessage().equals("GET"))//Client wants a token
 				{
 					String username = (String)message.getObjContents().get(0); //Get the username
-					if(username == null)
+					if(username == null || !my_gs.userList.checkUser(username))
 					{
 						response = new Envelope("FAIL");
 						response.addObject(null);
