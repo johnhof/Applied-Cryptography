@@ -4,7 +4,7 @@ public class UserToken implements UserTokenInterface, java.io.Serializable
 {
 	private String issuer; 
 	private String subject; 
-    	private List<String> groups;
+    private List<String> groups;
 
 	public UserToken(String Issuer, String Subject)
 	{

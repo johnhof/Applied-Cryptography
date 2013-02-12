@@ -179,8 +179,9 @@ public class UI
 			{
 				gUser.disconnect();
 				fUser.disconnect();
-				connected == false;
+				connected = false;
 			}
-		} while(connected == true);//forever
+			else System.out.println("Could not understand your input");
+		} while(connected);//forever
 	}
 }
