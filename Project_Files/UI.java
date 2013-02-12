@@ -11,7 +11,7 @@ public class UI
 
 		System.out.println("Attempting to connect to GroupServer.");
 		GroupClient gUser = new GroupClient();
-		gUser.connect(null, 8766);
+		//gUser.connect(null, 8766);
 		FileClient fUser = new FileClient();
 		fUser.connect(null, 4321);
 		//UI is connecting to localhost. May change with cmd line options later
@@ -21,15 +21,99 @@ public class UI
 		Scanner in = new Scanner(System.in);
 
 		String username = in.nextLine();
+
+		//for fileserver testing purposes:
+		//List<String> groups = new List<String>();
+		//UserToken token = null;
+
 		UserToken token = gUser.getToken(username);
+		
 		//confirmed that this token is correct
 		do{	
 			System.out.println("What would you like to do now?");//Queries the user
 			System.out.println("Type F for File Server operations or G for Group Server operations.");
 			String input = in.nextLine();
+			
 			if(input.equals("F") || input.equals("f"))
 			{
-				System.out.println("");
+				System.out.print("Would you like to:\n1-List Files\n2-Upload File\n");
+				System.out.print("3-Download File\n4-Delete File\n");
+				System.out.print("Please enter your selection's");
+				System.out.print(" numeric value.\n");
+				input = in.nextLine();
+
+
+				String srcFile = "";
+				String destFile = "";
+				String group = "";
+
+				switch(input)
+				{
+					case "1":
+						System.out.println("\nAccessable files:");
+						for(String file : fUser.listFiles(token))
+						{
+							System.out.println(file);
+						}
+					break;
+
+					case "2":
+						System.out.println("\nEnter source file path");
+						srcFile = in.nextLine();					
+
+						System.out.println("\nEnter destination file path");
+						destFile = in.nextLine();		
+
+						System.out.println("\nEnter destination group name");
+						group = in.nextLine();		
+		
+						if(fUser.upload(srcFile, destFile, group, token))
+						{
+							System.out.println("\nSuccessful upload");
+						}
+						else 
+						{
+							System.out.println("\nUpload failed");
+						}
+					break;
+					
+					case "3":
+						System.out.println("\nEnter source file path");
+						srcFile = in.nextLine();					
+
+						System.out.println("\nEnter destination file path");
+						destFile = in.nextLine();			
+							
+		
+						if(fUser.download(srcFile, destFile, token))
+						{
+							System.out.println("\nSuccessful download");
+						}
+						else 
+						{
+							System.out.println("\nDownload failed");
+						}						
+					break;
+					
+					case "4":
+						System.out.println("\nEnter file path for deletion");
+						destFile = in.nextLine();					
+		
+						if(fUser.delete(destFile, token))
+						{
+							System.out.println("\nSuccessful deletion");
+						}
+						else 
+						{
+							System.out.println("\nDelete failed");
+						}							
+					break;
+					
+					default:
+						System.out.println("\ninvalid input\n");
+					break;
+				}
+				System.out.println();
 			}
 			else if(input.equals("G") || input.equals("g"))
 			{
