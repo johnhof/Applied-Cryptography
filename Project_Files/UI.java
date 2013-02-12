@@ -11,7 +11,11 @@ public class UI
 
 		System.out.println("Attempting to connect to GroupServer.\n");
 		GroupClient gUser = new GroupClient();
-		user.connect(null, 8766);
+		gUser.connect(null, 8766);
+		FileClient fUser = new FileClient();
+		fUser.connect(null, 4321);
+		//UI is connecting to localhost. May change with cmd line options later
+		
 		
 		System.out.println("Please enter a username.");
 		Scanner in = new Scanner(System.in);
