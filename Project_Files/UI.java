@@ -42,16 +42,16 @@ public class UI
 				System.out.print("3-Download File\n4-Delete File\n");
 				System.out.print("Please enter your selection's");
 				System.out.print(" numeric value.\n");
-				input = in.nextLine();
+				int inputI = Integer.parseInt(in.nextLine());
 
 
 				String srcFile = "";
 				String destFile = "";
 				String group = "";
 
-				switch(input)
+				switch(inputI)
 				{
-					case "1":
+					case 1:
 						System.out.println("\nAccessable files:");
 						for(String file : fUser.listFiles(token))
 						{
@@ -59,7 +59,7 @@ public class UI
 						}
 					break;
 
-					case "2":
+					case 2:
 						System.out.println("\nEnter source file path");
 						srcFile = in.nextLine();					
 
@@ -79,7 +79,7 @@ public class UI
 						}
 					break;
 					
-					case "3":
+					case 3:
 						System.out.println("\nEnter source file path");
 						srcFile = in.nextLine();					
 
@@ -97,7 +97,7 @@ public class UI
 						}						
 					break;
 					
-					case "4":
+					case 4:
 						System.out.println("\nEnter file path for deletion");
 						destFile = in.nextLine();					
 		
