@@ -44,7 +44,7 @@ public class UI
 		do{	
 			System.out.println("What would you like to do now?");//Queries the user
 			System.out.print("Type F for File Server operations or G for Group Server operations");
-			System.out.println(" or D to disconnect.");
+			System.out.println("or D to disconnect.");
 			String input = in.nextLine();
 			
 			if(input.equals("F") || input.equals("f"))

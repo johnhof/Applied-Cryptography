@@ -1,7 +1,8 @@
 import java.util.ArrayList;
 
 
-public class Envelope implements java.io.Serializable {
+public class Envelope implements java.io.Serializable 
+{
 	
 	/**
 	 * 

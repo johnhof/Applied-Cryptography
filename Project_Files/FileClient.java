@@ -124,7 +124,7 @@ public class FileClient extends Client implements FileClientInterface
 	}
 
 	@SuppressWarnings("unchecked")
-	public List<String> listFiles(UserToken token) 
+	public List<ShareFile> listFiles(UserToken token) 
 	{
 		 try
 		 {
@@ -139,7 +139,8 @@ public class FileClient extends Client implements FileClientInterface
 			 //If server indicates success, return the member list
 			 if(e.getMessage().equals("OK"))
 			 { 
-				return (List<String>)e.getObjContents().get(0); //This cast creates compiler warnings. Sorry.
+
+				return (List<ShareFile>)e.getObjContents().get(0); //This cast creates compiler warnings. Sorry.
 			 }
 				
 			 return null;

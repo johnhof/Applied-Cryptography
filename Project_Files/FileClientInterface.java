@@ -38,7 +38,7 @@ public interface FileClientInterface
      * @return A list of filenames
      *
      */
-    public List<String> listFiles(final UserToken token);
+    public List<ShareFile> listFiles(final UserToken token);
 
 
     /**
