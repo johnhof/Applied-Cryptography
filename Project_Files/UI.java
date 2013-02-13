@@ -135,39 +135,47 @@ public class UI
 				System.out.print("\n6-Add to a Group\n7-Delete from a Group\nPlease enter your selection's");
 				System.out.print(" numeric value.\n");
 				input = in.nextLine();
+				boolean works;
 				if(input.equals("1"))
 				{
 					System.out.println("What user would you like to create?");
 					input = in.nextLine();
-					gUser.createUser(input, token);
+					works = gUser.createUser(input, token);
+					if(!works) System.out.println("Creation failed");
 				}
 				else if(input.equals("2"))
 				{
 					System.out.println("What user would you like to delete?");
 					input = in.nextLine();
-					gUser.deleteUser(input, token);
+					works = gUser.deleteUser(input, token);
+					if(!works) System.out.println("Deletion failed");
 				}
 				else if(input.equals("3"))
 				{
 					System.out.println("What group would you like to create?");
 					input = in.nextLine();
-					gUser.createGroup(input, token);
+					works = User.createGroup(input, token);
+					if(!works) System.out.println("Creation failed");
 				}
 				else if(input.equals("4"))
 				{
 					System.out.println("What group would you like to delete?");
 					input = in.nextLine();
-					gUser.deleteGroup(input, token);
+					works = gUser.deleteGroup(input, token);
+					if(!works) System.out.println("Deletion failed");
 				}
 				else if(input.equals("5"))
 				{
 					System.out.println("What group would you like to know the members of?");
 					input = in.nextLine();
 					ArrayList<String> members = (ArrayList<String>)gUser.listMembers(input, token);
-					for(int i = 0; i<members.size(); i++)
-					{
-						System.out.println(members.get(i));
+					if(members != null){
+						for(int i = 0; i<members.size(); i++)
+						{
+							System.out.println(members.get(i));
+						}
 					}
+					else System.out.println("Group does not exist");
 				}
 				else if(input.equals("6"))
 				{
@@ -175,7 +183,8 @@ public class UI
 					input = in.nextLine();
 					System.out.println("To which group?");
 					String input2 = in.nextLine();
-					gUser.addUserToGroup(input, input2, token);
+					works = gUser.addUserToGroup(input, input2, token);
+					if(!works) System.out.println("Addition failed");
 				}
 				else if(input.equals("7"))
 				{
@@ -183,7 +192,8 @@ public class UI
 					input = in.nextLine();
 					System.out.println("From which group?");
 					String input2 = in.nextLine();
-					gUser.deleteUserFromGroup(input, input2, token);
+					works = gUser.deleteUserFromGroup(input, input2, token);
+					if(!works) System.out.println("Deletion failed");
 				}
 			}
 			else if(input.equals("D") || input.equals("d"))
