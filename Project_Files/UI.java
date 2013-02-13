@@ -161,7 +161,7 @@ public class UI
 				{
 					System.out.println("What group would you like to create?");
 					input = in.nextLine();
-					works = User.createGroup(input, token);
+					works = gUser.createGroup(input, token);
 					if(!works) System.out.println("Creation failed");
 					else System.out.println("Success.");
 				}
