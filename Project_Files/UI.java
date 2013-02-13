@@ -11,9 +11,24 @@ public class UI
 
 		System.out.println("Attempting to connect to GroupServer.");
 		GroupClient gUser = new GroupClient();
-		gUser.connect(null, 8766);
+		if(args.size == 0)	
+		{
+			gUser.connect(null, 8766);
+		}
+		else
+		{
+			gUser.connect(null, Integer.parseInt(args[0]));
+		}
 		FileClient fUser = new FileClient();
-		fUser.connect(null, 4321);
+		if(args.size == 0)
+		{
+			fUser.connect(null, 4321);
+		}
+		else 
+		{
+			fUser.connect(null, Integer.parseInt(args[1]));
+		}
+		
 		boolean connected = true;
 		//UI is connecting to localhost. May change with cmd line options later
 		boolean proceed;
