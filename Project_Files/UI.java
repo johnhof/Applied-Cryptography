@@ -64,10 +64,15 @@ public class UI
 				{
 					case 1:
 						System.out.println("\nAccessable files:");
-						for(String file : fUser.listFiles(token))
+						List<String> theFiles = fUser.listFiles(token);
+						if(theFiles != null)
 						{
-							System.out.println(file);
+							for(String file : theFiles)
+							{
+								System.out.println(file);
+							}
 						}
+						else System.out.println("No files found");
 					break;
 
 					case 2:
