@@ -250,6 +250,7 @@ public class GroupThread extends Thread
 //--DISCONNECT----------------------------------------------------------------------------------------------------------
 				else if(message.getMessage().equals("DISCONNECT")) //Client wants to disconnect
 				{
+
 					socket.close(); //Close the socket
 					proceed = false; //End this communication loop
 				}
@@ -432,6 +433,7 @@ public class GroupThread extends Thread
 			&& !my_gs.groupList.getGroupMembers(groupName).contains(userName))
 		{
 			my_gs.addUserToGroup(groupName, userName);
+			return true;
 		}
 		return false;
 	}
@@ -442,6 +444,7 @@ public class GroupThread extends Thread
 		if(my_gs.groupList.checkGroup(groupName) && my_gs.groupList.getGroupOwners(groupName).contains(yourToken.getSubject()))
 		{
 			my_gs.removeUserFromGroup(groupName, userName);
+			return true;
 		}
 		return false;
 	}
