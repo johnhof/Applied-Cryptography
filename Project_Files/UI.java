@@ -16,7 +16,7 @@ public class UI
 		fUser.connect(null, 4321);
 		boolean connected = true;
 		//UI is connecting to localhost. May change with cmd line options later
-		boolean proceed = false;
+		boolean proceed;
 		Scanner in;
 		String username;
 		UserToken token;
@@ -25,6 +25,7 @@ public class UI
 		{
 			System.out.println("Please enter a username.");
 			in = new Scanner(System.in);
+			proceed = false;
 
 			username = in.nextLine();
 
