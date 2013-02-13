@@ -51,6 +51,10 @@ public class GroupList implements java.io.Serializable
 		
 	public synchronized void removeMember(String groupName, String member)
 	{
+	// 	System.out.println(groupName);
+	// 	System.out.println(member);
+	// 	System.out.println(list);
+	// 	System.out.println(list.get(groupName));
 		list.get(groupName).removeMember(member);
 	}
 		

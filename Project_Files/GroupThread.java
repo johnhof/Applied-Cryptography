@@ -348,7 +348,7 @@ public class GroupThread extends Thread
 					for(int index = 0; index < deleteFromGroups.size(); index++)
 					{
 //NOTE: removed due to compiling error... waht happened to this function, should we add it? - jmh 2/10
-						//my_gs.groupList.removeMember(username, deleteFromGroups.get(index));
+						my_gs.groupList.removeMember(deleteFromGroups.get(index), username);
 					}
 					
 					//If groups are owned, they must be deleted

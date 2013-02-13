@@ -207,6 +207,7 @@ public class GroupClient extends Client implements GroupClientInterface {
 			
 			response = (Envelope)input.readObject();
 			//If server indicates success, return true
+			
 			if(response.getMessage().equals("OK"))
 			{
 				return true;
