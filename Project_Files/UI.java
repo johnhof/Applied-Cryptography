@@ -38,7 +38,7 @@ public class UI
 				proceed = true;
 				System.out.println("Invalid Username");
 			}
-		}while(proceed);
+		}while(proceed);//asks for username again
 		
 		do{	
 			System.out.println("What would you like to do now?");//Queries the user
