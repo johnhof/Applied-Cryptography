@@ -26,6 +26,10 @@ USAGE:
  group, the group roster will not change to reflect this until a new UI session is started, despite the fact that
  the method succeeded.
 
+ When performing upload operations, the code asks for the source path. Use the relative path from where you are running
+ the code. When it then asks for the destination path, it wants the relative path from shared_files. If you use a 
+ different filename, it will rename the file. The reverse is true for the download operation.
+
  To reset the File server completely, delete FileList.bin and the shared_files 
  directory.
  To reset the Group Server, delete UserList.bin.
