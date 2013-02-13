@@ -142,6 +142,7 @@ public class UI
 					input = in.nextLine();
 					works = gUser.createUser(input, token);
 					if(!works) System.out.println("Creation failed");
+					else System.out.println("Success.");
 				}
 				else if(input.equals("2"))
 				{
@@ -149,6 +150,7 @@ public class UI
 					input = in.nextLine();
 					works = gUser.deleteUser(input, token);
 					if(!works) System.out.println("Deletion failed");
+					else System.out.println("Success.");
 				}
 				else if(input.equals("3"))
 				{
@@ -156,6 +158,7 @@ public class UI
 					input = in.nextLine();
 					works = User.createGroup(input, token);
 					if(!works) System.out.println("Creation failed");
+					else System.out.println("Success.");
 				}
 				else if(input.equals("4"))
 				{
@@ -163,6 +166,7 @@ public class UI
 					input = in.nextLine();
 					works = gUser.deleteGroup(input, token);
 					if(!works) System.out.println("Deletion failed");
+					else System.out.println("Success.");
 				}
 				else if(input.equals("5"))
 				{
@@ -185,6 +189,7 @@ public class UI
 					String input2 = in.nextLine();
 					works = gUser.addUserToGroup(input, input2, token);
 					if(!works) System.out.println("Addition failed");
+					else System.out.println("Success.");
 				}
 				else if(input.equals("7"))
 				{
@@ -194,6 +199,7 @@ public class UI
 					String input2 = in.nextLine();
 					works = gUser.deleteUserFromGroup(input, input2, token);
 					if(!works) System.out.println("Deletion failed");
+					else System.out.println("Success.");
 				}
 			}
 			else if(input.equals("D") || input.equals("d"))
