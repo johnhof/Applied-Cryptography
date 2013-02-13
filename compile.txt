@@ -1,4 +1,4 @@
-Once inside src/ folder,
+Once inside Project_Files/ folder,
 
 COMPILE: javac *.java
 
