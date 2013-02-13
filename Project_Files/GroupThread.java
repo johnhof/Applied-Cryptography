@@ -177,7 +177,7 @@ public class GroupThread extends Thread
 
 
 							ArrayList<String> users = listMembers(groupName, yourToken);
-							if(users.size() > 0)
+							if(users != null && users.size() > 0)
 							{
 								response = new Envelope("OK");
 								response.addObject(users);
