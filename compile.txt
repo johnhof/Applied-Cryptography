@@ -1,4 +1,0 @@
-Once inside Project_Files/ folder,
-
-COMPILE: javac *.java
-
