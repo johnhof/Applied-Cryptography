@@ -247,6 +247,20 @@ public class GroupThread extends Thread
 					}					
 					output.writeObject(response);
 				}
+				
+//--SEE ALL USERS----------------------------------------------------------------------------------------------------
+				else if(message.getMessage().equals("ALLUSERS")) //Admin wants to see all of the users in existence
+				{
+					response = new Envelope("FAIL");
+					if(message.getObjContents().get(0) != null && my_gs.userList.getUserGroups((String)message.getObjContents().get(0)).contains("ADMIN"))//test if they are an admin
+					{
+						response = new Envelope("OK");
+						ArrayList<String> usernameList = my_gs.userList.allUsers();
+						response.addObject(usernameList);
+					}
+					
+					output.writeObject(response);
+				}
 //--DISCONNECT----------------------------------------------------------------------------------------------------------
 				else if(message.getMessage().equals("DISCONNECT")) //Client wants to disconnect
 				{

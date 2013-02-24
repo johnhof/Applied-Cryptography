@@ -36,6 +36,18 @@ import java.util.*;
 			}
 		}
 		
+		public synchronized ArrayList<String> allUsers()
+		{
+			Enumeration keys = list.keys();
+			ArrayList<String> usernames = new ArrayList<String>();
+			while(keys.hasMoreElements())
+			{
+				usernames.add((String)keys.nextElement());
+			}
+			
+			return usernames;
+		}
+		
 		//These are all calls to the User subclass
 		public synchronized ArrayList<String> getUserGroups(String username)
 		{

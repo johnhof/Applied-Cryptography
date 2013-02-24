@@ -151,7 +151,7 @@ public class UI
 			{
 				System.out.print("Would you like to:\n1-Create a User\n2-Delete a User\n");
 				System.out.print("3-Create a Group\n4-Delete a Group\n5-List a Group's Members");
-				System.out.print("\n6-Add to a Group\n7-Delete from a Group\nPlease enter your selection's");
+				System.out.print("\n6-Add to a Group\n7-Delete from a Group\n8-See all Users\nPlease enter your selection's");
 				System.out.print(" numeric value.\n");
 				input = in.nextLine();
 				boolean works;
@@ -220,15 +220,25 @@ public class UI
 					if(!works) System.out.println("Deletion failed");
 					else System.out.println("Success.");
 				}
+				else if(input.equals("8"))
+				{
+					ArrayList<String> allUsers = gUser.allUsers(token);
+					if(allUsers != null)
+					{
+						for(int i =0; i<allUsers.size(); i++)
+						{
+							System.out.println(allUsers.get(i));
+						}
+					}
+				}
 			}
 			else if(input.equals("D") || input.equals("d"))
 			{
-				gUser.disconnect();
+				gUser.disconnect();	
 				fUser.disconnect();
 				connected = false;
 			}
 			else System.out.println("Could not understand your input");
-			token = gUser.getToken(username);
 		} while(connected);//forever
 	}
 }
