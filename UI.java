@@ -228,6 +228,7 @@ public class UI
 				connected = false;
 			}
 			else System.out.println("Could not understand your input");
+			token = gUser.getToken(username);
 		} while(connected);//forever
 	}
 }
