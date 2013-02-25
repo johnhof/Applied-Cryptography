@@ -223,8 +223,8 @@ public class GroupClient extends Client implements GroupClientInterface {
 		}
 	}
 	 
-	 public boolean deleteUserFromGroup(String username, String groupname, UserToken token)
-	 {
+	public boolean deleteUserFromGroup(String username, String groupname, UserToken token)
+	{
 		try
 		{
 			Envelope message = null, response = null;
@@ -252,4 +252,27 @@ public class GroupClient extends Client implements GroupClientInterface {
 		}
 	}
 
+	public ArrayList<String> allUsers(UserToken token)
+	{
+		try
+		{
+			Envelope message = null, response = null;
+			message = new Envelope("ALLUSERS");
+			message.addObject(token); //Add user's token
+			output.writeObject(message);
+			
+			response = (Envelope)input.readObject();
+			if(response.getMessage().equals("OK") && response.getObjContents() != null)
+			{
+				return (ArrayList<String>)response.getObjContents().get(0);
+			}
+			return null;
+		}
+		catch(Exception e)
+		{
+			System.err.println("Error: " + e.getMessage());
+			e.printStackTrace(System.err);
+			return null;
+		}
+	}
 }
