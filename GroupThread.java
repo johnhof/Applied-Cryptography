@@ -252,13 +252,16 @@ public class GroupThread extends Thread
 				else if(message.getMessage().equals("ALLUSERS")) //Admin wants to see all of the users in existence
 				{
 					response = new Envelope("FAIL");
-					if(message.getObjContents().get(0) != null && my_gs.userList.getUserGroups((String)message.getObjContents().get(0)).contains("ADMIN"))//test if they are an admin
+					if(message.getObjContents() != null)
 					{
-						response = new Envelope("OK");
-						ArrayList<String> usernameList = my_gs.userList.allUsers();
-						response.addObject(usernameList);
+						UserToken theirToken = (UserToken)message.getObjContents().get(0);
+						if(isAdmin(theirToken))//test if they are an admin
+						{
+							response = new Envelope("OK");
+							ArrayList<String> usernameList = my_gs.userList.allUsers();
+							response.addObject(usernameList);
+						}
 					}
-					
 					output.writeObject(response);
 				}
 //--DISCONNECT----------------------------------------------------------------------------------------------------------
@@ -298,6 +301,17 @@ public class GroupThread extends Thread
 		}
 	}
 	
+	
+	//Method to check user is admmin
+	private boolean isAdmin(UserToken token)
+	{
+		String user = token.getSubject();
+		ArrayList<String> temp = my_gs.userList.getUserGroups(user);
+		if(temp.contains("ADMIN"))
+			return true;
+		else
+			return false;
+	}
 	
 	//Method to create a user
 	private boolean createUser(String username, UserToken yourToken)
