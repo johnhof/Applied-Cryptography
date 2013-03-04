@@ -21,53 +21,49 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.KeyGenerator;
 import javax.crypto.spec.IvParameterSpec;
 
-import org.bouncycastle.crypto.BlockCipher;
-import org.bouncycastle.crypto.CipherParameters;
-import org.bouncycastle.crypto.engines.AESEngine;
-import org.bouncycastle.crypto.modes.CBCBlockCipher;
-import org.bouncycastle.crypto.paddings.PaddedBufferedBlockCipher;
+//import org.bouncycastle.crypto.paddings.PaddedBufferedBlockCipher;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.util.encoders.Hex;
 
 
-class CryptoDriver
+class CryptoEngine
 {
 	private KeyPairGenerator RSAKeyGen;
-	//KeyPair RSAKeyPair;
-	//CipherParameters IVAndKey;
 	private KeyGenerator AESKeyGen;
-	//Key AESKey;
 	IvParameterSpec IV;
 	public final int keySize;
 
 
     //NOTE: should we be using this cipher instead of a generic one? -John
-	private PaddedBufferedBlockCipher AESCipher;
+	//private PaddedBufferedBlockCipher AESCipher;
 
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 //-- CONSTRUCTOR
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	
-	public CryptoDriver() throws NoSuchAlgorithmException, NoSuchProviderException
+	public CryptoEngine() 
 	{
 		Security.addProvider(new BouncyCastleProvider());
 		keySize = 128;
 
 		//set up RSA objects
-		RSAKeyGen = KeyPairGenerator.getInstance("RSA");
-		RSAKeyGen.initialize(1024);
+		try {
+			RSAKeyGen = KeyPairGenerator.getInstance("RSA");
+			RSAKeyGen.initialize(1024);
+		} catch (NoSuchAlgorithmException e) {
+			System.out.print("WARNING:  CRYPTOENGINE;  RSA key gen failure");
+		}
 
   		//set up AES objects
-        AESKeyGen = KeyGenerator.getInstance("AES", "BC");
-        AESKeyGen.init(128);
-
-        //NOTE: should this be done for each key? - John
-        IV = new IvParameterSpec(new byte[16]);
-
-
-    	//NOTE: should we be using this cipher instead of a generic one? -John
- 	    //AESCipher = new PaddedBufferedBlockCipher( new CBCBlockCipher(new AESEngine()));
-
+        try {
+			AESKeyGen = KeyGenerator.getInstance("AES", "BC");
+			AESKeyGen.init(128);
+			
+	        //NOTE: should this be done for each key? - John
+	        IV = new IvParameterSpec(new byte[16]);
+	        
+		} catch (NoSuchAlgorithmException | NoSuchProviderException e) {
+			System.out.print("WARNING:  CRYPTOENGINE;  AES key gen failure");
+		}
 	}
 
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -76,7 +72,6 @@ class CryptoDriver
 
 	public Key genAESKey()
 	{
-
         //NOTE: should this be done and returned for each key? - John
         //IV = new IvParameterSpec(new byte[16]);
 	    return AESKeyGen.generateKey();
@@ -91,39 +86,35 @@ class CryptoDriver
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 	//return the signature as a byte array
-	public byte[] RSASign(byte[] plainText, PrivateKey key)
+	public byte[] RSASign(byte[] plainText, PrivateKey key) 
 	{
-		try
-		{
-	  	    Signature signature = Signature.getInstance("SHA1withRSA", "BC");
-	  	    signature.initSign(key, new SecureRandom());
+  	    Signature signature;
+  	    byte[] sigBytes = null;
+		try {
+			signature = Signature.getInstance("SHA1withRSA", "BC");
+			signature.initSign(key, new SecureRandom()); 
 			signature.update(plainText);
-			return signature.sign();
+			signature.sign();
+		} catch (InvalidKeyException |NoSuchAlgorithmException | NoSuchProviderException | SignatureException e) {
+			System.out.print("WARNING:  CRYPTOENGINE;  RSA sign failure");
 		}
-		catch(InvalidKeyException e){System.out.println("CRYPTO ENGINE ERROR:  RSAVerify;  Invalid Key");}
-		catch(NoSuchAlgorithmException e){System.out.println("CRYPTO ENGINE ERROR: RSAVerify;  No Such Algorithm");}
-		catch(SignatureException e){System.out.println("CRYPTO ENGINE ERROR:  RSAVerify;  Signature Exception");}
-		catch(NoSuchProviderException e){System.out.println("CRYPTO ENGINE  ERROR: RSAVerify;  No Such Provider");}
-
-		return null;
+		return sigBytes;
 	}
 
 	//return boolean of verified signature in byte form
-	public boolean RSAVerify(byte[] sigBytes, PublicKey key) 
+	public boolean RSAVerify(byte[] plainText, byte[] sigBytes, PublicKey key) 
 	{
-		try
-		{
-	  	    Signature signature = Signature.getInstance("SHA1withRSA", "BC");
+		boolean verified = false;
+	  	Signature signature;
+		try {
+			signature = Signature.getInstance("SHA1withRSA", "BC");
 		    signature.initVerify(key);
-			signature.update(sigBytes);
-	    	return signature.verify(sigBytes);
+			signature.update(plainText);
+		    verified = signature.verify(sigBytes);
+		} catch (NoSuchAlgorithmException | NoSuchProviderException | InvalidKeyException | SignatureException e) {
+			System.out.print("WARNING:  CRYPTOENGINE;  RSA signature verification failure");
 		}
-		catch(InvalidKeyException e){System.out.println("CRYPTO ENGINE ERROR:  RSAVerify;  Invalid Key");}
-		catch(NoSuchAlgorithmException e){System.out.println("CRYPTO ENGINE ERROR: RSAVerify;  No Such Algorithm");}
-		catch(SignatureException e){System.out.println("CRYPTO ENGINE ERROR:  RSAVerify;  Signature Exception");}
-		catch(NoSuchProviderException e){System.out.println("CRYPTO ENGINE  ERROR: RSAVerify;  No Such Provider");}
-
-		return false;
+		return verified;
 	}
 	
 
@@ -132,33 +123,30 @@ class CryptoDriver
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	
 	//wrappers for encrypt and decrypt
-	public byte[] AESEncrypt(byte[] plainText, Key key)
+	public byte[] AESEncrypt(byte[] plainText, Key key) 
 	{
-		return EngineCoreFunction(plainText, 1, Cipher.ENCRYPT_MODE, key);
+		return DriverCoreFunction(plainText, 1, Cipher.ENCRYPT_MODE, key);
 	}
-
 	public byte[] AESDecrypt(byte[] cipherText, Key key) 
 	{
-		return EngineCoreFunction(cipherText, 1, Cipher.DECRYPT_MODE, key);
+		return DriverCoreFunction(cipherText, 1, Cipher.DECRYPT_MODE, key);
 	}
-
-	public byte[] RSAEncrypt(byte[] plainText, PublicKey key)
+	public byte[] RSAEncrypt(byte[] plainText, Key key) 
 	{		
-		return EngineCoreFunction(plainText, 0, Cipher.ENCRYPT_MODE, (Key)key);
+		return DriverCoreFunction(plainText, 0, Cipher.ENCRYPT_MODE, (Key)key);
 	}
-
-	public byte[] RSADecrypt(byte[] cipherText, PrivateKey key) 
+	public byte[] RSADecrypt(byte[] cipherText, Key key) 
 	{
-		return EngineCoreFunction(cipherText, 0, Cipher.DECRYPT_MODE, (Key)key);
+		return DriverCoreFunction(cipherText, 0, Cipher.DECRYPT_MODE, (Key)key);
 	}
 
 	//performs encryption and decryption for all methods
-	public byte[] EngineCoreFunction(byte[] bytes, int type, int mode, Key key) 
+	public byte[] DriverCoreFunction(byte[] bytes, int type, int mode, Key key) 
 	{
-		//throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, UnsupportedEncodingException, NoSuchProviderException, InvalidAlgorithmParameterException
 		Cipher cipher = null;
-		
-		try
+		byte[]result = null;
+
+		try 
 		{
 			//RSA or AES
 			if(type == 0)
@@ -171,17 +159,14 @@ class CryptoDriver
 				cipher = Cipher.getInstance("AES/CBC/PKCS5Padding", "BC");
 				cipher.init(mode, key, IV);
 			}
-			return cipher.doFinal(bytes);
+	
+			 cipher.doFinal(bytes);	
+		} catch (InvalidKeyException | NoSuchAlgorithmException | NoSuchPaddingException | NoSuchProviderException | 
+				InvalidAlgorithmParameterException | IllegalBlockSizeException | BadPaddingException e) {
+			System.out.print("WARNING:  CRYPTOENGINE;  cipher failure;  RSA(0)/AES(1)="+type+";  encrypt(1)/decrypt(2)="+mode);
 		}
-		catch(NoSuchAlgorithmException e){System.out.println("CRYPTO ENGINE ERROR:  EngineCoreFunction;  No Such Algorithm");}
-		catch(NoSuchPaddingException e){System.out.println("CRYPTO ENGINE ERROR:  EngineCoreFunction;  No Such Padding");}
-		catch(InvalidKeyException e){System.out.println("CRYPTO ENGINE ERROR:  EngineCoreFunction;  Invalid Key");}
-		catch(IllegalBlockSizeException e){System.out.println("CRYPTO ENGINE ERROR:  EngineCoreFunction;  Illegal Block Size");}
-		catch(BadPaddingException e){System.out.println("CRYPTO ENGINE ERROR:  EngineCoreFunction;  Bad Padding");}
-		catch(NoSuchProviderException e){System.out.println("CRYPTO ENGINE ERROR:  EngineCoreFunction;  No Such Provider");}
-		catch(InvalidAlgorithmParameterException e)	{System.out.println("CRYPTO ENGINE ERROR:  EngineCoreFunction;  Invalid Algorithm Parameter");}
-
-		return 	null;
+		 
+		 return result;
 	}
 
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -201,9 +186,14 @@ class CryptoDriver
 		return new String(output,  Charset.forName("ISO-8859-1"));	
 	}
 
-	public byte[] StrToByte( String input) throws UnsupportedEncodingException
+	public byte[] strToByte( String input) 
 	{
-		return input.getBytes("ISO-8859-1");
+		try {
+			return input.getBytes("ISO-8859-1");
+		} catch (UnsupportedEncodingException e) {
+			System.out.print("WARNING:  CRYPTOENGINE;  string to byte conversion failure");
+			return null;
+		}
 	}
 }
 
