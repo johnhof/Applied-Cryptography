@@ -104,9 +104,15 @@ public class GroupThread extends Thread
 								UserToken yourToken = (UserToken)message.getObjContents().get(1); //Extract the token
 								
 								//create the user if the username/token allow it
-								if(deleteUser(username, yourToken))
+								/*if(deleteUser(username, yourToken))
 								{
 									response = new Envelope("OK"); //Success
+								}
+								else response = new Envelope("You could not delete the user");*/
+								if(isAdmin(yourToken) && my_gs.userList.allUsers().contains(username))
+								{
+									my_gs.deleteUser(username);
+									response = new Envelope("OK");
 								}
 								else response = new Envelope("You could not delete the user");
 							}
@@ -348,75 +354,6 @@ public class GroupThread extends Thread
 		}
 	}
 	
-	//Method to delete a user
-	private boolean deleteUser(String username, UserToken yourToken)
-	{
-		String requester = yourToken.getSubject();
-		
-		//Does requester exist?
-		if(my_gs.userList.checkUser(requester))
-		{
-			ArrayList<String> temp = my_gs.userList.getUserGroups(requester);
-			//requester needs to be an administer
-			if(temp.contains("ADMIN"))
-			{
-				//Does user exist?
-				if(my_gs.userList.checkUser(username))
-				{
-					//User needs deleted from the groups they belong
-					ArrayList<String> deleteFromGroups = new ArrayList<String>();
-					
-					//This will produce a hard copy of the list of groups this user belongs
-					for(int index = 0; index < my_gs.userList.getUserGroups(username).size(); index++)
-					{
-						deleteFromGroups.add(my_gs.userList.getUserGroups(username).get(index));
-					}
-					
-					//Delete the user from the groups
-					//If user is the owner, removeMember will automatically delete group!
-					for(int index = 0; index < deleteFromGroups.size(); index++)
-					{
-//NOTE: removed due to compiling error... waht happened to this function, should we add it? - jmh 2/10
-						my_gs.groupList.removeMember(deleteFromGroups.get(index), username);
-					}
-					
-					//If groups are owned, they must be deleted
-					ArrayList<String> deleteOwnedGroup = new ArrayList<String>();
-					
-					//Make a hard copy of the user's ownership list
-					for(int index = 0; index < my_gs.userList.getUserOwnership(username).size(); index++)
-					{
-						deleteOwnedGroup.add(my_gs.userList.getUserOwnership(username).get(index));
-					}
-					
-					//Delete owned groups
-					for(int index = 0; index < deleteOwnedGroup.size(); index++)
-					{
-						//Use the delete group method. UserToken must be created for this action
-						deleteGroup(deleteOwnedGroup.get(index), new UserToken(my_gs.name, username, deleteOwnedGroup));
-					}
-					
-					//Delete the user from the user list
-					my_gs.userList.deleteUser(username);
-					
-					return true;	
-				}
-				else
-				{
-					return false; //User does not exist
-					
-				}
-			}
-			else
-			{
-				return false; //requester is not an administer
-			}
-		}
-		else
-		{
-			return false; //requester does not exist
-		}
-	}
 
 //----------------------------------------------------------------------------------------------------------------------
 //-- UTILITY FUNCITONS
