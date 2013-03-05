@@ -11,23 +11,23 @@ public class UI
 
 		System.out.println("Attempting to connect to GroupServer.");
 		GroupClient gUser = new GroupClient();
-		if(args.length == 0)	
-		{
-			gUser.connect(null, 8766);
-		}
-		else
-		{
-			gUser.connect(null, Integer.parseInt(args[0]));
-		}
+		Scanner keyboard = new Scanner(System.in);
+		
+		System.out.println("What GroupServer should we connect to?");
+		String gServer = keyboard.nextLine();
+		System.out.println("What port should we connect to the GroupServer on?");
+		int gPort = Integer.parseInt(keyboard.nextLine());
+		
+		gUser.connect(gServer, gPort);
+		
 		FileClient fUser = new FileClient();
-		if(args.length == 0)
-		{
-			fUser.connect(null, 4321);
-		}
-		else 
-		{
-			fUser.connect(null, Integer.parseInt(args[1]));
-		}
+		
+		System.out.println("What FileServer should we connect to?");
+		String fServer = keyboard.nextLine();
+		System.out.println("What port should we connect to the FileServer on?");
+		int fPort = Integer.parseInt(keyboard.nextLine());
+		
+		fUser.connect(fServer, fPort);
 		
 		boolean connected = true;
 		//UI is connecting to localhost. May change with cmd line options later

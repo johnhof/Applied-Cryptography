@@ -49,7 +49,8 @@ class CryptoEngine
 		try {
 			RSAKeyGen = KeyPairGenerator.getInstance("RSA");
 			RSAKeyGen.initialize(1024);
-		} catch (NoSuchAlgorithmException e) {
+		} 
+		catch (NoSuchAlgorithmException e) {
 			System.out.print("WARNING:  CRYPTOENGINE;  RSA key gen failure");
 		}
 
@@ -61,7 +62,8 @@ class CryptoEngine
 	        //NOTE: should this be done for each key? - John
 	        IV = new IvParameterSpec(new byte[16]);
 	        
-		} catch (NoSuchAlgorithmException | NoSuchProviderException e) {
+		} 
+		catch (Exception e) {
 			System.out.print("WARNING:  CRYPTOENGINE;  AES key gen failure");
 		}
 	}
@@ -95,7 +97,7 @@ class CryptoEngine
 			signature.initSign(key, new SecureRandom()); 
 			signature.update(plainText);
 			signature.sign();
-		} catch (InvalidKeyException |NoSuchAlgorithmException | NoSuchProviderException | SignatureException e) {
+		} catch (Exception e) {
 			System.out.print("WARNING:  CRYPTOENGINE;  RSA sign failure");
 		}
 		return sigBytes;
@@ -111,7 +113,7 @@ class CryptoEngine
 		    signature.initVerify(key);
 			signature.update(plainText);
 		    verified = signature.verify(sigBytes);
-		} catch (NoSuchAlgorithmException | NoSuchProviderException | InvalidKeyException | SignatureException e) {
+		} catch (Exception e) {
 			System.out.print("WARNING:  CRYPTOENGINE;  RSA signature verification failure");
 		}
 		return verified;
@@ -161,8 +163,7 @@ class CryptoEngine
 			}
 	
 			 cipher.doFinal(bytes);	
-		} catch (InvalidKeyException | NoSuchAlgorithmException | NoSuchPaddingException | NoSuchProviderException | 
-				InvalidAlgorithmParameterException | IllegalBlockSizeException | BadPaddingException e) {
+		} catch (Exception e) {
 			System.out.print("WARNING:  CRYPTOENGINE;  cipher failure;  RSA(0)/AES(1)="+type+";  encrypt(1)/decrypt(2)="+mode);
 		}
 		 
