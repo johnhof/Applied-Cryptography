@@ -11,6 +11,38 @@
  
  //It seems that all that needs done is a group list save process similar to the userlist
 
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.Key;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.SecureRandom;
+import java.security.Security;
+import java.security.Signature;
+import java.security.SignatureException;
+import java.security.PublicKey;
+import java.security.PrivateKey;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.KeyGenerator;
+import javax.crypto.spec.IvParameterSpec;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+
+//import org.bouncycastle.crypto.paddings.PaddedBufferedBlockCipher;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.io.*;
@@ -26,33 +58,60 @@ NOTE: this is probably not the right way to do this, but I'm at a loss for alter
 public class GroupServer extends Server {
 
 	public static final int SERVER_PORT = 8766;
+
+	public KeyPair signKeys;
 	public UserList userList;
 	public GroupList groupList;
 	//^^^^This should really be a database...
+
+	public CryptoEngine cEngine;
     
 	public GroupServer() 
 	{
 		super(SERVER_PORT, "ALPHA");
+    	cEngine = new CryptoEngine();
 	}
 	
 	public GroupServer(int _port) 
 	{
 		super(_port, "ALPHA");
+    	cEngine = new CryptoEngine();
 	}
 	
 	public void start() 
 	{
 		// Overwrote server.start() because if no user file exists, initial admin account needs to be created
 		
+		String resourceFile = "GroupResources.bin";
 		String userFile = "UserList.bin";
 		String groupFile = "GroupList.bin";
+		String keyDistroFile = "GServer_PublicKeyDistro.bin";
 		Scanner console = new Scanner(System.in);
 		ObjectInputStream userStream;
 		ObjectInputStream groupStream;
+		ObjectInputStream resourceStream;
 
 		//This runs a thread that saves the lists on program exit
 		Runtime runtime = Runtime.getRuntime();
 		runtime.addShutdownHook(new ShutDownListener(this));
+
+//----------------------------------------------------------------------------------------------------------------------
+//--ADDED: resource setup
+//----------------------------------------------------------------------------------------------------------------------
+		try
+		{
+			FileInputStream fis = new FileInputStream(resourceFile);
+			resourceStream = new ObjectInputStream(fis);
+
+			//retrieve the keys used for signing
+			signKeys = (KeyPair)resourceStream.readObject();
+		}
+		catch(Exception e)
+		{
+			System.out.println("ERROR:  GROUPSERVER;  could not load resource file");
+			System.exit(-1);
+		}
+//----------------------------------------------------------------------------------------------------------------------
 
 //----------------------------------------------------------------------------------------------------------------------
 //--ADDED: groupList setup
@@ -65,21 +124,22 @@ public class GroupServer extends Server {
 		}
 		catch(FileNotFoundException e)
 		{
-			System.out.println("groupList File Does Not Exist. Creating groupList...");
-			System.out.println("No groups currently exist");
+			System.out.println("resources File Does Not Exist. Creating resources...");
+			System.out.println("No resources currently exist");
 
 			groupList = new GroupList();
 		}
 		catch(IOException e)
 		{
-			System.out.println("Error reading from groupList file");
+			System.out.println("Error reading from resource file");
 			System.exit(-1);
 		}
 		catch(ClassNotFoundException e)
 		{
-			System.out.println("Error reading from groupList file");
+			System.out.println("Error reading from resouce file");
 			System.exit(-1);
 		}
+
 //----------------------------------------------------------------------------------------------------------------------
 
 
@@ -263,6 +323,7 @@ class ShutDownListener extends Thread
 			outStream = new ObjectOutputStream(new FileOutputStream("GroupList.bin"));
 			outStream.writeObject(my_gs.groupList);
 //----------------------------------------------------------------------------------------------------------------------
+
 		}
 		catch(Exception e)
 		{
