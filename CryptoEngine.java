@@ -56,7 +56,7 @@ class CryptoEngine
 			RSAKeyGen.initialize(1024);
 		} 
 		catch (NoSuchAlgorithmException e) {
-			System.out.println("WARNING:  CRYPTOENGINE;  RSA key gen failure");
+			System.out.println("WARNING:  CRYPTOENGINE;  RSA key genrator initialization failure");
 		}
 
   		//set up AES objects
@@ -65,7 +65,7 @@ class CryptoEngine
 			AESKeyGen.init(128);
 		} 
 		catch (Exception e) {
-			System.out.println("WARNING:  CRYPTOENGINE;  AES key gen failure");
+			System.out.println("WARNING:  CRYPTOENGINE;  AES key genrator initialization failure");
 		}
 	}
 
@@ -78,9 +78,19 @@ class CryptoEngine
 		//gent a key, IV pair and return it
 	    return new AESKeySet(AESKeyGen.generateKey(), new IvParameterSpec(new byte[16]));
 	}
-	public KeyPair genRSAKeyPair() throws InvalidKeyException
+	public KeyPair genRSAKeyPair()
 	{
-  		return RSAKeyGen.generateKeyPair();
+		KeyPair keys = null;
+		try
+		{
+			keys = RSAKeyGen.generateKeyPair();
+		}
+		catch(Exception e)
+		{
+			System.out.println("WARNING:  CRYPTOENGINE;  RSAS key gen failure");
+			return null;
+		}
+  		return keys;
 	}
 
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
