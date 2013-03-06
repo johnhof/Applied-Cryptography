@@ -23,18 +23,13 @@ import javax.crypto.spec.IvParameterSpec;
 
 import java.util.List;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-
 public class UserToken implements UserTokenInterface, java.io.Serializable
 {
 	private String issuer; 
 	private String subject; 
     private List<String> groups;
     private byte[] signature;
+    private CryptoEngine cEngine;
 
 	public UserToken(String Issuer, String Subject)
 	{
@@ -49,6 +44,7 @@ public class UserToken implements UserTokenInterface, java.io.Serializable
         subject = Subject; 
         groups = Groups;
         signature = null;
+        CryptoEngine cEngine = new CryptoEngine();
     }
 
     public String getIssuer()
@@ -97,32 +93,20 @@ public class UserToken implements UserTokenInterface, java.io.Serializable
 
     public void sign(PrivateKey key)
     {
-        String issuer; 
-        String subject; 
-        List<String> groups;
     }
 
 
     public boolean verifySignature(PrivateKey key)
     {
-        
         return false;
     }
 
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 //-- Utility Functions
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-/*
+
     private byte[] getContentsInBytes()
     {
-        public static byte[] serialize(Object obj) throws IOException {
-        ByteArrayOutputStream b = new ByteArrayOutputStream();
-        ObjectOutputStream o = new ObjectOutputStream(b);
-        o.writeObject(obj);
-
-        return b.toByteArray();
-        byte[] contents;
-        return contents
+        return null;
     }
-*/
 }
