@@ -102,12 +102,15 @@ class CryptoEngine
 	{
   	    Signature signature;
   	    byte[] sigBytes = null;
-		try {
+		try 
+		{
 			signature = Signature.getInstance("SHA1withRSA", "BC");
 			signature.initSign(key, new SecureRandom()); 
 			signature.update(plainText);
-			signature.sign();
-		} catch (Exception e) {
+			sigBytes = signature.sign();
+		} 
+		catch (Exception e) 
+		{
 			System.out.println("WARNING:  CRYPTOENGINE;  RSA sign failure");
 		}
 		return sigBytes;
@@ -118,12 +121,15 @@ class CryptoEngine
 	{
 		boolean verified = false;
 	  	Signature signature;
-		try {
+		try 
+		{
 			signature = Signature.getInstance("SHA1withRSA", "BC");
 		    signature.initVerify(key);
 			signature.update(plainText);
 		    verified = signature.verify(sigBytes);
-		} catch (Exception e) {
+		} 
+		catch (Exception e) 
+		{
 			System.out.println("WARNING:  CRYPTOENGINE;  RSA signature verification failure");
 		}
 		return verified;
@@ -150,7 +156,6 @@ class CryptoEngine
 		byte[]result = null;
 		Key key = keySet.getKey();
 		IvParameterSpec IV = keySet.getIV();
-
 
 		try 
 		{
