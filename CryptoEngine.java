@@ -29,7 +29,6 @@ class CryptoEngine
 {
 	private KeyPairGenerator RSAKeyGen;
 	private KeyGenerator AESKeyGen;
-	IvParameterSpec IV;
 	public final int keySize;
 
 
@@ -58,10 +57,6 @@ class CryptoEngine
         try {
 			AESKeyGen = KeyGenerator.getInstance("AES", "BC");
 			AESKeyGen.init(128);
-			
-	        //NOTE: should this be done for each key? - John
-	        IV = new IvParameterSpec(new byte[16]);
-	        
 		} 
 		catch (Exception e) {
 			System.out.print("WARNING:  CRYPTOENGINE;  AES key gen failure");
@@ -72,11 +67,10 @@ class CryptoEngine
 //-- KEY GENERATORS
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-	public Key genAESKey()
+	public AESKeySet genAESKeySet()
 	{
-        //NOTE: should this be done and returned for each key? - John
-        //IV = new IvParameterSpec(new byte[16]);
-	    return AESKeyGen.generateKey();
+		//gent a key, IV pair and return it
+	    return new AESKeySet(AESKeyGen.generateKey(), new IvParameterSpec(new byte[16]));
 	}
 	public KeyPair genRSAKeyPair() throws InvalidKeyException
 	{
@@ -125,46 +119,59 @@ class CryptoEngine
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	
 	//wrappers for encrypt and decrypt
-	public byte[] AESEncrypt(byte[] plainText, Key key) 
+	public byte[] AESEncrypt(byte[] plainText, AESKeySet keySet) 
 	{
-		return DriverCoreFunction(plainText, 1, Cipher.ENCRYPT_MODE, key);
+		return DriverCoreFunction(plainText,  Cipher.ENCRYPT_MODE, keySet);
 	}
-	public byte[] AESDecrypt(byte[] cipherText, Key key) 
+	public byte[] AESDecrypt(byte[] cipherText, AESKeySet keySet) 
 	{
-		return DriverCoreFunction(cipherText, 1, Cipher.DECRYPT_MODE, key);
+		return DriverCoreFunction(cipherText, Cipher.DECRYPT_MODE, keySet);
 	}
+	//performs encryption and decryption for aAES
+	public byte[] DriverCoreFunction(byte[] bytes, int mode, AESKeySet keySet) 
+	{
+		Cipher cipher = null;
+		byte[]result = null;
+		Key key = keySet.getKey();
+		IvParameterSpec IV = keySet.getIV();
+
+
+		try 
+		{
+			cipher = Cipher.getInstance("AES/CBC/PKCS5Padding", "BC");
+			cipher.init(mode, key, IV);
+			cipher.doFinal(bytes);	
+		} 
+		catch (Exception e) {
+			System.out.print("WARNING:  CRYPTOENGINE;  AES cipher failure; encrypt(1)/decrypt(2)="+mode);
+		}
+		 
+		 return result;
+	}
+
 	public byte[] RSAEncrypt(byte[] plainText, Key key) 
 	{		
-		return DriverCoreFunction(plainText, 0, Cipher.ENCRYPT_MODE, (Key)key);
+		return DriverCoreFunction(plainText, Cipher.ENCRYPT_MODE, (Key)key);
 	}
 	public byte[] RSADecrypt(byte[] cipherText, Key key) 
 	{
-		return DriverCoreFunction(cipherText, 0, Cipher.DECRYPT_MODE, (Key)key);
+		return DriverCoreFunction(cipherText, Cipher.DECRYPT_MODE, (Key)key);
 	}
 
-	//performs encryption and decryption for all methods
-	public byte[] DriverCoreFunction(byte[] bytes, int type, int mode, Key key) 
+	//performs encryption and decryption for RSA
+	public byte[] DriverCoreFunction(byte[] bytes,  int mode, Key key) 
 	{
 		Cipher cipher = null;
 		byte[]result = null;
 
 		try 
 		{
-			//RSA or AES
-			if(type == 0)
-			{
-				cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-				cipher.init(mode, key);
-			}
-			else
-			{
-				cipher = Cipher.getInstance("AES/CBC/PKCS5Padding", "BC");
-				cipher.init(mode, key, IV);
-			}
-	
-			 cipher.doFinal(bytes);	
-		} catch (Exception e) {
-			System.out.print("WARNING:  CRYPTOENGINE;  cipher failure;  RSA(0)/AES(1)="+type+";  encrypt(1)/decrypt(2)="+mode);
+			cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+			cipher.init(mode, key);	
+			cipher.doFinal(bytes);	
+		} 
+		catch (Exception e) {
+			System.out.print("WARNING:  CRYPTOENGINE;  RSA cipher failure;  encrypt(1)/decrypt(2)="+mode);
 		}
 		 
 		 return result;
