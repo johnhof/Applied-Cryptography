@@ -21,6 +21,12 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.KeyGenerator;
 import javax.crypto.spec.IvParameterSpec;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+
 //import org.bouncycastle.crypto.paddings.PaddedBufferedBlockCipher;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
@@ -50,7 +56,7 @@ class CryptoEngine
 			RSAKeyGen.initialize(1024);
 		} 
 		catch (NoSuchAlgorithmException e) {
-			System.out.print("WARNING:  CRYPTOENGINE;  RSA key gen failure");
+			System.out.println("WARNING:  CRYPTOENGINE;  RSA key gen failure");
 		}
 
   		//set up AES objects
@@ -59,7 +65,7 @@ class CryptoEngine
 			AESKeyGen.init(128);
 		} 
 		catch (Exception e) {
-			System.out.print("WARNING:  CRYPTOENGINE;  AES key gen failure");
+			System.out.println("WARNING:  CRYPTOENGINE;  AES key gen failure");
 		}
 	}
 
@@ -92,7 +98,7 @@ class CryptoEngine
 			signature.update(plainText);
 			signature.sign();
 		} catch (Exception e) {
-			System.out.print("WARNING:  CRYPTOENGINE;  RSA sign failure");
+			System.out.println("WARNING:  CRYPTOENGINE;  RSA sign failure");
 		}
 		return sigBytes;
 	}
@@ -108,7 +114,7 @@ class CryptoEngine
 			signature.update(plainText);
 		    verified = signature.verify(sigBytes);
 		} catch (Exception e) {
-			System.out.print("WARNING:  CRYPTOENGINE;  RSA signature verification failure");
+			System.out.println("WARNING:  CRYPTOENGINE;  RSA signature verification failure");
 		}
 		return verified;
 	}
@@ -143,7 +149,7 @@ class CryptoEngine
 			cipher.doFinal(bytes);	
 		} 
 		catch (Exception e) {
-			System.out.print("WARNING:  CRYPTOENGINE;  AES cipher failure; encrypt(1)/decrypt(2)="+mode);
+			System.out.println("WARNING:  CRYPTOENGINE;  AES cipher failure; encrypt(1)/decrypt(2)="+mode);
 		}
 		 
 		 return result;
@@ -170,8 +176,9 @@ class CryptoEngine
 			cipher.init(mode, key);	
 			cipher.doFinal(bytes);	
 		} 
-		catch (Exception e) {
-			System.out.print("WARNING:  CRYPTOENGINE;  RSA cipher failure;  encrypt(1)/decrypt(2)="+mode);
+		catch (Exception e) 
+		{
+			System.out.println("WARNING:  CRYPTOENGINE;  RSA cipher failure;  encrypt(1)/decrypt(2)="+mode);
 		}
 		 
 		 return result;
@@ -181,12 +188,14 @@ class CryptoEngine
 //-- EXTERNAL UTILITY FUNCTIONS
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+	//string specific serializers/deserializers
 	public String byteToStr(byte[] input)
 	{
 	    byte[] output = new byte[input.length];
 	    int i = 0;
 
-	    for (Byte current : input) {
+	    for (Byte current : input) 
+	    {
 	        output[i] = current;
 	        i++;
 	    }
@@ -196,12 +205,52 @@ class CryptoEngine
 
 	public byte[] strToByte( String input) 
 	{
-		try {
+		try 
+		{
 			return input.getBytes("ISO-8859-1");
-		} catch (UnsupportedEncodingException e) {
-			System.out.print("WARNING:  CRYPTOENGINE;  string to byte conversion failure");
+		} 
+		catch (UnsupportedEncodingException e) 
+		{
+			System.out.println("WARNING:  CRYPTOENGINE;  string to byte conversion failure");
 			return null;
 		}
 	}
+
+	//general purpose serializer
+    public byte[] serialize(Object obj)
+    {
+    	byte[] byteArray = null;
+    	try
+    	{
+        	ByteArrayOutputStream bStream = new ByteArrayOutputStream();
+        	ObjectOutputStream oStream = new ObjectOutputStream(bStream);
+        	oStream.writeObject(obj);
+        	byteArray = bStream.toByteArray();
+		}
+        catch(Exception e)
+        {
+			System.out.println("WARNING:  CRYPTOENGINE;  serializing error, NULL returned");
+        	return null;
+        }
+        return byteArray;
+    }
+
+	//general purpose deserializer
+    public Object deserialize(byte[] bytes)
+    {
+    	Object obj = null;
+    	try
+    	{
+	        ByteArrayInputStream bStream = new ByteArrayInputStream(bytes);
+	        ObjectInputStream oStream = new ObjectInputStream(bStream);
+	        obj = oStream.readObject();
+		}
+        catch(Exception e)
+        {
+			System.out.println("WARNING:  CRYPTOENGINE;  deserializing error, NULL returned");
+        	return null;
+        }
+        return obj;
+    }
 }
 
