@@ -3,20 +3,115 @@
 import java.util.ArrayList;
 import java.util.List;
 import java.io.ObjectInputStream;
+import java.security.*;
+import javax.crypto.*;
+import java.io.*;
 
 public class GroupClient extends Client implements GroupClientInterface {
  
-	 public UserToken getToken(String username)
-	 {
+	private AESKeySet aesKey;
+	private CryptoEngine cEngine;
+	
+	public boolean connect(final String server, final int port)
+	{
+		super.connect(server, port);
+		cEngine = new CryptoEngine();	
+		boolean keyNeedsSet = true;
+		
+		do
+		{
+			if(setKey())
+				keyNeedsSet = false;
+		}while(keyNeedsSet);
+		//i had this marked TODO, but i think its finished? -PHIL 3/6 18:06
+		return true;
+	}
+	
+	private boolean writeObject(ObjectOutputStream output, Object obj)
+	{
+		try
+		{
+			ByteArrayOutputStream toBytes = new ByteArrayOutputStream();//create ByteArrayOutputStream
+			ObjectOutputStream localOutput = new ObjectOutputStream(toBytes);//Make an object outputstream to that bytestream
+			localOutput.writeObject(obj);//write to the bytearrayoutputstream
+			byte[] data = toBytes.toByteArray();//turn our object into byte[]
+			
+			byte[] eData = cEngine.AESEncrypt(data, aesKey);//encrypt the data
+			output.writeObject(eData);//write the data to the client
+			toBytes.close();
+			localOutput.close();
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+			return false;
+		}
+		return true;
+	}
+	
+	//Method to read objects
+	private Object readObject(ObjectInputStream input)
+	{
+		Object obj = null;
+		try
+		{
+			byte[] eData = (byte[])input.readObject();
+			byte[] data = cEngine.AESDecrypt(eData, aesKey);
+			ByteArrayInputStream fromBytes = new ByteArrayInputStream(data);
+			ObjectInputStream localInput = new ObjectInputStream(fromBytes);
+			obj = localInput.readObject();
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+		
+		return obj;
+	}
+	
+	private boolean setKey() 
+	{
+		try
+		{
+			Envelope message, response;
+			message = new Envelope("PUBKEYREQ");//requests the servers public key
+			aesKey = cEngine.genAESKeySet();
+			response = (Envelope)input.readObject();
+			if(response.getMessage().equals("PUBKEYANSW"))
+			{
+				Key rsaPublic = (Key)response.getObjContents().get(0);
+				//encrypt the aesKey with the rsaPublic
+				ByteArrayOutputStream toBytes = new ByteArrayOutputStream();//create ByteArrayOutputStream
+				ObjectOutputStream localOutput = new ObjectOutputStream(toBytes);//Make an object outputstream to that bytestream
+				localOutput.writeObject(aesKey);//write to the bytearrayoutputstream
+				byte[] aesKeyBytes = toBytes.toByteArray();
+				
+				byte[] encryptedKey = cEngine.RSAEncrypt(aesKeyBytes, rsaPublic);
+				message = new Envelope("AESKEY");
+				message.addObject(encryptedKey);
+				output.writeObject(message);
+				return true;
+			}
+			else return false;
+		}
+		catch(Exception e)
+		{
+			return false;
+		}
+	}
+	
+	public UserToken getToken(String username)
+	{
 		try
 		{
 			UserToken token = null;
-			Envelope message = null, response = null;
-		 		 	
+			Envelope message = null, response = null;	 	
+
 			//Tell the server to return a token.
 			message = new Envelope("GET");
 			message.addObject(username); //Add user name string
-			output.writeObject(message);
+			//output.writeObject(message);
+			writeObject(output, message);
 			
 			//Get the response from the server
 			response = (Envelope)input.readObject();
@@ -56,10 +151,11 @@ public class GroupClient extends Client implements GroupClientInterface {
 			message = new Envelope("CUSER");
 			message.addObject(username); //Add user name string
 			message.addObject(token); //Add the requester's token
-			output.writeObject(message);
+			//output.writeObject(message);
+			writeObject(output, message);
 			
-			response = (Envelope)input.readObject();
-				
+			//response = (Envelope)input.readObject();
+			response = (Envelope)readObject(input);	
 			//If server indicates success, return true
 			if(response.getMessage().equals("OK"))
 			{
@@ -86,10 +182,11 @@ public class GroupClient extends Client implements GroupClientInterface {
 			message = new Envelope("DUSER");
 			message.addObject(username); //Add user name
 			message.addObject(token);  //Add requester's token
-			output.writeObject(message);
+			//output.writeObject(message);
+			writeObject(output, message);
 			
-			response = (Envelope)input.readObject();
-				
+			//response = (Envelope)input.readObject();
+			response = (Envelope)readObject(input);		
 			//If server indicates success, return true
 			if(response.getMessage().equals("OK"))
 			{
@@ -115,10 +212,11 @@ public class GroupClient extends Client implements GroupClientInterface {
 			message = new Envelope("CGROUP");
 			message.addObject(groupname); //Add the group name string
 			message.addObject(token); //Add the requester's token
-			output.writeObject(message); 
+			//output.writeObject(message);
+			writeObject(output, message);
 			
-			response = (Envelope)input.readObject();
-				
+			//response = (Envelope)input.readObject();
+			response = (Envelope)readObject(input);		
 			//If server indicates success, return true
 			if(response.getMessage().equals("OK"))
 			{
@@ -144,9 +242,11 @@ public class GroupClient extends Client implements GroupClientInterface {
 			message = new Envelope("DGROUP");
 			message.addObject(groupname); //Add group name string
 			message.addObject(token); //Add requester's token
-			output.writeObject(message); 
+			//output.writeObject(message);
+			writeObject(output, message);
 			
-			response = (Envelope)input.readObject();
+			//response = (Envelope)input.readObject();
+			response = (Envelope)readObject(input);	
 			//If server indicates success, return true
 			if(response.getMessage().equals("OK"))
 			{
@@ -173,10 +273,11 @@ public class GroupClient extends Client implements GroupClientInterface {
 			message = new Envelope("LMEMBERS");
 			message.addObject(group); //Add group name string
 			message.addObject(token); //Add requester's token
-			output.writeObject(message); 
-			 
-			response = (Envelope)input.readObject();
-			 
+			//output.writeObject(message);
+			writeObject(output, message);
+			
+			//response = (Envelope)input.readObject();
+			response = (Envelope)readObject(input);	
 			//If server indicates success, return the member list
 			if(response.getMessage().equals("OK"))
 			{ 
@@ -203,9 +304,11 @@ public class GroupClient extends Client implements GroupClientInterface {
 			message.addObject(username); //Add user name string
 			message.addObject(groupname); //Add group name string
 			message.addObject(token); //Add requester's token
-			output.writeObject(message); 
+			//output.writeObject(message);
+			writeObject(output, message);
 			
-			response = (Envelope)input.readObject();
+			//response = (Envelope)input.readObject();
+			response = (Envelope)readObject(input);	
 			//If server indicates success, return true
 			
 			if(response.getMessage().equals("OK"))
@@ -233,9 +336,11 @@ public class GroupClient extends Client implements GroupClientInterface {
 			message.addObject(username); //Add user name string
 			message.addObject(groupname); //Add group name string
 			message.addObject(token); //Add requester's token
-			output.writeObject(message);
+			//output.writeObject(message);
+			writeObject(output, message);
 			
-			response = (Envelope)input.readObject();
+			//response = (Envelope)input.readObject();
+			response = (Envelope)readObject(input);	
 			//If server indicates success, return true
 			if(response.getMessage().equals("OK"))
 			{
@@ -259,9 +364,11 @@ public class GroupClient extends Client implements GroupClientInterface {
 			Envelope message = null, response = null;
 			message = new Envelope("ALLUSERS");
 			message.addObject(token); //Add user's token
-			output.writeObject(message);
+			//output.writeObject(message);
+			writeObject(output, message);
 			
-			response = (Envelope)input.readObject();
+			//response = (Envelope)input.readObject();
+			response = (Envelope)readObject(input);	
 			if(response.getMessage().equals("OK") && response.getObjContents() != null)
 			{
 				return (ArrayList<String>)response.getObjContents().get(0);
