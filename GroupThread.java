@@ -5,11 +5,16 @@ import java.lang.Thread;
 import java.net.Socket;
 import java.io.*;
 import java.util.*;
+import java.security.*;
+import javax.crypto.*;
+
 
 public class GroupThread extends Thread 
 {
 	private final Socket socket;
 	private GroupServer my_gs;
+	private CryptoEngine cEngine = my_gs.cEngine;
+	private Key aesKey = null;
 	
 	//These get spun off from GroupServer
 	public GroupThread(Socket _socket, GroupServer _gs)
@@ -28,11 +33,20 @@ public class GroupThread extends Thread
 			System.out.println("*** New connection from " + socket.getInetAddress() + ":" + socket.getPort() + "***");
 			final ObjectInputStream input = new ObjectInputStream(socket.getInputStream());
 			final ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
+//--SET UP AES KEY-------------------------------------------------------------------------------------------------------------
+			boolean keyNeedsSet = true;
+			
+			do
+			{
+				if(setKey(input, output))
+					keyNeedsSet = false;
+			}while(keyNeedsSet);
+			assert aesKey != null;
 			
 			//handle messages from the input stream(ie. socket)
 			do
 			{
-				Envelope message = (Envelope)input.readObject();
+				Envelope message = (Envelope)readObject(input);
 				System.out.println("Request received: " + message.getMessage());
 				Envelope response;
 				
@@ -44,7 +58,8 @@ public class GroupThread extends Thread
 					{
 						response = new Envelope("FAIL");
 						response.addObject(null);
-						output.writeObject(response);
+						writeObject(output, response);
+						//output.writeObject(response);
 					}
 					else
 					{
@@ -53,6 +68,7 @@ public class GroupThread extends Thread
 						//Respond to the client. On error, the client will receive a null token
 						response = new Envelope("OK");
 						response.addObject(yourToken);
+						writeObject(output, response);
 						output.writeObject(response);
 					}
 				}
@@ -82,8 +98,8 @@ public class GroupThread extends Thread
 							}
 						}
 					}
-					
-					output.writeObject(response);
+					writeObject(output, response);
+					//output.writeObject(response);
 				}
 //--DELETE USER---------------------------------------------------------------------------------------------------------
 				else if(message.getMessage().equals("DUSER")) //Client wants to delete a user
@@ -103,12 +119,6 @@ public class GroupThread extends Thread
 								String username = (String)message.getObjContents().get(0); //Extract the username
 								UserToken yourToken = (UserToken)message.getObjContents().get(1); //Extract the token
 								
-								//create the user if the username/token allow it
-								/*if(deleteUser(username, yourToken))
-								{
-									response = new Envelope("OK"); //Success
-								}
-								else response = new Envelope("You could not delete the user");*/
 								if(isAdmin(yourToken) && my_gs.userList.allUsers().contains(username))
 								{
 									my_gs.deleteUser(username);
@@ -118,8 +128,8 @@ public class GroupThread extends Thread
 							}
 						}
 					}
-					
-					output.writeObject(response);
+					writeObject(output, response);
+					//output.writeObject(response);
 				}
 //--CREATE GROUP---------------------------------------------------------------------------------------------------------
 				else if(message.getMessage().equals("CGROUP")) //Client wants to create a group
@@ -141,7 +151,7 @@ public class GroupThread extends Thread
 							}
 						}
 					}
-					
+					writeObject(output, response);
 					output.writeObject(response);
 				}
 //--DELETE GROUP--------------------------------------------------------------------------------------------------------
@@ -165,8 +175,8 @@ public class GroupThread extends Thread
 							else response = new Envelope("You could not delete the group.");
 						}
 					}
-					
-					output.writeObject(response);
+					writeObject(output, response);
+					//output.writeObject(response);
 				}
 //--LIST MEMBERS--------------------------------------------------------------------------------------------------------
 				else if(message.getMessage().equals("LMEMBERS")) //Client wants a list of members in a group
@@ -194,8 +204,9 @@ public class GroupThread extends Thread
 							}
 					
 						}
-					}					
-					output.writeObject(response);
+					}
+					writeObject(output, response);
+					//output.writeObject(response);
 				}
 //--ADD TO GROUP--------------------------------------------------------------------------------------------------------
 				else if(message.getMessage().equals("AUSERTOGROUP")) //Client wants to add user to a group
@@ -222,8 +233,9 @@ public class GroupThread extends Thread
 							}
 					
 						}
-					}					
-					output.writeObject(response);
+					}		
+					writeObject(output, response);
+					//output.writeObject(response);
 				}
 //--REMOVE FROM GROUP----------------------------------------------------------------------------------------------------
 				else if(message.getMessage().equals("RUSERFROMGROUP")) //Client wants to remove user from a group
@@ -250,8 +262,9 @@ public class GroupThread extends Thread
 							}
 					
 						}
-					}					
-					output.writeObject(response);
+					}
+					writeObject(output, response);
+					//output.writeObject(response);
 				}
 				
 //--SEE ALL USERS----------------------------------------------------------------------------------------------------
@@ -268,7 +281,8 @@ public class GroupThread extends Thread
 							response.addObject(usernameList);
 						}
 					}
-					output.writeObject(response);
+					writeObject(output, response);
+					//output.writeObject(response);
 				}
 //--DISCONNECT----------------------------------------------------------------------------------------------------------
 				else if(message.getMessage().equals("DISCONNECT")) //Client wants to disconnect
@@ -280,7 +294,8 @@ public class GroupThread extends Thread
 				else
 				{
 					response = new Envelope("FAIL"); //Server does not understand client request
-					output.writeObject(response);
+					writeObject(output, response);
+					//output.writeObject(response);
 				}
 			}while(proceed);	
 		}
@@ -288,6 +303,71 @@ public class GroupThread extends Thread
 		{
 			System.err.println("Error: " + e.getMessage());
 			e.printStackTrace(System.err);
+		}
+	}
+	//Method to write objects
+	private boolean writeObject(ObjectOutputStream output, Object obj)
+	{
+		try
+		{
+			ByteArrayOutputStream toBytes = new ByteArrayOutputStream();//create ByteArrayOutputStream
+			ObjectOutputStream localOutput = new ObjectOutputStream(toBytes);//Make an object outputstream to that bytestream
+			localOutput.writeObject(obj);//write to the bytearrayoutputstream
+			byte[] data = toBytes.toByteArray();//turn our object into byte[]
+			
+			byte[] eData = cEngine.AESEncrpyt(data, key);//encrypt the data
+			output.writeObject(eData);//write the data to the client
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+			return false;
+		}
+		toBytes.close();
+		localOutput.close();
+		return true;
+	}
+	
+	//Method to read objects
+	private Object readObject(ObjectInputStream input)
+	{
+		byte[] eData = input.readObject();
+		ByteArrayInputStream fromBytes = new ByteArrayInputStream(eData);
+		ObjectInputStream localInput = new ObjectInputStream(fromBytes);
+		Object obj = localInput.readObject()
+		
+		return obj;
+	}
+	
+	//Method to receive and establish an AESKey from the client
+	private boolean setKey(ObjectInputStream input, ObjectOutputStream output)
+	{
+		try
+		{
+			Envelope message;
+			Envelope response;
+			message = (Envelope)input.readObject();
+			if(message.getMessage().equals("PUBKEYREQ"))
+			{
+				response = new Envelope("PUBKEYANSW");
+				response.addObject(my_gs.signKeys.getPublic());//send as Key not byte[]
+				output.writeObject(message);
+				
+				message = (Envelope)input.readObject();
+				if(message.getMessage().equals("AESKEY"))
+				{
+					byte[] aesKeyBytes = (byte[]) message.getObjContents().get(0);//This is sent as byte[]
+					aesKeyBytes = cEngine.RSAEncrypt(aesKeyBytes, my_gs.signKeys.getPrivate());
+					aesKey = (Key) new javax.crypto.spec.SecretKeySpec(aesKeyBytes, "AES");
+					return true;
+				}
+				else return false;
+			}
+			else return false;
+		}
+		catch(Exception e)
+		{
+			return false;
 		}
 	}
 	
