@@ -161,7 +161,7 @@ class CryptoEngine
 		{
 			cipher = Cipher.getInstance("AES/CBC/PKCS5Padding", "BC");
 			cipher.init(mode, key, IV);
-			cipher.doFinal(bytes);	
+			result = cipher.doFinal(bytes);	
 		} 
 		catch (Exception e) {
 			System.out.println("WARNING:  CRYPTOENGINE;  AES cipher failure; encrypt(1)/decrypt(2)="+mode);
@@ -189,11 +189,12 @@ class CryptoEngine
 		{
 			cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
 			cipher.init(mode, key);	
-			cipher.doFinal(bytes);	
+			result = cipher.doFinal(bytes);	
 		} 
 		catch (Exception e) 
 		{
 			System.out.println("WARNING:  CRYPTOENGINE;  RSA cipher failure;  encrypt(1)/decrypt(2)="+mode);
+			e.printStackTrace();
 		}
 		 
 		 return result;

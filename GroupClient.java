@@ -15,14 +15,12 @@ public class GroupClient extends Client implements GroupClientInterface {
 	public boolean connect(final String server, final int port)
 	{
 		super.connect(server, port);
+		
 		cEngine = new CryptoEngine();	
 		boolean keyNeedsSet = true;
 		
-		do
-		{
-			if(setKey())
-				keyNeedsSet = false;
-		}while(keyNeedsSet);
+		setKey();
+		assert aesKey != null;
 		//i had this marked TODO, but i think its finished? -PHIL 3/6 18:06
 		return true;
 	}
@@ -76,19 +74,39 @@ public class GroupClient extends Client implements GroupClientInterface {
 			Envelope message, response;
 			message = new Envelope("PUBKEYREQ");//requests the servers public key
 			aesKey = cEngine.genAESKeySet();
+			output.writeObject(message);
+			
 			response = (Envelope)input.readObject();
+			
 			if(response.getMessage().equals("PUBKEYANSW"))
 			{
 				Key rsaPublic = (Key)response.getObjContents().get(0);
 				//encrypt the aesKey with the rsaPublic
+				
 				ByteArrayOutputStream toBytes = new ByteArrayOutputStream();//create ByteArrayOutputStream
 				ObjectOutputStream localOutput = new ObjectOutputStream(toBytes);//Make an object outputstream to that bytestream
-				localOutput.writeObject(aesKey);//write to the bytearrayoutputstream
+				
+				localOutput.writeObject(aesKey.getKey());//write to the bytearrayoutputstream
+				
 				byte[] aesKeyBytes = toBytes.toByteArray();
 				
-				byte[] encryptedKey = cEngine.RSAEncrypt(aesKeyBytes, rsaPublic);
+				byte[] aesKeyBytesA = new byte[100];
+				byte[] aesKeyBytesB = new byte[41];
+				
+				System.arraycopy(aesKeyBytes, 0, aesKeyBytesA, 0, aesKeyBytesA.length);
+				System.arraycopy(aesKeyBytes, 100, aesKeyBytesB, 0, aesKeyBytes.length-100);
+				
+				byte[] encryptedKeyA = cEngine.RSAEncrypt(aesKeyBytesA, rsaPublic);
+				byte[] encryptedKeyB = cEngine.RSAEncrypt(aesKeyBytesB, rsaPublic);
+				
+				byte[] encryptedKey = new byte[encryptedKeyA.length + encryptedKeyB.length];
+				System.arraycopy(encryptedKeyA, 0, encryptedKey, 0, encryptedKeyA.length);
+				System.arraycopy(encryptedKeyB, 0, encryptedKey, encryptedKeyA.length, encryptedKeyB.length);
+				
 				message = new Envelope("AESKEY");
 				message.addObject(encryptedKey);
+				message.addObject(aesKey.getIV().getIV());
+				
 				output.writeObject(message);
 				return true;
 			}
@@ -96,8 +114,10 @@ public class GroupClient extends Client implements GroupClientInterface {
 		}
 		catch(Exception e)
 		{
-			return false;
+			e.printStackTrace();
+			System.exit(-1);
 		}
+		return false;
 	}
 	
 	public UserToken getToken(String username)

@@ -7,7 +7,7 @@ import java.io.*;
 import java.util.*;
 import java.security.*;
 import javax.crypto.*;
-
+import javax.crypto.spec.IvParameterSpec;
 
 public class GroupThread extends Thread 
 {
@@ -27,7 +27,7 @@ public class GroupThread extends Thread
 	public void run()
 	{
 		boolean proceed = true;
-
+		
 		try
 		{
 			//Announces connection and opens object streams
@@ -37,11 +37,7 @@ public class GroupThread extends Thread
 //--SET UP AES KEY-------------------------------------------------------------------------------------------------------------
 			boolean keyNeedsSet = true;
 			
-			do
-			{
-				if(setKey(input, output))
-					keyNeedsSet = false;
-			}while(keyNeedsSet);
+			setKey(input, output);
 			assert aesKey != null;
 			
 			//handle messages from the input stream(ie. socket)
@@ -74,7 +70,6 @@ public class GroupThread extends Thread
 						response = new Envelope("OK");
 						response.addObject(yourToken);
 						writeObject(output, response);
-						output.writeObject(response);
 					}
 				}
 //--CREATE USER-------------------------------------------------------------------------------------------------------
@@ -392,22 +387,35 @@ public class GroupThread extends Thread
 			Envelope message;
 			Envelope response;
 			message = (Envelope)input.readObject();
+			System.out.println("Request received: " + message.getMessage());
 			if(message.getMessage().equals("PUBKEYREQ"))
 			{
 				response = new Envelope("PUBKEYANSW");
 				response.addObject(my_gs.signKeys.getPublic());//send as Key not byte[]
-				output.writeObject(message);
+				output.writeObject(response);
 				
 				message = (Envelope)input.readObject();
+				System.out.println("Request received: " + message.getMessage());
 				if(message.getMessage().equals("AESKEY"))
 				{
 					byte[] aesKeyBytes = (byte[]) message.getObjContents().get(0);//This is sent as byte[]
-					aesKeyBytes = cEngine.RSADecrypt(aesKeyBytes, my_gs.signKeys.getPublic());
+
+					byte[] aesKeyBytesA = new byte[128];
+					byte[] aesKeyBytesB = new byte[128];
+					
+					System.arraycopy(aesKeyBytes, 0, aesKeyBytesA, 0, 128);
+					System.arraycopy(aesKeyBytes, 128, aesKeyBytesB, 0, 128);
+				
+					aesKeyBytesA = cEngine.RSADecrypt(aesKeyBytesA, my_gs.signKeys.getPrivate());
+					aesKeyBytesB = cEngine.RSADecrypt(aesKeyBytesB, my_gs.signKeys.getPrivate());
+					
+					System.arraycopy(aesKeyBytesA, 0, aesKeyBytes, 0, 100);
+					System.arraycopy(aesKeyBytesB, 0, aesKeyBytes, 100, 41);
 					
 					ByteArrayInputStream fromBytes = new ByteArrayInputStream(aesKeyBytes);
 					ObjectInputStream localInput = new ObjectInputStream(fromBytes);
-					aesKey = (AESKeySet) localInput.readObject();
-					
+					aesKey = new AESKeySet((Key) localInput.readObject(), new IvParameterSpec((byte[])message.getObjContents().get(1)));
+					//get(1) contains the IV. localinput turned the byte[] back into a key
 					return true;
 				}
 				else return false;
@@ -416,8 +424,10 @@ public class GroupThread extends Thread
 		}
 		catch(Exception e)
 		{
-			return false;
+			e.printStackTrace();
+			System.exit(-1);
 		}
+		return false;
 	}
 	
 	//Method to create tokens
