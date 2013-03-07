@@ -14,6 +14,7 @@ public class UserList implements java.io.Serializable
 		
 	public synchronized void deleteUser(String username)
 	{
+		if(list.get(username) == null) return;
 		list.remove(username);
 	}
 		

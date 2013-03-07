@@ -82,7 +82,7 @@ public class FileThread extends Thread
 
 						//validate token, terminate connection if failed
 						proceed = yourToken.verifySignature(my_fs.signVerifyKey, cEngine);
-	        			System.out.println("\nToken Authenticated:"+proceed);
+	        			System.out.println("Token Authenticated:"+proceed+"\n");
 						if(!proceed)
 						{
 							rejectToken(response, output);
@@ -136,7 +136,7 @@ public class FileThread extends Thread
 
 							//validate token, terminate connection if failed
 							proceed = yourToken.verifySignature(my_fs.signVerifyKey, cEngine);
-		        			System.out.println("\nToken Authenticated:"+proceed);
+		        			System.out.println("Token Authenticated:"+proceed+"\n");
 							if(!proceed)
 							{
 								rejectToken(response, output);
@@ -190,7 +190,7 @@ public class FileThread extends Thread
 
 							//validate token, terminate connection if failed
 							proceed = yourToken.verifySignature(my_fs.signVerifyKey, cEngine);
-	        				System.out.println("\nToken Authenticated:"+proceed);
+	        				System.out.println("Token Authenticated:"+proceed+"\n");
 							if(!proceed) rejectToken(response, output);
 
 							ArrayList<ShareFile> theFiles = FileServer.fileList.getFiles();
@@ -240,7 +240,7 @@ public class FileThread extends Thread
 
 							//validate token, terminate connection if failed
 							proceed = yourToken.verifySignature(my_fs.signVerifyKey, cEngine);
-	        				System.out.println("\nToken Authenticated:"+proceed);
+	        				System.out.println("Token Authenticated:"+proceed+"\n");
 							if(!proceed) rejectToken(response, output);
 
 							if (FileServer.fileList.checkFile(remotePath)) 
@@ -304,7 +304,7 @@ public class FileThread extends Thread
 
 					//validate token, terminate connection if failed
 					proceed = t.verifySignature(my_fs.signVerifyKey, cEngine);
-	        		System.out.println("\nToken Authenticated:"+proceed);
+	        		System.out.println("Token Authenticated:"+proceed+"\n");
 					if(!proceed) rejectToken(response, output);
 
 					if (sf == null) 
@@ -408,7 +408,7 @@ public class FileThread extends Thread
 					
 					//validate token, terminate connection if failed
 					proceed = t.verifySignature(my_fs.signVerifyKey, cEngine);
-	        		System.out.println("\nToken Authenticated:"+proceed);
+	        		System.out.println("Token Authenticated:"+proceed+"\n");
 					if(!proceed) rejectToken(response, output);
 
 

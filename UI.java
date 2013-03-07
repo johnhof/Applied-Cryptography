@@ -18,8 +18,15 @@ public class UI
 		System.out.println("What port should we connect to the GroupServer on?");
 		int gPort = Integer.parseInt(keyboard.nextLine());
 		
-		gUser.connect(gServer, gPort);
-		
+		try
+		{
+			gUser.connect(gServer, gPort);
+		}
+		catch(Exception e)
+		{
+			System.out.println("\nfailed to connect to server");
+		}
+
 		boolean proceed;
 		Scanner in;
 		String username;
@@ -52,8 +59,15 @@ public class UI
 		System.out.println("What port should we connect to the FileServer on?");
 		int fPort = Integer.parseInt(keyboard.nextLine());
 		
-		fUser.connect(fServer, fPort, username, token); 
-		
+		try
+		{
+			fUser.connect(fServer, fPort, username, token); 
+		}
+		catch(Exception e)
+		{
+			System.out.println("\nfailed to connect to server");
+		}
+
 		boolean connected = true;
 		//UI is connecting to localhost. May change with cmd line options later
 
@@ -76,11 +90,7 @@ public class UI
 				{
 					inputI = Integer.parseInt(in.nextLine());
 				}
-				catch(Exception e)
-				{
-					continue;
-				}
-
+				catch(Exception e){continue;}
 
 				String srcFile = "";
 				String destFile = "";

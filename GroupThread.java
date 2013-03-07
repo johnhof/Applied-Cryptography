@@ -262,10 +262,6 @@ public class GroupThread extends Thread
         					System.out.println("Token Authenticated:"+proceed+"\n");
 							if(!proceed) rejectToken(response, output);
 
-							System.out.println("\n"+userName);
-							System.out.println("\n"+groupName);
-							System.out.println("\n"+yourToken);
-
 							//verify the owner
 							if(my_gs.groupList.getGroupOwners(groupName).contains(yourToken.getSubject()))
 							{

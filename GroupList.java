@@ -42,6 +42,7 @@ public class GroupList implements java.io.Serializable
 	public synchronized ArrayList<String> getGroupOwners(String groupName)
 	{
 		return list.get(groupName).getOwners();
+
 	}
 		
 	public synchronized void addMember(String groupName, String member)
@@ -51,10 +52,6 @@ public class GroupList implements java.io.Serializable
 		
 	public synchronized void removeMember(String groupName, String member)
 	{
-	// 	System.out.println(groupName);
-	// 	System.out.println(member);
-	// 	System.out.println(list);
-	// 	System.out.println(list.get(groupName));
 		list.get(groupName).removeMember(member);
 	}
 		
