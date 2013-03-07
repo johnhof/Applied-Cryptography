@@ -34,7 +34,8 @@ public class GroupThread extends Thread
 			System.out.println("*** New connection from " + socket.getInetAddress() + ":" + socket.getPort() + "***");
 			final ObjectInputStream input = new ObjectInputStream(socket.getInputStream());
 			final ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
-
+			
+			setKey(input, output);
 			//handle messages from the input stream(ie. socket)
 			do
 			{
