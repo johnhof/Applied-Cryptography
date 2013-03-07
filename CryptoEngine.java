@@ -100,6 +100,7 @@ class CryptoEngine
 	//return the signature as a byte array
 	public byte[] RSASign(byte[] plainText, PrivateKey key) 
 	{
+		System.out.println("\nTEST");
   	    Signature signature;
   	    byte[] sigBytes = null;
 		try 

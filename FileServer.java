@@ -1,20 +1,46 @@
 /* FileServer loads files from FileList.bin.  Stores files in shared_files directory. */
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
+import java.nio.charset.Charset;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.Key;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.SecureRandom;
+import java.security.Security;
+import java.security.Signature;
+import java.security.SignatureException;
+import java.security.PublicKey;
+import java.security.PrivateKey;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.KeyGenerator;
+import javax.crypto.spec.IvParameterSpec;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+
+//import org.bouncycastle.crypto.paddings.PaddedBufferedBlockCipher;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+
 import java.net.ServerSocket;
 import java.net.Socket;
-
+import java.io.*;
+import java.util.*;
 public class FileServer extends Server {
 	
 	//IMPORTANT: server listens on port 4321
 	public static final int SERVER_PORT = 4321;
 	public static FileList fileList;
+	public static PublicKey signVerifyKey;
 	
 	public FileServer() {
 		super(SERVER_PORT, "FilePile");
@@ -26,13 +52,33 @@ public class FileServer extends Server {
 	
 	public void start() {
 		String fileFile = "FileList.bin";
+        String keyDistroFile = "GroupPublicKey.bin";
 		ObjectInputStream fileStream;
+		ObjectInputStream sigKeyStream;
 		
 		//This runs a thread that saves the lists on program exit
 		Runtime runtime = Runtime.getRuntime();
-		Thread catchExit = new Thread(new ShutDownListenerFS());
+		Thread catchExit = new Thread(new ShutDownListenerFS(this));
 		runtime.addShutdownHook(catchExit);
 		
+//----------------------------------------------------------------------------------------------------------------------
+//--ADDED: retrieve the group server public key to verify signatures
+//----------------------------------------------------------------------------------------------------------------------
+		try
+		{
+			FileInputStream fis = new FileInputStream(keyDistroFile);
+			sigKeyStream = new ObjectInputStream(fis);
+
+			//retrieve the keys used for signing
+			signVerifyKey = (PublicKey)sigKeyStream.readObject();
+		}
+		catch(Exception e)
+		{
+			System.out.println("ERROR:  GROUPSERVER;  could not load resource file");
+			System.exit(-1);
+		}
+//----------------------------------------------------------------------------------------------------------------------
+
 		//Open user file to get user list
 		try
 		{
@@ -72,7 +118,7 @@ public class FileServer extends Server {
 		 }
 		
 		//Autosave Daemon. Saves lists every 5 minutes
-		AutoSaveFS aSave = new AutoSaveFS();
+		AutoSaveFS aSave = new AutoSaveFS(this);
 		aSave.setDaemon(true);
 		aSave.start();
 		
@@ -104,12 +150,20 @@ public class FileServer extends Server {
 			System.err.println("Error: " + e.getMessage());
 			e.printStackTrace(System.err);
 		}
+
+		System.out.println("\nUPDATE: GroupServer; setup succesful");
 	}
 }
 
 //This thread saves user and group lists
 class ShutDownListenerFS implements Runnable
 {
+	public FileServer my_fs;
+	
+	public ShutDownListenerFS (FileServer _fs) {
+		my_fs = _fs;
+	}
+
 	public void run()
 	{
 		System.out.println("Shutting down server");
@@ -131,6 +185,12 @@ class ShutDownListenerFS implements Runnable
 
 class AutoSaveFS extends Thread
 {
+	public FileServer my_fs;
+	
+	public AutoSaveFS (FileServer _fs) {
+		my_fs = _fs;
+	}
+
 	public void run()
 	{
 		do
