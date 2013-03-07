@@ -35,22 +35,26 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.io.*;
 import java.util.*;
-public class FileServer extends Server {
+public class FileServer extends Server 
+{
 	
 	//IMPORTANT: server listens on port 4321
 	public static final int SERVER_PORT = 4321;
 	public static FileList fileList;
 	public static PublicKey signVerifyKey;
 	
-	public FileServer() {
+	public FileServer() 
+	{
 		super(SERVER_PORT, "FilePile");
 	}
 
-	public FileServer(int _port) {
+	public FileServer(int _port) 
+	{
 		super(_port, "FilePile");
 	}
 	
-	public void start() {
+	public void start() 
+	{
 		String fileFile = "FileList.bin";
         String keyDistroFile = "GroupPublicKey.bin";
 		ObjectInputStream fileStream;
@@ -104,18 +108,18 @@ public class FileServer extends Server {
 		
 		//Create or find a directory named "shared_files"
 		File file = new File("shared_files");
-		 if (file.mkdir()) 
-		 {
-			 System.out.println("Created new shared_files directory");
-		 }
-		 else if (file.exists())
-		 {
-			 System.out.println("Found shared_files directory");
-		 }
-		 else 
-		 {
-			 System.out.println("Error creating shared_files directory");				 
-		 }
+		if (file.mkdir()) 
+		{
+			System.out.println("Created new shared_files directory");
+		}
+		else if (file.exists())
+		{
+			System.out.println("Found shared_files directory");
+		}
+		else 
+		{
+			System.out.println("Error creating shared_files directory");				 
+		}
 		
 		//Autosave Daemon. Saves lists every 5 minutes
 		AutoSaveFS aSave = new AutoSaveFS(this);
@@ -160,7 +164,8 @@ class ShutDownListenerFS implements Runnable
 {
 	public FileServer my_fs;
 	
-	public ShutDownListenerFS (FileServer _fs) {
+	public ShutDownListenerFS (FileServer _fs) 
+	{
 		my_fs = _fs;
 	}
 
@@ -187,7 +192,8 @@ class AutoSaveFS extends Thread
 {
 	public FileServer my_fs;
 	
-	public AutoSaveFS (FileServer _fs) {
+	public AutoSaveFS (FileServer _fs) 
+	{
 		my_fs = _fs;
 	}
 
@@ -218,6 +224,7 @@ class AutoSaveFS extends Thread
 			{
 				System.out.println("Autosave Interrupted");
 			}
-		}while(true);
+		}
+		while(true);
 	}
 }

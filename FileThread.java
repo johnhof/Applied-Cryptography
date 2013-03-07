@@ -50,9 +50,9 @@ public class FileThread extends Thread
 						
 						output.writeObject(response);
 					}
-					else//no files exist
+					else	//no files exist
 					{
-						response = new Envelope("FAIL-NOFILES");
+						response = new Envelope("FAIL -- no files exist. Ask yourself why. ");
 						output.writeObject(response);
 					}
 					
@@ -62,24 +62,23 @@ public class FileThread extends Thread
 				
 				if(e.getMessage().equals("UPLOADF"))
 				{
-
 					if(e.getObjContents().size() < 3)
 					{
-						response = new Envelope("FAIL-BADCONTENTS");
+						response = new Envelope("FAIL -- bad contents. Ask yourself why. ");
 					}
 					else
 					{
 						if(e.getObjContents().get(0) == null) 
 						{
-							response = new Envelope("FAIL-BADPATH");
+							response = new Envelope("FAIL -- bad path. Ask yourself why. ");
 						}
 						if(e.getObjContents().get(1) == null) 
 						{
-							response = new Envelope("FAIL-BADGROUP");
+							response = new Envelope("FAIL -- bad group. Ask yourself why. ");
 						}
 						if(e.getObjContents().get(2) == null) 
 						{
-							response = new Envelope("FAIL-BADTOKEN");
+							response = new Envelope("FAIL -- bad token. Ask yourself why. ");
 						}
 						else {
 							//retrieve the contents of the envelope
@@ -90,17 +89,17 @@ public class FileThread extends Thread
 							if (FileServer.fileList.checkFile(remotePath)) 
 							{
 								System.out.printf("Error: file already exists at %s\n", remotePath);
-								response = new Envelope("FAIL-FILEEXISTS"); //Success
+								response = new Envelope("FAIL -- file already exists. "); //Success
 							}
 							else if (!yourToken.getGroups().contains(group)) 
 							{
 								System.out.printf("Error: user missing valid token for group %s\n", group);
-								response = new Envelope("FAIL-UNAUTHORIZED"); //Success
+								response = new Envelope("FAIL -- unauthorized user token for group. Ask yourself why. "); //Success
 							}
 							//create file and handle upload
 							else  
 							{
-								File file = new File("shared_files/"+remotePath.replace('/', '_'));
+								File file = new File("shared_files/" + remotePath.replace('/', '_'));
 								file.createNewFile();
 								FileOutputStream fos = new FileOutputStream(file);
 								System.out.printf("Successfully created file %s\n", remotePath.replace('/', '_'));
@@ -111,7 +110,8 @@ public class FileThread extends Thread
 
 								//recieve and write the file to the directory
 								e = (Envelope)input.readObject();
-								while (e.getMessage().compareTo("CHUNK")==0) {
+								while (e.getMessage().compareTo("CHUNK") == 0) 
+								{
 									fos.write((byte[])e.getObjContents().get(0), 0, (Integer)e.getObjContents().get(1));
 									response = new Envelope("READY"); //Success
 									output.writeObject(response);
@@ -119,14 +119,16 @@ public class FileThread extends Thread
 								}
 
 								//end of file identifier expected, inform the user of status
-								if(e.getMessage().compareTo("EOF")==0) {
+								if(e.getMessage().compareTo("EOF") == 0) 
+								{
 									System.out.printf("Transfer successful file %s\n", remotePath);
 									FileServer.fileList.addFile(yourToken.getSubject(), group, remotePath);
 									response = new Envelope("OK"); //Success
 								}
-								else {
+								else 
+									7{
 									System.out.printf("Error reading file %s from client\n", remotePath);
-									response = new Envelope("ERROR-TRANSFER"); //Success
+									response = new Envelope("ERROR -- failed attempt at reading file from client. "); //Success
 								}
 								fos.close();
 							}
@@ -136,24 +138,23 @@ public class FileThread extends Thread
 					output.writeObject(response);
 				}
 //--DOWNLOAD FILE------------------------------------------------------------------------------------------------------
-				else if (e.getMessage().compareTo("DOWNLOADF")==0) 
+				else if (e.getMessage().compareTo("DOWNLOADF") == 0) 
 				{
 					//retrieve the contents of the envelope, and attampt to access the requested file
 					String remotePath = (String)e.getObjContents().get(0);
 					UserToken t = (UserToken)e.getObjContents().get(1);
-					ShareFile sf = FileServer.fileList.getFile("/"+remotePath);
+					ShareFile sf = FileServer.fileList.getFile("/" + remotePath);
 
 					if (sf == null) 
 					{
 						System.out.printf("Error: File %s doesn't exist\n", remotePath);
-						e = new Envelope("ERROR_FILEMISSING");
+						e = new Envelope("ERROR -- file missing. Ask yourself why. ");
 						output.writeObject(e);
-
 					}
 					else if (!t.getGroups().contains(sf.getGroup()))
 					{
 						System.out.printf("Error user %s doesn't have permission\n", t.getSubject());
-						e = new Envelope("ERROR_PERMISSION");
+						e = new Envelope("ERROR -- insufficient user permissions. Ask yourself why. ");
 						output.writeObject(e);
 					}
 					else 
@@ -165,26 +166,31 @@ public class FileThread extends Thread
 							if (!f.exists()) 
 							{
 								System.out.printf("Error file %s missing from disk\n", "_"+remotePath.replace('/', '_'));
-								e = new Envelope("ERROR_NOTONDISK");
+								e = new Envelope("ERROR -- file not on disk. Ask yourself why. ");
 								output.writeObject(e);
 							}
-							else {
+							else 
+							{
 								FileInputStream fis = new FileInputStream(f);
 
 								//send the file in 4096 byte chunks
-								do {
+								do 
+								{
 									byte[] buf = new byte[4096];
-									if (e.getMessage().compareTo("DOWNLOADF")!=0) {
+									if (e.getMessage().compareTo("DOWNLOADF") != 0) 
+									{
 										System.out.printf("Server error: %s\n", e.getMessage());
 										break;
 									}
 									e = new Envelope("CHUNK");
 									int n = fis.read(buf); //can throw an IOException
-									if (n > 0) {
+									if (n > 0) 
+									{
 										System.out.printf(".");
-									} else if (n < 0) {
-										System.out.println("Read error");
-
+									} 
+									else if (n < 0) 
+									{
+										System.out.println("Read error. Ask yourself why. ");
 									}
 
 									//tack the chunk onto the envelope and write it
@@ -195,18 +201,18 @@ public class FileThread extends Thread
 									//get response
 									e = (Envelope)input.readObject();
 								}
-								while (fis.available()>0);
+								while (fis.available() > 0);
 
 								//If server indicates success, return the member list
-								if(e.getMessage().compareTo("DOWNLOADF")==0)
+								if(e.getMessage().compareTo("DOWNLOADF") == 0)
 								{
 									//send the end of file identifier
-									e = new Envelope("EOF");
+									e = new Envelope("EOF -- end of file. Ask yourself why. ");
 									output.writeObject(e);
 
 									//accept response
 									e = (Envelope)input.readObject();
-									if(e.getMessage().compareTo("OK")==0) 
+									if(e.getMessage().compareTo("OK") == 0) 
 									{
 										System.out.printf("File data upload successful\n");
 									}
@@ -241,12 +247,12 @@ public class FileThread extends Thread
 					if (sf == null) 
 					{	
 						System.out.printf("Error: File %s doesn't exist\n", remotePath);
-						e = new Envelope("ERROR_DOESNTEXIST");
+						e = new Envelope("ERROR -- file does not exists. ");
 					}
 					else if (!t.getGroups().contains(sf.getGroup()))
 					{
 						System.out.printf("Error user %s doesn't have permission\n", t.getSubject());
-						e = new Envelope("ERROR_PERMISSION");
+						e = new Envelope("ERROR -- insufficient user permissions. Ask yourself why. ");
 					}
 					else 
 					{
@@ -258,7 +264,7 @@ public class FileThread extends Thread
 							if (!f.exists()) 
 							{
 								System.out.printf("Error file %s missing from disk\n", "_"+remotePath.replace('/', '_'));
-								e = new Envelope("ERROR_FILEMISSING");
+								e = new Envelope("ERROR -- insufficient user permissions. Ask yourself why. ");
 							}
 							else if (f.delete()) 
 							{
@@ -269,7 +275,7 @@ public class FileThread extends Thread
 							else 
 							{
 								System.out.printf("Error deleting file %s from disk\n", "_"+remotePath.replace('/', '_'));
-								e = new Envelope("ERROR_DELETE");
+								e = new Envelope("ERROR -- file unable to be deleted from disk. ");
 							}
 
 
