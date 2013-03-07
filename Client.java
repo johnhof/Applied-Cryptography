@@ -31,22 +31,9 @@ public class Client extends ClientInterface
 		{
 			System.err.println("Host unknown: "+e.toString());
 		}
-		//finally
-		//{
-			//close connection
-			//try
-			//{
-				//sock.close();
-			//}
-			//catch(IOException e)
-			//{
-				//e.printStackTrace();
-			//}
-		//}
-		//PHILIP 11/2 14:47. Why are you closing the connection here?
-//my attempt ends here
-		return true;//Why are we returning false here? -PHIL 11/2 14:36
-		//I set it to true -PHIL 11/2 14:52
+		
+		
+		return true;
 	}
 
 	public boolean isConnected() 
