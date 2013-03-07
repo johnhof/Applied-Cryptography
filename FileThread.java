@@ -76,6 +76,17 @@ public class FileThread extends Thread
 				ObjectInputStream localInput = new ObjectInputStream(fromBytes);
 				aesKey = new AESKeySet((Key) localInput.readObject(), new IvParameterSpec((byte[])message.getObjContents().get(1)));
 				//get(1) contains the IV. localinput turned the byte[] back into a key
+				
+				//THE AES KEY IS NOW SET
+				message = (Envelope)readObject(input);
+				if(message.getMessage().equals("CHALLENGE"));
+				{
+					Integer challenge = (Integer)message.getObjContents().get(0);
+					challenge = new Integer((challenge.intValue()+1));
+					response = new Envelope("OK");
+					response.addObject(challenge);
+					writeObject(output, response);
+				}
 			}
 			else
 			{
@@ -365,9 +376,7 @@ public class FileThread extends Thread
 		{
 			byte[] eData = (byte[])input.readObject();
 			byte[] data = cEngine.AESDecrypt(eData, aesKey);
-			ByteArrayInputStream fromBytes = new ByteArrayInputStream(data);
-			ObjectInputStream localInput = new ObjectInputStream(fromBytes);
-			obj = localInput.readObject();
+			obj = cEngine.deserialize(data);
 		}
 		catch(Exception e)
 		{
@@ -381,15 +390,10 @@ public class FileThread extends Thread
 	{
 		try
 		{
-			ByteArrayOutputStream toBytes = new ByteArrayOutputStream();//create ByteArrayOutputStream
-			ObjectOutputStream localOutput = new ObjectOutputStream(toBytes);//Make an object outputstream to that bytestream
-			localOutput.writeObject(obj);//write to the bytearrayoutputstream
-			byte[] data = toBytes.toByteArray();//turn our object into byte[]
+			byte[] data = cEngine.serialize(obj);
 			
 			byte[] eData = cEngine.AESEncrypt(data, aesKey);//encrypt the data
 			output.writeObject(eData);//write the data to the client
-			toBytes.close();
-			localOutput.close();
 		}
 		catch(Exception e)
 		{

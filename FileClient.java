@@ -9,13 +9,14 @@ import java.security.*;
 import javax.crypto.*;
 import java.io.*;
 import javax.crypto.spec.IvParameterSpec;
+import java.util.Random;
 
 public class FileClient extends Client implements FileClientInterface 
 {
 	private CryptoEngine cEngine;
 	private Key serverPublicKey;
 	private KeyList keyList;
-	private Key aesSessionKey;
+	private AESKeySet aesKey;
 	
 	public boolean connect(final String server, final int port, String username)
 	{
@@ -37,7 +38,7 @@ public class FileClient extends Client implements FileClientInterface
 				Key allegedKey = setPublicKey();
 				if(serverPublicKey.toString().equals(allegedKey.toString()))
 				{
-					System.out.println("FileServer verified.");
+					System.out.println("FileServer verification step 1 complete.");
 				}
 				else
 				{
@@ -83,7 +84,7 @@ public class FileClient extends Client implements FileClientInterface
 		}
 		
 		setAesKey();
-		System.out.println("SUCCESS");
+		
 		return true;
 	}
 	
@@ -92,7 +93,7 @@ public class FileClient extends Client implements FileClientInterface
 	{
 		try{
 			Envelope message, response;
-			AESKeySet aesKey = cEngine.genAESKeySet();
+			aesKey = cEngine.genAESKeySet();
 			ByteArrayOutputStream toBytes = new ByteArrayOutputStream();//create ByteArrayOutputStream
 			ObjectOutputStream localOutput = new ObjectOutputStream(toBytes);//Make an object outputstream to that bytestream
 			
@@ -118,6 +119,24 @@ public class FileClient extends Client implements FileClientInterface
 			message.addObject(aesKey.getIV().getIV());
 		
 			output.writeObject(message);
+			//THE AES KEY IS NOW SET
+			message = new Envelope("CHALLENGE");
+			Integer challenge = new Integer((new Random()).nextInt());
+			message.addObject(challenge);
+			writeObject(message);
+			response = (Envelope)readObject();
+			if(response.getMessage().equals("OK"))
+			{
+				if((challenge.intValue()+1) != ((Integer)response.getObjContents().get(0)).intValue())
+				{
+					System.out.println("CHALLENGE FAILED");
+					System.exit(-1);
+				}
+				else
+				{
+					System.out.println("Challenge succeeded");
+				}
+			}
 		}
 		catch(Exception e)
 		{
@@ -125,6 +144,42 @@ public class FileClient extends Client implements FileClientInterface
 			e.printStackTrace();
 			System.exit(-1);
 		}
+	}
+	
+	private boolean writeObject(Object obj)
+	{
+		try
+		{
+			byte[] data = cEngine.serialize(obj);
+			
+			byte[] eData = cEngine.AESEncrypt(data, aesKey);//encrypt the data
+			output.writeObject(eData);//write the data to the client
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+			return false;
+		}
+		return true;
+	}
+	
+	//Method to read objects
+	private Object readObject()
+	{
+		Object obj = null;
+		try
+		{
+			byte[] eData = (byte[])input.readObject();
+			
+			byte[] data = cEngine.AESDecrypt(eData, aesKey);
+			obj = cEngine.deserialize(data);
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+		
+		return obj;
 	}
 	
 	public Key setPublicKey()
