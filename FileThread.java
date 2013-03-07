@@ -86,7 +86,7 @@ public class FileThread extends Thread
 					challenge = new Integer((challenge.intValue()+1));
 					response = new Envelope("OK");
 					response.addObject(challenge);
-					Date currentTime = new java.sql.Timestamp(Calendar.getInstance().getTime().getTime());
+					java.sql.Timestamp currentTime = new java.sql.Timestamp(Calendar.getInstance().getTime().getTime());
 					response.addObject(currentTime);
 					writeObject(output, response);
 				}

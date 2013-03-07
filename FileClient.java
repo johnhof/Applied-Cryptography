@@ -137,7 +137,16 @@ public class FileClient extends Client implements FileClientInterface
 				else
 				{
 					System.out.println("Challenge succeeded");
-					//if(response.getObjContents().get(1))
+					java.sql.Timestamp challengeTime = (java.sql.Timestamp)response.getObjContents().get(1);
+					if((System.currentTimeMillis() - challengeTime.getTime())/(1000*60) < 5 )
+					{
+						System.out.println("Fresh timestamp");
+					}
+					else
+					{
+						System.out.println("Old timestamp");
+						System.exit(-1);
+					}
 				}
 			}
 		}
