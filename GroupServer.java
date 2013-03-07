@@ -61,6 +61,7 @@ public class GroupServer extends Server
 	public static final int SERVER_PORT = 8766;
 
 	public KeyPair signKeys;
+	public KeyPair authKeys;
 	public UserList userList;
 	public GroupList groupList;
 	//^^^^This should really be a database...
@@ -105,6 +106,7 @@ public class GroupServer extends Server
 
 			//retrieve the keys used for signing
 			signKeys = (KeyPair)resourceStream.readObject();
+			authKeys = cEngine.genRSAKeyPair();
 		}
 		catch(Exception e)
 		{

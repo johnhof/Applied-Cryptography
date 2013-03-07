@@ -395,9 +395,8 @@ public class GroupThread extends Thread
 	{
 		try
 		{
-			KeyPair rsaSessionKeys = cEngine.genRSAKeyPair();
-			Key rsaSessionPublic = rsaSessionKeys.getPublic();
-			Key rsaSessionPrivate = rsaSessionKeys.getPrivate();
+			Key rsaSessionPublic = my_gs.authKeys.getPublic();
+			Key rsaSessionPrivate = my_gs.authKeys.getPrivate();
 			//These keys exist just to encrypt/decrypt this specific session key for this user
 			
 			Envelope message;
