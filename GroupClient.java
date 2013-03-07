@@ -112,8 +112,7 @@ public class GroupClient extends Client implements GroupClientInterface {
 				
 				byte[] encryptedKeyA = cEngine.RSAEncrypt(aesKeyBytesA, rsaPublic);
 				byte[] encryptedKeyB = cEngine.RSAEncrypt(aesKeyBytesB, rsaPublic);
-				System.out.println(encryptedKeyA.length);
-				System.out.println(encryptedKeyB.length);
+				
 				byte[] encryptedKey = new byte[encryptedKeyA.length + encryptedKeyB.length];
 				System.arraycopy(encryptedKeyA, 0, encryptedKey, 0, 128);
 				System.arraycopy(encryptedKeyB, 0, encryptedKey, 128, 128);
