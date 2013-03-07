@@ -134,7 +134,7 @@ public class GroupClient extends Client implements GroupClientInterface {
 			writeObject(output, message);
 			
 			//Get the response from the server
-			response = (Envelope)input.readObject();
+			response = (Envelope)readObject(input);
 			
 			//Successful response
 			if(response.getMessage().equals("OK"))
@@ -149,7 +149,10 @@ public class GroupClient extends Client implements GroupClientInterface {
 					return token;
 				}
 			}
-			
+			else
+			{
+				System.out.println(response.getMessage());
+			}
 			return null;
 		}
 		catch(Exception e)

@@ -54,16 +54,12 @@ public class GroupThread extends Thread
 					if(username == null)
 					{
 						response = new Envelope("FAIL: no username provided.");
-						response.addObject(null);
 						writeObject(output, response);
-						//output.writeObject(response);
 					}
 					else if(!my_gs.userList.checkUser(username))
 					{
 						response = new Envelope("FAIL: username not found.");
-						response.addObject(null);
 						writeObject(output, response);
-						//output.writeObject(response);
 					}
 					else
 					{
