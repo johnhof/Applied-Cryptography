@@ -13,6 +13,7 @@ import java.security.Signature;
 import java.security.SignatureException;
 import java.security.PublicKey;
 import java.security.PrivateKey;
+import java.security.MessageDigest;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -69,6 +70,26 @@ class CryptoEngine
 		}
 	}
 
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+//-- HASH FUNCTIONS
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	
+	public byte[] hashString(String str)
+	{
+		MessageDigest md = null;
+		try
+		{
+			md = MessageDigest.getInstance("SHA");
+		}
+		catch(Exception e)
+		{
+			System.out.println("WARNING: Could not hash password");
+			e.printStackTrace();
+		}
+		return md.digest(str.getBytes());
+	}
+	
+	
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 //-- KEY GENERATORS
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

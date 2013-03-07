@@ -61,6 +61,7 @@ public class GroupServer extends Server
 	public static final int SERVER_PORT = 8766;
 
 	public KeyPair signKeys;
+	public KeyPair authKeys;
 	public UserList userList;
 	public GroupList groupList;
 	//^^^^This should really be a database...
@@ -105,6 +106,7 @@ public class GroupServer extends Server
 
 			//retrieve the keys used for signing
 			signKeys = (KeyPair)resourceStream.readObject();
+			authKeys = cEngine.genRSAKeyPair();
 		}
 		catch(Exception e)
 		{
@@ -185,6 +187,8 @@ public class GroupServer extends Server
 		aSave.setDaemon(true);
 		aSave.start();
 		
+		System.out.println("\nUPDATE: GroupServer; setup succesful");
+		
 		//This block listens for connections and creates threads on new connections
 		try
 		{
@@ -208,9 +212,6 @@ public class GroupServer extends Server
 			System.err.println("Error: " + e.getMessage());
 			e.printStackTrace(System.err);
 		}
-
-		System.out.println("\nUPDATE: GroupServer; setup succesful");
-
 	}
 
 
