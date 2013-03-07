@@ -85,7 +85,6 @@ public class GroupServer extends Server {
 		String resourceFile = "GroupResources.bin";
 		String userFile = "UserList.bin";
 		String groupFile = "GroupList.bin";
-		String keyDistroFile = "GServer_PublicKeyDistro.bin";
 		Scanner console = new Scanner(System.in);
 		ObjectInputStream userStream;
 		ObjectInputStream groupStream;
@@ -124,8 +123,8 @@ public class GroupServer extends Server {
 		}
 		catch(FileNotFoundException e)
 		{
-			System.out.println("resources File Does Not Exist. Creating resources...");
-			System.out.println("No resources currently exist");
+			System.out.println("groupList File Does Not Exist. Creating resources...");
+			System.out.println("No groupList currently exists");
 
 			groupList = new GroupList();
 		}
@@ -208,6 +207,8 @@ public class GroupServer extends Server {
 			System.err.println("Error: " + e.getMessage());
 			e.printStackTrace(System.err);
 		}
+
+		System.out.println("\nUPDATE: GroupServer; setup succesful");
 
 	}
 

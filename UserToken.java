@@ -21,7 +21,7 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.KeyGenerator;
 import javax.crypto.spec.IvParameterSpec;
 
-import java.util.List;
+import java.util.*;
 
 public class UserToken implements UserTokenInterface, java.io.Serializable
 {
@@ -35,7 +35,9 @@ public class UserToken implements UserTokenInterface, java.io.Serializable
 	{
 		issuer = Issuer; 
 		subject = Subject; 
+        groups = null;
         signature = null;
+        cEngine = new CryptoEngine();
 	}
 
     public UserToken(String Issuer, String Subject, List<String> Groups)
@@ -44,7 +46,7 @@ public class UserToken implements UserTokenInterface, java.io.Serializable
         subject = Subject; 
         groups = Groups;
         signature = null;
-        CryptoEngine cEngine = new CryptoEngine();
+        cEngine = new CryptoEngine();
     }
 
     public String getIssuer()
@@ -93,20 +95,26 @@ public class UserToken implements UserTokenInterface, java.io.Serializable
 
     public void sign(PrivateKey key)
     {
+        signature = cEngine.RSASign(getContentsInBytes(), key);
     }
 
 
-    public boolean verifySignature(PrivateKey key)
+    public boolean verifySignature(PublicKey key)
     {
-        return false;
+        return cEngine.RSAVerify(getContentsInBytes(),  signature, key);
     }
 
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 //-- Utility Functions
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+    //megre the token contents into an array
     private byte[] getContentsInBytes()
     {
-        return null;
+        ArrayList<Object> contents = new ArrayList<Object>();
+        contents.add(issuer);
+        contents.add(subject);
+        if(groups != null)contents.add(groups);
+        return cEngine.serialize(contents);
     }
 }
