@@ -37,8 +37,8 @@ public class GroupThread extends Thread
 //--SET UP AES KEY-------------------------------------------------------------------------------------------------------------
 			boolean keyNeedsSet = true;
 			
-			setKey(input, output);
-			assert aesKey != null;
+			//setKey(input, output);
+			//assert aesKey != null;
 			
 			//handle messages from the input stream(ie. socket)
 			do

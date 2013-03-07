@@ -19,8 +19,9 @@ public class GroupClient extends Client implements GroupClientInterface {
 		cEngine = new CryptoEngine();	
 		boolean keyNeedsSet = true;
 		
-		setKey();
-		assert aesKey != null;
+		//setKey();
+		//assert aesKey != null;
+		
 		//i had this marked TODO, but i think its finished? -PHIL 3/6 18:06
 		return true;
 	}
