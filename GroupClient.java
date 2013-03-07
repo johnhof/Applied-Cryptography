@@ -49,15 +49,10 @@ public class GroupClient extends Client implements GroupClientInterface {
 	{
 		try
 		{
-			ByteArrayOutputStream toBytes = new ByteArrayOutputStream();//create ByteArrayOutputStream
-			ObjectOutputStream localOutput = new ObjectOutputStream(toBytes);//Make an object outputstream to that bytestream
-			localOutput.writeObject(obj);//write to the bytearrayoutputstream
-			byte[] data = toBytes.toByteArray();//turn our object into byte[]
+			byte[] data = cEngine.serialize(obj);
 			
 			byte[] eData = cEngine.AESEncrypt(data, aesKey);//encrypt the data
 			output.writeObject(eData);//write the data to the client
-			toBytes.close();
-			localOutput.close();
 		}
 		catch(Exception e)
 		{
@@ -76,9 +71,7 @@ public class GroupClient extends Client implements GroupClientInterface {
 			byte[] eData = (byte[])input.readObject();
 			
 			byte[] data = cEngine.AESDecrypt(eData, aesKey);
-			ByteArrayInputStream fromBytes = new ByteArrayInputStream(data);
-			ObjectInputStream localInput = new ObjectInputStream(fromBytes);
-			obj = localInput.readObject();
+			obj = cEngine.deserialize(data);
 		}
 		catch(Exception e)
 		{
