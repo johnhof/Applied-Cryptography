@@ -66,7 +66,6 @@ public class GroupThread extends Thread
 						response = new Envelope("OK");
 						response.addObject(yourToken);
 						writeObject(output, response);
-						output.writeObject(response);
 					}
 				}
 //--CREATE USER-------------------------------------------------------------------------------------------------------
