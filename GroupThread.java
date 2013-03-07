@@ -34,12 +34,7 @@ public class GroupThread extends Thread
 			System.out.println("*** New connection from " + socket.getInetAddress() + ":" + socket.getPort() + "***");
 			final ObjectInputStream input = new ObjectInputStream(socket.getInputStream());
 			final ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
-//--SET UP AES KEY-------------------------------------------------------------------------------------------------------------
-			boolean keyNeedsSet = true;
-			
-			//setKey(input, output);
-			//assert aesKey != null;
-			
+
 			//handle messages from the input stream(ie. socket)
 			do
 			{
@@ -78,6 +73,7 @@ public class GroupThread extends Thread
 
 						//validate token, terminate connection if failed
 						proceed = yourToken.verifySignature(my_gs.signKeys.getPublic(), cEngine);
+        				System.out.println("\nToken Authenticated:"+proceed);
 						if(!proceed) rejectToken(response, output);
 						
 						//Respond to the client. On error, the client will receive a null token
@@ -107,6 +103,7 @@ public class GroupThread extends Thread
 								
 								//validate token, terminate connection if failed
 								proceed = yourToken.verifySignature(my_gs.signKeys.getPublic(), cEngine);
+        						System.out.println("\nToken Authenticated:"+proceed);
 								if(!proceed) rejectToken(response, output);
 
 								//create the user if the username/token allow it
@@ -139,6 +136,7 @@ public class GroupThread extends Thread
 
 								//validate token, terminate connection if failed
 								proceed = yourToken.verifySignature(my_gs.signKeys.getPublic(), cEngine);
+        						System.out.println("\nToken Authenticated:"+proceed);
 								if(!proceed) rejectToken(response, output);
 								
 								if(isAdmin(yourToken))
@@ -171,6 +169,7 @@ public class GroupThread extends Thread
 
 							//validate token, terminate connection if failed
 							proceed = yourToken.verifySignature(my_gs.signKeys.getPublic(), cEngine);
+        					System.out.println("\nToken Authenticated:"+proceed);
 							if(!proceed) rejectToken(response, output);
 
 							//create the group if the it doesn't already exist
@@ -197,6 +196,7 @@ public class GroupThread extends Thread
 
 							//validate token, terminate connection if failed
 							proceed = yourToken.verifySignature(my_gs.signKeys.getPublic(), cEngine);
+        					System.out.println("\nToken Authenticated:"+proceed);
 							if(!proceed) rejectToken(response, output);
 								
 							//create the group if the it doesn't already exist
@@ -224,6 +224,7 @@ public class GroupThread extends Thread
 
 							//validate token, terminate connection if failed
 							proceed = yourToken.verifySignature(my_gs.signKeys.getPublic(), cEngine);
+        					System.out.println("\nToken Authenticated:"+proceed);
 							if(!proceed) rejectToken(response, output);
 
 							ArrayList<String> users = listMembers(groupName, yourToken);
@@ -257,6 +258,7 @@ public class GroupThread extends Thread
 
 							//validate token, terminate connection if failed
 							proceed = yourToken.verifySignature(my_gs.signKeys.getPublic(), cEngine);
+        					System.out.println("\nToken Authenticated:"+proceed);
 							if(!proceed) rejectToken(response, output);
 
 							//verify the owner
@@ -289,6 +291,7 @@ public class GroupThread extends Thread
 
 							//validate token, terminate connection if failed
 							proceed = yourToken.verifySignature(my_gs.signKeys.getPublic(), cEngine);
+        					System.out.println("\nToken Authenticated:"+proceed);
 							if(!proceed) rejectToken(response, output);
 
 							//verify the owner
@@ -300,7 +303,6 @@ public class GroupThread extends Thread
 									response = new Envelope("OK"); //Success
 								}
 							}
-					
 						}
 					}
 					writeObject(output, response);
@@ -316,6 +318,7 @@ public class GroupThread extends Thread
 
 						//validate token, terminate connection if failed
 						proceed = theirToken.verifySignature(my_gs.signKeys.getPublic(), cEngine);
+        				System.out.println("\nToken Authenticated:"+proceed);
 						if(!proceed) rejectToken(response, output);
 
 						if(isAdmin(theirToken))//test if they are an admin
@@ -357,8 +360,7 @@ public class GroupThread extends Thread
 			localOutput.writeObject(obj);//write to the bytearrayoutputstream
 			byte[] data = toBytes.toByteArray();//turn our object into byte[]
 			
-			byte[] eData = cEngine.AESEncrypt(data, aesKey);//encrypt the data
-			output.writeObject(eData);//write the data to the client
+			output.writeObject(data);//write the data to the client
 			toBytes.close();
 			localOutput.close();
 		}
