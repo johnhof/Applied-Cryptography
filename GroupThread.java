@@ -13,7 +13,7 @@ public class GroupThread extends Thread
 {
 	private final Socket socket;
 	private GroupServer my_gs;
-	private CryptoEngine cEngine = my_gs.cEngine;
+	private CryptoEngine cEngine;
 	private AESKeySet aesKey = null;
 	
 	//These get spun off from GroupServer
@@ -21,6 +21,7 @@ public class GroupThread extends Thread
 	{
 		socket = _socket;
 		my_gs = _gs;
+		cEngine = my_gs.cEngine;
 	}
 	
 	public void run()
