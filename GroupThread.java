@@ -27,7 +27,7 @@ public class GroupThread extends Thread
 	public void run()
 	{
 		boolean proceed = true;
-
+		
 		try
 		{
 			//Announces connection and opens object streams
@@ -37,11 +37,7 @@ public class GroupThread extends Thread
 //--SET UP AES KEY-------------------------------------------------------------------------------------------------------------
 			boolean keyNeedsSet = true;
 			
-			do
-			{
-				if(setKey(input, output))
-					keyNeedsSet = false;
-			}while(keyNeedsSet);
+			setKey(input, output);
 			assert aesKey != null;
 			
 			//handle messages from the input stream(ie. socket)
@@ -357,13 +353,15 @@ public class GroupThread extends Thread
 			Envelope message;
 			Envelope response;
 			message = (Envelope)input.readObject();
+			System.out.println("Request received: " + message.getMessage());
 			if(message.getMessage().equals("PUBKEYREQ"))
 			{
 				response = new Envelope("PUBKEYANSW");
 				response.addObject(my_gs.signKeys.getPublic());//send as Key not byte[]
-				output.writeObject(message);
+				output.writeObject(response);
 				
 				message = (Envelope)input.readObject();
+				System.out.println("Request received: " + message.getMessage());
 				if(message.getMessage().equals("AESKEY"))
 				{
 					byte[] aesKeyBytes = (byte[]) message.getObjContents().get(0);//This is sent as byte[]
@@ -371,8 +369,8 @@ public class GroupThread extends Thread
 					
 					ByteArrayInputStream fromBytes = new ByteArrayInputStream(aesKeyBytes);
 					ObjectInputStream localInput = new ObjectInputStream(fromBytes);
-					aesKey = (AESKeySet) localInput.readObject();
-					
+					aesKey = new AESKeySet((Key) localInput.readObject(), (javax.crypto.spec.IvParameterSpec)message.getObjContents().get(1));
+					//get(1) contains the IV. localinput turned the byte[] back into a key
 					return true;
 				}
 				else return false;
@@ -381,8 +379,10 @@ public class GroupThread extends Thread
 		}
 		catch(Exception e)
 		{
-			return false;
+			e.printStackTrace();
+			System.exit(-1);
 		}
+		return false;
 	}
 	
 	//Method to create tokens

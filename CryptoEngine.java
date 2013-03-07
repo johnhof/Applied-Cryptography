@@ -195,6 +195,7 @@ class CryptoEngine
 		catch (Exception e) 
 		{
 			System.out.println("WARNING:  CRYPTOENGINE;  RSA cipher failure;  encrypt(1)/decrypt(2)="+mode);
+			e.printStackTrace();
 		}
 		 
 		 return result;
