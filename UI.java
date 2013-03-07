@@ -52,7 +52,7 @@ public class UI
 		System.out.println("What port should we connect to the FileServer on?");
 		int fPort = Integer.parseInt(keyboard.nextLine());
 		
-		fUser.connect(fServer, fPort, username); 
+		fUser.connect(fServer, fPort, username, token); 
 		
 		boolean connected = true;
 		//UI is connecting to localhost. May change with cmd line options later
@@ -69,7 +69,17 @@ public class UI
 				System.out.print("3-Download File\n4-Delete File\n");
 				System.out.print("Please enter your selection's");
 				System.out.print(" numeric value.\n");
-				int inputI = Integer.parseInt(in.nextLine());
+
+				int inputI = 0;
+
+				try
+				{
+					inputI = Integer.parseInt(in.nextLine());
+				}
+				catch(Exception e)
+				{
+					continue;
+				}
 
 
 				String srcFile = "";

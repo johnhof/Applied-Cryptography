@@ -74,7 +74,7 @@ public class GroupThread extends Thread
 
 						//validate token, terminate connection if failed
 						proceed = yourToken.verifySignature(my_gs.signKeys.getPublic(), cEngine);
-        				System.out.println("\nToken Authenticated:"+proceed);
+        				System.out.println("Token Authenticated:"+proceed+"\n");
 						if(!proceed) rejectToken(response, output);
 						
 						//Respond to the client. On error, the client will receive a null token
@@ -104,7 +104,7 @@ public class GroupThread extends Thread
 								
 								//validate token, terminate connection if failed
 								proceed = yourToken.verifySignature(my_gs.signKeys.getPublic(), cEngine);
-        						System.out.println("\nToken Authenticated:"+proceed);
+        						System.out.println("Token Authenticated:"+proceed+"\n");
 								if(!proceed) rejectToken(response, output);
 
 								//create the user if the username/token allow it
@@ -137,7 +137,7 @@ public class GroupThread extends Thread
 
 								//validate token, terminate connection if failed
 								proceed = yourToken.verifySignature(my_gs.signKeys.getPublic(), cEngine);
-        						System.out.println("\nToken Authenticated:"+proceed);
+        						System.out.println("Token Authenticated:"+proceed+"\n");
 								if(!proceed) rejectToken(response, output);
 								
 								if(isAdmin(yourToken))
@@ -170,7 +170,7 @@ public class GroupThread extends Thread
 
 							//validate token, terminate connection if failed
 							proceed = yourToken.verifySignature(my_gs.signKeys.getPublic(), cEngine);
-        					System.out.println("\nToken Authenticated:"+proceed);
+        					System.out.println("Token Authenticated:"+proceed+"\n");
 							if(!proceed) rejectToken(response, output);
 
 							//create the group if the it doesn't already exist
@@ -197,7 +197,7 @@ public class GroupThread extends Thread
 
 							//validate token, terminate connection if failed
 							proceed = yourToken.verifySignature(my_gs.signKeys.getPublic(), cEngine);
-        					System.out.println("\nToken Authenticated:"+proceed);
+        					System.out.println("Token Authenticated:"+proceed+"\n");
 							if(!proceed) rejectToken(response, output);
 								
 							//create the group if the it doesn't already exist
@@ -225,7 +225,7 @@ public class GroupThread extends Thread
 
 							//validate token, terminate connection if failed
 							proceed = yourToken.verifySignature(my_gs.signKeys.getPublic(), cEngine);
-        					System.out.println("\nToken Authenticated:"+proceed);
+        					System.out.println("Token Authenticated:"+proceed+"\n");
 							if(!proceed) rejectToken(response, output);
 
 							ArrayList<String> users = listMembers(groupName, yourToken);
@@ -259,8 +259,12 @@ public class GroupThread extends Thread
 
 							//validate token, terminate connection if failed
 							proceed = yourToken.verifySignature(my_gs.signKeys.getPublic(), cEngine);
-        					System.out.println("\nToken Authenticated:"+proceed);
+        					System.out.println("Token Authenticated:"+proceed+"\n");
 							if(!proceed) rejectToken(response, output);
+
+							System.out.println("\n"+userName);
+							System.out.println("\n"+groupName);
+							System.out.println("\n"+yourToken);
 
 							//verify the owner
 							if(my_gs.groupList.getGroupOwners(groupName).contains(yourToken.getSubject()))
@@ -292,7 +296,7 @@ public class GroupThread extends Thread
 
 							//validate token, terminate connection if failed
 							proceed = yourToken.verifySignature(my_gs.signKeys.getPublic(), cEngine);
-        					System.out.println("\nToken Authenticated:"+proceed);
+        					System.out.println("Token Authenticated:"+proceed+"\n");
 							if(!proceed) rejectToken(response, output);
 
 							//verify the owner
@@ -319,7 +323,7 @@ public class GroupThread extends Thread
 
 						//validate token, terminate connection if failed
 						proceed = theirToken.verifySignature(my_gs.signKeys.getPublic(), cEngine);
-        				System.out.println("\nToken Authenticated:"+proceed);
+        				System.out.println("Token Authenticated:"+proceed+"\n");
 						if(!proceed) rejectToken(response, output);
 
 						if(isAdmin(theirToken))//test if they are an admin

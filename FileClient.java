@@ -19,10 +19,13 @@ public class FileClient extends Client implements FileClientInterface
 	private Key serverPublicKey;
 	private KeyList keyList;
 	private AESKeySet aesKey;
+	private UserToken token;
 	
-	public boolean connect(final String server, final int port, String username)
+	public boolean connect(final String server, final int port, String username, UserToken newtoken)
 	{
 		super.connect(server, port);
+
+		token = newtoken;
 		
 		cEngine = new CryptoEngine();
 		String userFile = "UserKeys" + username + ".bin";
@@ -85,13 +88,18 @@ public class FileClient extends Client implements FileClientInterface
 			System.exit(-1);
 		}
 		
-		setAesKey();
+		setAesKey(token);
 		
 		return true;
 	}
+
+	public void setToken(UserToken newtoken)
+	{
+		token = newtoken;
+	}
 	
 	//This function also authenticats the fileserver
-	public void setAesKey()
+	public void setAesKey(UserToken token)
 	{
 		try{
 			Envelope message, response;
@@ -117,6 +125,7 @@ public class FileClient extends Client implements FileClientInterface
 			System.arraycopy(encryptedKeyB, 0, encryptedKey, encryptedKeyA.length, encryptedKeyB.length);
 		
 			message = new Envelope("AESKEY");
+			message.addObject(token);
 			message.addObject(encryptedKey);
 			message.addObject(aesKey.getIV().getIV());
 		
@@ -124,6 +133,7 @@ public class FileClient extends Client implements FileClientInterface
 			//THE AES KEY IS NOW SET
 			message = new Envelope("CHALLENGE");
 			Integer challenge = new Integer((new SecureRandom()).nextInt());
+			message.addObject(token);
 			message.addObject(challenge);
 			writeObject(message);
 			response = (Envelope)readObject();

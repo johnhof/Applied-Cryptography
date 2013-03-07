@@ -39,7 +39,7 @@ public class FileThread extends Thread
 			System.out.println("*** New connection from " + socket.getInetAddress() + ":" + socket.getPort() + "***");
 			final ObjectInputStream input = new ObjectInputStream(socket.getInputStream());
 			final ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
-			Envelope response;
+			Envelope response = null;
 			
 			Envelope message = (Envelope)input.readObject();
 			if(message.getMessage().equals("PUBKEYREQ"))
@@ -56,10 +56,42 @@ public class FileThread extends Thread
 			
 			//This is wrong, they are still sending this as an envelope
 			message = (Envelope)input.readObject();
+
 			//The Client has encrypted a message for us with our public key.
 			if(message.getMessage().equals("AESKEY"))
 			{
-				byte[] aesKeyBytes = (byte[]) message.getObjContents().get(0);//This is sent as byte[]
+				//check packet integrity and token signature
+				if(message.getObjContents().size() < 2)
+				{
+					response = new Envelope("FAIL -- not enough data. Ask yourself why. ");
+					message = (Envelope)readObject(input);
+					System.exit(-1);
+				}
+				else
+				{
+					if(message.getObjContents().get(0) == null) 
+					{
+						response = new Envelope("FAIL -- Token. Ask yourself why. ");
+						message = (Envelope)readObject(input);
+						System.exit(-1);
+					}
+					else
+					{
+						//retrieve the contents of the envelope
+						UserToken yourToken = (UserToken)message.getObjContents().get(0); //Extract token
+
+						//validate token, terminate connection if failed
+						proceed = yourToken.verifySignature(my_fs.signVerifyKey, cEngine);
+	        			System.out.println("\nToken Authenticated:"+proceed);
+						if(!proceed)
+						{
+							rejectToken(response, output);
+							System.exit(-1);
+						}
+					}
+				}
+
+				byte[] aesKeyBytes = (byte[]) message.getObjContents().get(1);//This is sent as byte[]
 
 				byte[] aesKeyBytesA = new byte[128];
 				byte[] aesKeyBytesB = new byte[128];
@@ -75,14 +107,44 @@ public class FileThread extends Thread
 					
 				ByteArrayInputStream fromBytes = new ByteArrayInputStream(aesKeyBytes);
 				ObjectInputStream localInput = new ObjectInputStream(fromBytes);
-				aesKey = new AESKeySet((Key) localInput.readObject(), new IvParameterSpec((byte[])message.getObjContents().get(1)));
+				aesKey = new AESKeySet((Key) localInput.readObject(), new IvParameterSpec((byte[])message.getObjContents().get(2)));
 				//get(1) contains the IV. localinput turned the byte[] back into a key
 				
 				//THE AES KEY IS NOW SET
 				message = (Envelope)readObject(input);
 				if(message.getMessage().equals("CHALLENGE"));
 				{
-					Integer challenge = (Integer)message.getObjContents().get(0);
+					//check packet integrity and token signature
+					if(message.getObjContents().size() < 2)
+					{
+						response = new Envelope("FAIL -- not enough data. Ask yourself why. ");
+						message = (Envelope)readObject(input);
+						System.exit(-1);
+					}
+					else
+					{
+						if(message.getObjContents().get(0) == null) 
+						{
+							response = new Envelope("FAIL -- Token. Ask yourself why. ");
+							message = (Envelope)readObject(input);
+							System.exit(-1);
+						}
+						else
+						{
+							//retrieve the contents of the envelope
+							UserToken yourToken = (UserToken)message.getObjContents().get(0); //Extract token
+
+							//validate token, terminate connection if failed
+							proceed = yourToken.verifySignature(my_fs.signVerifyKey, cEngine);
+		        			System.out.println("\nToken Authenticated:"+proceed);
+							if(!proceed)
+							{
+								rejectToken(response, output);
+								System.exit(-1);
+							}
+						}
+					}
+					Integer challenge = (Integer)message.getObjContents().get(1);
 					challenge = new Integer((challenge.intValue()+1));
 					response = new Envelope("OK");
 					response.addObject(challenge);
@@ -110,22 +172,44 @@ public class FileThread extends Thread
 				
 				if(e.getMessage().equals("LFILES"))
 				{
-					ArrayList<ShareFile> theFiles = FileServer.fileList.getFiles();
-					if(theFiles.size() > 0)
+
+					if(e.getObjContents().size() < 1)
 					{
-						response = new Envelope("OK");//success (check FileClient line 140 to see why this is the message
-						response.addObject(theFiles);//See FileClient for protocol
-						
-						output.writeObject(response);
+						response = new Envelope("FAIL -- not enough data. Ask yourself why. ");
 					}
-					else	//no files exist
+					else
 					{
-						response = new Envelope("FAIL -- no files exist. Ask yourself why. ");
-						output.writeObject(response);
+						if(e.getObjContents().get(0) == null) 
+						{
+							response = new Envelope("FAIL -- Token. Ask yourself why. ");
+						}
+						else
+						{
+							//retrieve the contents of the envelope
+							UserToken yourToken = (UserToken)e.getObjContents().get(0); //Extract token
+
+							//validate token, terminate connection if failed
+							proceed = yourToken.verifySignature(my_fs.signVerifyKey, cEngine);
+	        				System.out.println("\nToken Authenticated:"+proceed);
+							if(!proceed) rejectToken(response, output);
+
+							ArrayList<ShareFile> theFiles = FileServer.fileList.getFiles();
+							if(theFiles.size() > 0)
+							{
+								response = new Envelope("OK");//success (check FileClient line 140 to see why this is the message
+								response.addObject(theFiles);//See FileClient for protocol
+								
+								output.writeObject(response);
+							}
+							else	//no files exist
+							{
+								response = new Envelope("FAIL -- no files exist. Ask yourself why. ");
+								output.writeObject(response);
+							}
+						}
 					}
-					
-//--TODO: Test/Finish this handler-------------------------------------------------------------------------------------------
 				}
+
 //--UPLOAD FILE--------------------------------------------------------------------------------------------------------
 				
 				if(e.getMessage().equals("UPLOADF"))
@@ -153,6 +237,11 @@ public class FileThread extends Thread
 							String remotePath = (String)e.getObjContents().get(0);
 							String group = (String)e.getObjContents().get(1);
 							UserToken yourToken = (UserToken)e.getObjContents().get(2); //Extract token
+
+							//validate token, terminate connection if failed
+							proceed = yourToken.verifySignature(my_fs.signVerifyKey, cEngine);
+	        				System.out.println("\nToken Authenticated:"+proceed);
+							if(!proceed) rejectToken(response, output);
 
 							if (FileServer.fileList.checkFile(remotePath)) 
 							{
@@ -212,6 +301,11 @@ public class FileThread extends Thread
 					String remotePath = (String)e.getObjContents().get(0);
 					UserToken t = (UserToken)e.getObjContents().get(1);
 					ShareFile sf = FileServer.fileList.getFile("/" + remotePath);
+
+					//validate token, terminate connection if failed
+					proceed = t.verifySignature(my_fs.signVerifyKey, cEngine);
+	        		System.out.println("\nToken Authenticated:"+proceed);
+					if(!proceed) rejectToken(response, output);
 
 					if (sf == null) 
 					{
@@ -311,6 +405,12 @@ public class FileThread extends Thread
 					String remotePath = (String)e.getObjContents().get(0);
 					UserToken t = (UserToken)e.getObjContents().get(1);
 					ShareFile sf = FileServer.fileList.getFile("/"+remotePath);
+					
+					//validate token, terminate connection if failed
+					proceed = t.verifySignature(my_fs.signVerifyKey, cEngine);
+	        		System.out.println("\nToken Authenticated:"+proceed);
+					if(!proceed) rejectToken(response, output);
+
 
 					if (sf == null) 
 					{	
