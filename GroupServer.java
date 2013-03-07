@@ -55,7 +55,8 @@ import java.util.*;
 NOTE: this is probably not the right way to do this, but I'm at a loss for alternatives
 */
 
-public class GroupServer extends Server {
+public class GroupServer extends Server 
+{
 
 	public static final int SERVER_PORT = 8766;
 
@@ -107,7 +108,7 @@ public class GroupServer extends Server {
 		}
 		catch(Exception e)
 		{
-			System.out.println("ERROR:  GROUPSERVER;  could not load resource file");
+			System.out.println("GROUPSERVER ERROR: could not load resource file");
 			System.exit(-1);
 		}
 //----------------------------------------------------------------------------------------------------------------------
