@@ -9,6 +9,10 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.security.*;
+import javax.crypto.*;
+import javax.crypto.spec.IvParameterSpec;
+import java.io.*;
 
 //These threads are spun off by FileServer.java
 public class FileThread extends Thread
@@ -16,6 +20,7 @@ public class FileThread extends Thread
 	private final Socket socket;
 	private FileServer my_fs;
 	private CryptoEngine cEngine;
+	private AESKeySet aesKey;
 
 	public FileThread(FileServer _fs, Socket _socket)
 	{
@@ -47,6 +52,38 @@ public class FileThread extends Thread
 				System.out.println("ERROR: FILETHREAD: FAILED TO SEND PUBLIC KEY");
 				System.exit(-1);
 			}
+			
+			message = (Envelope)readObject(input);
+			//The Client has encrypted a message for us with our public key.
+			if(message.getMessage().equals("AESKEY"))
+			{
+				byte[] aesKeyBytes = (byte[]) message.getObjContents().get(0);//This is sent as byte[]
+
+				byte[] aesKeyBytesA = new byte[128];
+				byte[] aesKeyBytesB = new byte[128];
+					
+				System.arraycopy(aesKeyBytes, 0, aesKeyBytesA, 0, 128);
+				System.arraycopy(aesKeyBytes, 128, aesKeyBytesB, 0, 128);
+				
+				aesKeyBytesA = cEngine.RSADecrypt(aesKeyBytesA, my_fs.authKeys.getPrivate());
+				aesKeyBytesB = cEngine.RSADecrypt(aesKeyBytesB, my_fs.authKeys.getPrivate());
+					
+				System.arraycopy(aesKeyBytesA, 0, aesKeyBytes, 0, 100);
+				System.arraycopy(aesKeyBytesB, 0, aesKeyBytes, 100, 41);
+					
+				ByteArrayInputStream fromBytes = new ByteArrayInputStream(aesKeyBytes);
+				ObjectInputStream localInput = new ObjectInputStream(fromBytes);
+				aesKey = new AESKeySet((Key) localInput.readObject(), new IvParameterSpec((byte[])message.getObjContents().get(1)));
+				//get(1) contains the IV. localinput turned the byte[] back into a key
+			}
+			else
+			{
+				System.out.println("ERROR:FILETHREAD: COULD NOT SETUP AESKEY");
+				System.exit(-1);
+			}
+			
+			
+			
 			//handle messages from the input stream(ie. socket)
 			do
 			{
@@ -320,4 +357,44 @@ public class FileThread extends Thread
 		}
 	}
 
+	private Object readObject(ObjectInputStream input)
+	{
+		Object obj = null;
+		try
+		{
+			byte[] eData = (byte[])input.readObject();
+			byte[] data = cEngine.AESDecrypt(eData, aesKey);
+			ByteArrayInputStream fromBytes = new ByteArrayInputStream(data);
+			ObjectInputStream localInput = new ObjectInputStream(fromBytes);
+			obj = localInput.readObject();
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+		
+		return obj;
+	}
+	
+	private boolean writeObject(ObjectOutputStream output, Object obj)
+	{
+		try
+		{
+			ByteArrayOutputStream toBytes = new ByteArrayOutputStream();//create ByteArrayOutputStream
+			ObjectOutputStream localOutput = new ObjectOutputStream(toBytes);//Make an object outputstream to that bytestream
+			localOutput.writeObject(obj);//write to the bytearrayoutputstream
+			byte[] data = toBytes.toByteArray();//turn our object into byte[]
+			
+			byte[] eData = cEngine.AESEncrypt(data, aesKey);//encrypt the data
+			output.writeObject(eData);//write the data to the client
+			toBytes.close();
+			localOutput.close();
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+			return false;
+		}
+		return true;
+	}
 }

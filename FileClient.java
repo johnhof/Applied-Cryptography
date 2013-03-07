@@ -8,6 +8,7 @@ import java.util.List;
 import java.security.*;
 import javax.crypto.*;
 import java.io.*;
+import javax.crypto.spec.IvParameterSpec;
 
 public class FileClient extends Client implements FileClientInterface 
 {
@@ -20,6 +21,7 @@ public class FileClient extends Client implements FileClientInterface
 	{
 		super.connect(server, port);
 		
+		cEngine = new CryptoEngine();
 		String userFile = "UserKeys" + username + ".bin";
 		ObjectInputStream keyStream;
 		
@@ -80,12 +82,48 @@ public class FileClient extends Client implements FileClientInterface
 		}
 		
 		setAesKey();
+		System.out.println("SUCCESS");
 		return true;
 	}
 	
+	//This function also authenticats the fileserver
 	public void setAesKey()
 	{
+		try{
+			Envelope message, response;
+			AESKeySet aesKey = cEngine.genAESKeySet();
+			ByteArrayOutputStream toBytes = new ByteArrayOutputStream();//create ByteArrayOutputStream
+			ObjectOutputStream localOutput = new ObjectOutputStream(toBytes);//Make an object outputstream to that bytestream
+			
+			localOutput.writeObject(aesKey.getKey());//write to the bytearrayoutputstream
+		
+			byte[] aesKeyBytes = toBytes.toByteArray();
+		
+			byte[] aesKeyBytesA = new byte[100];
+			byte[] aesKeyBytesB = new byte[41];
+		
+			System.arraycopy(aesKeyBytes, 0, aesKeyBytesA, 0, aesKeyBytesA.length);
+			System.arraycopy(aesKeyBytes, 100, aesKeyBytesB, 0, aesKeyBytes.length-100);
+		
+			byte[] encryptedKeyA = cEngine.RSAEncrypt(aesKeyBytesA, serverPublicKey);
+			byte[] encryptedKeyB = cEngine.RSAEncrypt(aesKeyBytesB, serverPublicKey);
 	
+			byte[] encryptedKey = new byte[encryptedKeyA.length + encryptedKeyB.length];
+			System.arraycopy(encryptedKeyA, 0, encryptedKey, 0, encryptedKeyA.length);
+			System.arraycopy(encryptedKeyB, 0, encryptedKey, encryptedKeyA.length, encryptedKeyB.length);
+		
+			message = new Envelope("AESKEY");
+			message.addObject(encryptedKey);
+			message.addObject(aesKey.getIV().getIV());
+		
+			output.writeObject(message);
+		}
+		catch(Exception e)
+		{
+			System.out.println("ERROR:FILECLIENT: COULD NOT SEND AESKEY");
+			e.printStackTrace();
+			System.exit(-1);
+		}
 	}
 	
 	public Key setPublicKey()
