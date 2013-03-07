@@ -53,7 +53,8 @@ public class FileThread extends Thread
 				System.exit(-1);
 			}
 			
-			message = (Envelope)readObject(input);
+			//This is wrong, they are still sending this as an envelope
+			message = (Envelope)input.readObject();
 			//The Client has encrypted a message for us with our public key.
 			if(message.getMessage().equals("AESKEY"))
 			{
