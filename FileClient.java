@@ -34,7 +34,8 @@ public class FileClient extends Client implements FileClientInterface
 			{
 				//we have connected before
 				serverPublicKey = keyList.getKey(server);
-				if(serverPublicKey.getEncoded() == setPublicKey().getEncoded())
+				Key allegedKey = setPublicKey();
+				if(serverPublicKey.toString().equals(allegedKey.toString()))
 				{
 					System.out.println("FileServer verified.");
 				}
