@@ -2,8 +2,8 @@
 import java.util.*;
 
 
-	public class FileList implements java.io.Serializable 
-	{
+public class FileList implements java.io.Serializable 
+{
 		
 	/*Serializable so it can be stored in a file for persistence */
 	private static final long serialVersionUID = -8911161283900260136L;

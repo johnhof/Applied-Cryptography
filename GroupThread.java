@@ -51,9 +51,16 @@ public class GroupThread extends Thread
 				if(message.getMessage().equals("GET"))//Client wants a token
 				{
 					String username = (String)message.getObjContents().get(0); //Get the username
-					if(username == null || !my_gs.userList.checkUser(username))
+					if(username == null)
 					{
-						response = new Envelope("FAIL");
+						response = new Envelope("FAIL: no username provided.");
+						response.addObject(null);
+						writeObject(output, response);
+						//output.writeObject(response);
+					}
+					else if(!my_gs.userList.checkUser(username))
+					{
+						response = new Envelope("FAIL: username not found.");
 						response.addObject(null);
 						writeObject(output, response);
 						//output.writeObject(response);
@@ -77,11 +84,11 @@ public class GroupThread extends Thread
 				{
 					if(message.getObjContents().size() < 2)
 					{
-						response = new Envelope("FAIL");
+						response = new Envelope("FAIL: user unable to be created -- message object size less than 2. ");
 					}
 					else
 					{
-						response = new Envelope("FAIL");
+						response = new Envelope("FAIL: user unable to be created. ");
 						
 						if(message.getObjContents().get(0) != null)
 						{
@@ -110,11 +117,11 @@ public class GroupThread extends Thread
 				{					
 					if(message.getObjContents().size() < 2)
 					{
-						response = new Envelope("FAIL");
+						response = new Envelope("FAIL: user unable to be deleted -- message object size less than 2. ");
 					}
 					else
 					{
-						response = new Envelope("FAIL");
+						response = new Envelope("FAIL: user unable to be deleted. ");
 						
 						if(message.getObjContents().get(0) != null)
 						{
@@ -127,12 +134,16 @@ public class GroupThread extends Thread
 								proceed = yourToken.verifySignature(my_gs.signKeys.getPublic(), cEngine);
 								if(!proceed) rejectToken(response, output);
 								
-								if(isAdmin(yourToken) && my_gs.userList.allUsers().contains(username))
+								if(isAdmin(yourToken))
 								{
-									my_gs.deleteUser(username);
-									response = new Envelope("OK");
+									if (my_gs.userList.allUsers().contains(username))
+									{
+										my_gs.deleteUser(username);
+										response = new Envelope("OK");
+									}
+									else response = new Envelope("FAIL: user unable to be deleted -- username not found. ");
 								}
-								else response = new Envelope("You could not delete the user");
+								else response = new Envelope("FAIL: user unable to be deleted -- you do not have sufficient privileges. ");
 							}
 						}
 					}
@@ -143,7 +154,7 @@ public class GroupThread extends Thread
 				else if(message.getMessage().equals("CGROUP")) //Client wants to create a group
 				{
 					//if the message is too short, return failure
-					response = new Envelope("FAIL");
+					response = new Envelope("FAIL: group unable to be created. ");
 					if(message.getObjContents().size() > 1)
 					{
 						//get the elements of the message
@@ -170,7 +181,7 @@ public class GroupThread extends Thread
 				else if(message.getMessage().equals("DGROUP")) //Client wants to delete a group
 				{
 					//if the message is too short, return failure
-					response = new Envelope("FAIL");
+					response = new Envelope("FAIL: group unable to be deleted. ");
 					if(message.getObjContents().size() > 1)
 					{
 						//get the elements of the message
@@ -188,7 +199,7 @@ public class GroupThread extends Thread
 							{
 								response = new Envelope("OK"); //Success
 							}
-							else response = new Envelope("You could not delete the group.");
+							else response = new Envelope("FAIL: group unable to be deleted. ");
 						}
 					}
 					writeObject(output, response);
@@ -198,7 +209,7 @@ public class GroupThread extends Thread
 				else if(message.getMessage().equals("LMEMBERS")) //Client wants a list of members in a group
 				{
 					//if the message is too short, return failure
-					response = new Envelope("FAIL");
+					response = new Envelope("FAIL: user list unable to be generated. ");
 					if(message.getObjContents().size() > 1)
 					{
 						//get the elements of the message
@@ -219,7 +230,7 @@ public class GroupThread extends Thread
 							}
 							else//no files exist
 							{
-								response = new Envelope("FAIL-NOUSERS");
+								response = new Envelope("FAIL -- no users detected. ");
 							}
 					
 						}
@@ -231,7 +242,7 @@ public class GroupThread extends Thread
 				else if(message.getMessage().equals("AUSERTOGROUP")) //Client wants to add user to a group
 				{
 					//if the message is too short, return failure
-					response = new Envelope("FAIL");
+					response = new Envelope("FAIL -- user unable to be added to group. ");
 					if(message.getObjContents().size() > 2)
 					{
 						//get the elements of the message
@@ -264,7 +275,7 @@ public class GroupThread extends Thread
 				else if(message.getMessage().equals("RUSERFROMGROUP")) //Client wants to remove user from a group
 				{
 					//if the message is too short, return failure
-					response = new Envelope("FAIL");
+					response = new Envelope("FAIL -- unable to remove user from group. ");
 					if(message.getObjContents().size() > 1)
 					{
 						//get the elements of the message
@@ -297,7 +308,7 @@ public class GroupThread extends Thread
 //--SEE ALL USERS----------------------------------------------------------------------------------------------------
 				else if(message.getMessage().equals("ALLUSERS")) //Admin wants to see all of the users in existence
 				{
-					response = new Envelope("FAIL");
+					response = new Envelope("FAIL -- complete user list unable to be generated. ");
 					if(message.getObjContents() != null)
 					{
 						UserToken theirToken = (UserToken)message.getObjContents().get(0);
@@ -324,11 +335,12 @@ public class GroupThread extends Thread
 				}
 				else
 				{
-					response = new Envelope("FAIL"); //Server does not understand client request
+					response = new Envelope("FAIL -- server does not understand client request. "); //Server does not understand client request
 					writeObject(output, response);
 					//output.writeObject(response);
 				}
-			}while(proceed);	
+			}
+			while(proceed);	
 		}
 		catch(Exception e)
 		{
@@ -418,9 +430,9 @@ public class GroupThread extends Thread
 					//get(1) contains the IV. localinput turned the byte[] back into a key
 					return true;
 				}
-				else return false;
+				else {return false;}
 			}
-			else return false;
+			else {return false;}
 		}
 		catch(Exception e)
 		{
@@ -457,9 +469,13 @@ public class GroupThread extends Thread
 		String user = token.getSubject();
 		ArrayList<String> temp = my_gs.userList.getUserGroups(user);
 		if(temp.contains("ADMIN"))
+		{
 			return true;
+		}
 		else
+		{
 			return false;
+		}
 	}
 	
 	//Method to create a user
@@ -537,8 +553,7 @@ public class GroupThread extends Thread
 	private boolean addToGroup(String userName, String groupName, UserToken yourToken)
 	{
 		//verify that the group exists, that the user is an owner, and that the user isnt already a member
-		if(my_gs.groupList.checkGroup(groupName) && my_gs.groupList.getGroupOwners(groupName).contains(yourToken.getSubject()) 
-			&& !my_gs.groupList.getGroupMembers(groupName).contains(userName))
+		if(my_gs.groupList.checkGroup(groupName) && my_gs.groupList.getGroupOwners(groupName).contains(yourToken.getSubject()) && !my_gs.groupList.getGroupMembers(groupName).contains(userName))
 		{
 			my_gs.addUserToGroup(groupName, userName);
 			return true;
