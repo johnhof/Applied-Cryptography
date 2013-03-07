@@ -12,9 +12,9 @@ import java.util.*;
 		private Hashtable<String, User> list = new Hashtable<String, User>();
 		private static final long serialVersionUID = 7600343803563417992L;
 		
-		public synchronized void addUser(String username)
+		public synchronized void addUser(String username, String pwd)
 		{
-			User newUser = new User();
+			User newUser = new User(pwd);
 			list.put(username, newUser);
 		}
 		
@@ -34,6 +34,11 @@ import java.util.*;
 			{
 				return false;
 			}
+		}
+		
+		public synchronized String getUserPassword(String username)
+		{
+			return list.get(username).password();
 		}
 		
 		public synchronized ArrayList<String> allUsers()
@@ -87,11 +92,18 @@ import java.util.*;
 		private static final long serialVersionUID = -6699986336399821598L;
 		private ArrayList<String> groups;
 		private ArrayList<String> ownership;
+		private String password;
 		
-		public User()
+		public User(String pwd)
 		{
 			groups = new ArrayList<String>();
 			ownership = new ArrayList<String>();
+			password = pwd;
+		}
+		
+		public String password()
+		{
+			return password;
 		}
 		
 		public ArrayList<String> getGroups()

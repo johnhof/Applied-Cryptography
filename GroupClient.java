@@ -120,7 +120,7 @@ public class GroupClient extends Client implements GroupClientInterface {
 		return false;
 	}
 	
-	public UserToken getToken(String username)
+	public UserToken getToken(String username, String pwd)
 	{
 		try
 		{
@@ -130,7 +130,8 @@ public class GroupClient extends Client implements GroupClientInterface {
 			//Tell the server to return a token.
 			message = new Envelope("GET");
 			message.addObject(username); //Add user name string
-			//output.writeObject(message);
+			message.addObject(pwd);
+			
 			writeObject(output, message);
 			
 			//Get the response from the server
@@ -164,7 +165,7 @@ public class GroupClient extends Client implements GroupClientInterface {
 		
 	 }
 	 
-	 public boolean createUser(String username, UserToken token)
+	 public boolean createUser(String username, String pwd, UserToken token)
 	 {
 		try
 		{
@@ -174,6 +175,7 @@ public class GroupClient extends Client implements GroupClientInterface {
 			message = new Envelope("CUSER");
 			message.addObject(username); //Add user name string
 			message.addObject(token); //Add the requester's token
+			message.addObject(pwd);//add the desired password
 			//output.writeObject(message);
 			writeObject(output, message);
 			

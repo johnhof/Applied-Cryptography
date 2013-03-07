@@ -51,6 +51,7 @@ public class GroupThread extends Thread
 				if(message.getMessage().equals("GET"))//Client wants a token
 				{
 					String username = (String)message.getObjContents().get(0); //Get the username
+					String pwd = (String)message.getObjContents().get(1);//get password
 					if(username == null)
 					{
 						response = new Envelope("FAIL: no username provided.");
@@ -59,6 +60,16 @@ public class GroupThread extends Thread
 					else if(!my_gs.userList.checkUser(username))
 					{
 						response = new Envelope("FAIL: username not found.");
+						writeObject(output, response);
+					}
+					else if(pwd == null || pwd.length() == 0)
+					{
+						response = new Envelope("FAIL: no password.");
+						writeObject(output, response);
+					}
+					else if(!my_gs.userList.getUserPassword(username).equals(pwd))
+					{
+						response = new Envelope("Wrong password.");
 						writeObject(output, response);
 					}
 					else
@@ -88,17 +99,18 @@ public class GroupThread extends Thread
 						
 						if(message.getObjContents().get(0) != null)
 						{
-							if(message.getObjContents().get(1) != null)
+							if(message.getObjContents().get(1) != null && message.getObjContents().get(2) != null)
 							{
 								String username = (String)message.getObjContents().get(0); //Extract the username
 								UserToken yourToken = (UserToken)message.getObjContents().get(1); //Extract the token
-
+								String pwd = (String)message.getObjContents().get(2);
+								
 								//validate token, terminate connection if failed
 								proceed = yourToken.verifySignature(my_gs.signKeys.getPublic(), cEngine);
 								if(!proceed) rejectToken(response, output);
 
 								//create the user if the username/token allow it
-								if(createUser(username, yourToken))
+								if(createUser(username, pwd, yourToken))
 								{
 									response = new Envelope("OK"); //Success
 								}
@@ -106,7 +118,6 @@ public class GroupThread extends Thread
 						}
 					}
 					writeObject(output, response);
-					//output.writeObject(response);
 				}
 //--DELETE USER---------------------------------------------------------------------------------------------------------
 				else if(message.getMessage().equals("DUSER")) //Client wants to delete a user
@@ -144,7 +155,6 @@ public class GroupThread extends Thread
 						}
 					}
 					writeObject(output, response);
-					//output.writeObject(response);
 				}
 //--CREATE GROUP---------------------------------------------------------------------------------------------------------
 				else if(message.getMessage().equals("CGROUP")) //Client wants to create a group
@@ -171,7 +181,6 @@ public class GroupThread extends Thread
 						}
 					}
 					writeObject(output, response);
-					output.writeObject(response);
 				}
 //--DELETE GROUP--------------------------------------------------------------------------------------------------------
 				else if(message.getMessage().equals("DGROUP")) //Client wants to delete a group
@@ -199,7 +208,6 @@ public class GroupThread extends Thread
 						}
 					}
 					writeObject(output, response);
-					//output.writeObject(response);
 				}
 //--LIST MEMBERS--------------------------------------------------------------------------------------------------------
 				else if(message.getMessage().equals("LMEMBERS")) //Client wants a list of members in a group
@@ -232,7 +240,6 @@ public class GroupThread extends Thread
 						}
 					}
 					writeObject(output, response);
-					//output.writeObject(response);
 				}
 //--ADD TO GROUP--------------------------------------------------------------------------------------------------------
 				else if(message.getMessage().equals("AUSERTOGROUP")) //Client wants to add user to a group
@@ -265,7 +272,6 @@ public class GroupThread extends Thread
 						}
 					}		
 					writeObject(output, response);
-					//output.writeObject(response);
 				}
 //--REMOVE FROM GROUP----------------------------------------------------------------------------------------------------
 				else if(message.getMessage().equals("RUSERFROMGROUP")) //Client wants to remove user from a group
@@ -298,7 +304,6 @@ public class GroupThread extends Thread
 						}
 					}
 					writeObject(output, response);
-					//output.writeObject(response);
 				}
 				
 //--SEE ALL USERS----------------------------------------------------------------------------------------------------
@@ -321,7 +326,6 @@ public class GroupThread extends Thread
 						}
 					}
 					writeObject(output, response);
-					//output.writeObject(response);
 				}
 //--DISCONNECT----------------------------------------------------------------------------------------------------------
 				else if(message.getMessage().equals("DISCONNECT")) //Client wants to disconnect
@@ -333,7 +337,6 @@ public class GroupThread extends Thread
 				{
 					response = new Envelope("FAIL -- server does not understand client request. "); //Server does not understand client request
 					writeObject(output, response);
-					//output.writeObject(response);
 				}
 			}
 			while(proceed);	
@@ -480,7 +483,7 @@ public class GroupThread extends Thread
 	}
 	
 	//Method to create a user
-	private boolean createUser(String username, UserToken yourToken)
+	private boolean createUser(String username, String pwd, UserToken yourToken)
 	{
 		String requester = yourToken.getSubject();
 		
@@ -499,7 +502,7 @@ public class GroupThread extends Thread
 				}
 				else
 				{
-					my_gs.userList.addUser(username);
+					my_gs.userList.addUser(username, pwd);
 					return true;
 				}
 			}

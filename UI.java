@@ -44,11 +44,10 @@ public class UI
 
 			username = in.nextLine();
 
-			//for fileserver testing purposes:
-			//List<String> groups = new List<String>();
-			//UserToken token = null;
+			System.out.println("Please enter your password.");
+			String pwd = in.nextLine();
 
-			token = gUser.getToken(username);
+			token = gUser.getToken(username, pwd);
 			if (token == null)
 			{
 				proceed = true;
@@ -159,7 +158,9 @@ public class UI
 				{
 					System.out.println("What user would you like to create?");
 					input = in.nextLine();
-					works = gUser.createUser(input, token);
+					System.out.println("What password should they have?");
+					String pwd = in.nextLine();
+					works = gUser.createUser(input, pwd, token);
 					if(!works) System.out.println("Creation failed");
 					else System.out.println("Success.");
 				}
