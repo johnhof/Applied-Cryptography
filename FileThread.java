@@ -126,7 +126,7 @@ public class FileThread extends Thread
 									response = new Envelope("OK"); //Success
 								}
 								else 
-									7{
+									{
 									System.out.printf("Error reading file %s from client\n", remotePath);
 									response = new Envelope("ERROR -- failed attempt at reading file from client. "); //Success
 								}

@@ -185,6 +185,8 @@ public class GroupServer extends Server
 		aSave.setDaemon(true);
 		aSave.start();
 		
+		System.out.println("\nUPDATE: GroupServer; setup succesful");
+		
 		//This block listens for connections and creates threads on new connections
 		try
 		{
@@ -208,9 +210,6 @@ public class GroupServer extends Server
 			System.err.println("Error: " + e.getMessage());
 			e.printStackTrace(System.err);
 		}
-
-		System.out.println("\nUPDATE: GroupServer; setup succesful");
-
 	}
 
 
