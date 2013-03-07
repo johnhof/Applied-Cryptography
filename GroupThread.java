@@ -392,6 +392,11 @@ public class GroupThread extends Thread
 	{
 		try
 		{
+			KeyPair rsaSessionKeys = cEngine.genRSAKeyPair();
+			Key rsaSessionPublic = rsaSessionKeys.getPublic();
+			Key rsaSessionPrivate = rsaSessionKeys.getPrivate();
+			//These keys exist just to encrypt/decrypt this specific session key for this user
+			
 			Envelope message;
 			Envelope response;
 			message = (Envelope)input.readObject();
@@ -399,7 +404,7 @@ public class GroupThread extends Thread
 			if(message.getMessage().equals("PUBKEYREQ"))
 			{
 				response = new Envelope("PUBKEYANSW");
-				response.addObject(my_gs.signKeys.getPublic());//send as Key not byte[]
+				response.addObject(rsaSessionPublic);//send as Key not byte[]
 				output.writeObject(response);
 				
 				message = (Envelope)input.readObject();
@@ -414,8 +419,8 @@ public class GroupThread extends Thread
 					System.arraycopy(aesKeyBytes, 0, aesKeyBytesA, 0, 128);
 					System.arraycopy(aesKeyBytes, 128, aesKeyBytesB, 0, 128);
 				
-					aesKeyBytesA = cEngine.RSADecrypt(aesKeyBytesA, my_gs.signKeys.getPrivate());
-					aesKeyBytesB = cEngine.RSADecrypt(aesKeyBytesB, my_gs.signKeys.getPrivate());
+					aesKeyBytesA = cEngine.RSADecrypt(aesKeyBytesA, rsaSessionPrivate);
+					aesKeyBytesB = cEngine.RSADecrypt(aesKeyBytesB, rsaSessionPrivate);
 					
 					System.arraycopy(aesKeyBytesA, 0, aesKeyBytes, 0, 100);
 					System.arraycopy(aesKeyBytesB, 0, aesKeyBytes, 100, 41);
