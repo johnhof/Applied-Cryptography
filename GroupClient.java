@@ -77,7 +77,7 @@ public class GroupClient extends Client implements GroupClientInterface {
 			output.writeObject(message);
 			
 			response = (Envelope)input.readObject();
-			System.out.println(response.getMessage());
+			
 			if(response.getMessage().equals("PUBKEYANSW"))
 			{
 				Key rsaPublic = (Key)response.getObjContents().get(0);
@@ -89,7 +89,19 @@ public class GroupClient extends Client implements GroupClientInterface {
 				localOutput.writeObject(aesKey.getKey());//write to the bytearrayoutputstream
 				
 				byte[] aesKeyBytes = toBytes.toByteArray();
-				byte[] encryptedKey = cEngine.RSAEncrypt(aesKeyBytes, rsaPublic);
+				
+				byte[] aesKeyBytesA = new byte[100];
+				byte[] aesKeyBytesB = new byte[41];
+				
+				System.arraycopy(aesKeyBytes, 0, aesKeyBytesA, 0, aesKeyBytesA.length);
+				System.arraycopy(aesKeyBytes, 100, aesKeyBytesB, 0, aesKeyBytes.length-100);
+				
+				byte[] encryptedKeyA = cEngine.RSAEncrypt(aesKeyBytesA, rsaPublic);
+				byte[] encryptedKeyB = cEngine.RSAEncrypt(aesKeyBytesB, rsaPublic);
+				
+				byte[] encryptedKey = new byte[encryptedKeyA.length + encryptedKeyB.length];
+				System.arraycopy(encryptedKeyA, 0, encryptedKey, 0, encryptedKeyA.length);
+				System.arraycopy(encryptedKeyB, 0, encryptedKey, encryptedKeyA.length, encryptedKeyB.length);
 				
 				message = new Envelope("AESKEY");
 				message.addObject(encryptedKey);

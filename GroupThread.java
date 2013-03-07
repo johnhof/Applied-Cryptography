@@ -365,7 +365,17 @@ public class GroupThread extends Thread
 				if(message.getMessage().equals("AESKEY"))
 				{
 					byte[] aesKeyBytes = (byte[]) message.getObjContents().get(0);//This is sent as byte[]
-					aesKeyBytes = cEngine.RSADecrypt(aesKeyBytes, my_gs.signKeys.getPrivate());
+					byte[] aesKeyBytesA = new byte[128];
+					byte[] aesKeyBytesB = new byte[128];
+					
+					System.arraycopy(aesKeyBytes, 0, aesKeyBytesA, 0, 128);
+					System.arraycopy(aesKeyBytes, 128, aesKeyBytesB, 0, 128);
+				
+					aesKeyBytesA = cEngine.RSADecrypt(aesKeyBytesA, my_gs.signKeys.getPrivate());
+					aesKeyBytesB = cEngine.RSADecrypt(aesKeyBytesB, my_gs.signKeys.getPrivate());
+					
+					System.arraycopy(aesKeyBytesA, 0, aesKeyBytes, 0, 100);
+					System.arraycopy(aesKeyBytesB, 0, aesKeyBytes, 100, 41);
 					
 					ByteArrayInputStream fromBytes = new ByteArrayInputStream(aesKeyBytes);
 					ObjectInputStream localInput = new ObjectInputStream(fromBytes);
