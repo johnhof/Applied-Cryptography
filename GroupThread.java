@@ -7,7 +7,7 @@ import java.io.*;
 import java.util.*;
 import java.security.*;
 import javax.crypto.*;
-
+import javax.crypto.spec.IvParameterSpec;
 
 public class GroupThread extends Thread 
 {
@@ -369,7 +369,7 @@ public class GroupThread extends Thread
 					
 					ByteArrayInputStream fromBytes = new ByteArrayInputStream(aesKeyBytes);
 					ObjectInputStream localInput = new ObjectInputStream(fromBytes);
-					aesKey = new AESKeySet((Key) localInput.readObject(), (javax.crypto.spec.IvParameterSpec)message.getObjContents().get(1));
+					aesKey = new AESKeySet((Key) localInput.readObject(), new IvParameterSpec((byte[])message.getObjContents().get(1)));
 					//get(1) contains the IV. localinput turned the byte[] back into a key
 					return true;
 				}

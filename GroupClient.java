@@ -93,7 +93,7 @@ public class GroupClient extends Client implements GroupClientInterface {
 				
 				message = new Envelope("AESKEY");
 				message.addObject(encryptedKey);
-				message.addObject(aesKey.getIV());
+				message.addObject(aesKey.getIV().getIV());
 				
 				output.writeObject(message);
 				return true;
