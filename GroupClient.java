@@ -122,7 +122,26 @@ public class GroupClient extends Client implements GroupClientInterface {
 				message.addObject(aesKey.getIV().getIV());
 				
 				output.writeObject(message);
-				return true;
+				
+				message = new Envelope("CHALLENGE");
+				Integer challenge = new Integer((new SecureRandom()).nextInt());
+				message.addObject(challenge);
+				writeObject(output, message);
+				
+				response = (Envelope)readObject(input);
+				if(response.getMessage().equals("OK"))
+				{
+					if((challenge.intValue()+1) != ((Integer)response.getObjContents().get(0)).intValue())
+					{
+						System.out.println("Challenge failed.");
+						System.exit(-1);
+					}
+					else
+					{
+						System.out.println("Challenge passed.");
+						return true;
+					}
+				}
 			}
 			else return false;
 		}

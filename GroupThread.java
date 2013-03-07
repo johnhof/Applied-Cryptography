@@ -428,7 +428,16 @@ public class GroupThread extends Thread
 					ObjectInputStream localInput = new ObjectInputStream(fromBytes);
 					aesKey = new AESKeySet((Key) localInput.readObject(), new IvParameterSpec((byte[])message.getObjContents().get(1)));
 					//get(1) contains the IV. localinput turned the byte[] back into a key
-					return true;
+					message=(Envelope)readObject(input);
+					if(message.getMessage().equals("CHALLENGE"))
+					{
+						Integer challenge = (Integer)message.getObjContents().get(0);
+						challenge = new Integer((challenge.intValue()+1));
+						response = new Envelope("OK");
+						response.addObject(challenge);
+						writeObject(output, response);
+						return true;
+					}
 				}
 				else {return false;}
 			}
