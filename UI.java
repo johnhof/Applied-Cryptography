@@ -36,9 +36,6 @@ public class UI
 			System.out.println("Please enter your password.");
 			String pwd = in.nextLine();
 
-			System.out.println("\nname: "+username);
-			System.out.println("\npwd: "+pwd);
-
 			token = gUser.getToken(username, pwd);
 			if (token == null)
 			{

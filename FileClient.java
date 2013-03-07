@@ -10,6 +10,8 @@ import javax.crypto.*;
 import java.io.*;
 import javax.crypto.spec.IvParameterSpec;
 import java.util.Random;
+import java.security.SecureRandom;
+import java.util.*;
 
 public class FileClient extends Client implements FileClientInterface 
 {
@@ -121,7 +123,7 @@ public class FileClient extends Client implements FileClientInterface
 			output.writeObject(message);
 			//THE AES KEY IS NOW SET
 			message = new Envelope("CHALLENGE");
-			Integer challenge = new Integer((new Random()).nextInt());
+			Integer challenge = new Integer((new SecureRandom()).nextInt());
 			message.addObject(challenge);
 			writeObject(message);
 			response = (Envelope)readObject();
@@ -135,6 +137,7 @@ public class FileClient extends Client implements FileClientInterface
 				else
 				{
 					System.out.println("Challenge succeeded");
+					//if(response.getObjContents().get(1))
 				}
 			}
 		}
