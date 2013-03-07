@@ -25,6 +25,25 @@ public class GroupClient extends Client implements GroupClientInterface {
 		return true;
 	}
 	
+	public void disconnect()	 
+	{
+		if (isConnected()) 
+		{
+			try
+			{
+				Envelope message = new Envelope("DISCONNECT");
+				writeObject(output, message);
+				sock.close();//I don't see why we shouldn't attempt 
+				//to close the socket on both the server and client sides
+			}
+			catch(Exception e)
+			{
+				System.err.println("Error: " + e.getMessage());
+				e.printStackTrace(System.err);
+			}
+		}
+	}
+	
 	private boolean writeObject(ObjectOutputStream output, Object obj)
 	{
 		try
