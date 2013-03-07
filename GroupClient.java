@@ -74,6 +74,7 @@ public class GroupClient extends Client implements GroupClientInterface {
 		try
 		{
 			byte[] eData = (byte[])input.readObject();
+			
 			byte[] data = cEngine.AESDecrypt(eData, aesKey);
 			ByteArrayInputStream fromBytes = new ByteArrayInputStream(data);
 			ObjectInputStream localInput = new ObjectInputStream(fromBytes);
@@ -113,15 +114,16 @@ public class GroupClient extends Client implements GroupClientInterface {
 				byte[] aesKeyBytesA = new byte[100];
 				byte[] aesKeyBytesB = new byte[41];
 				
-				System.arraycopy(aesKeyBytes, 0, aesKeyBytesA, 0, aesKeyBytesA.length);
-				System.arraycopy(aesKeyBytes, 100, aesKeyBytesB, 0, aesKeyBytes.length-100);
+				System.arraycopy(aesKeyBytes, 0, aesKeyBytesA, 0, 100);
+				System.arraycopy(aesKeyBytes, 100, aesKeyBytesB, 0, 41);
 				
 				byte[] encryptedKeyA = cEngine.RSAEncrypt(aesKeyBytesA, rsaPublic);
 				byte[] encryptedKeyB = cEngine.RSAEncrypt(aesKeyBytesB, rsaPublic);
-				
+				System.out.println(encryptedKeyA.length);
+				System.out.println(encryptedKeyB.length);
 				byte[] encryptedKey = new byte[encryptedKeyA.length + encryptedKeyB.length];
-				System.arraycopy(encryptedKeyA, 0, encryptedKey, 0, encryptedKeyA.length);
-				System.arraycopy(encryptedKeyB, 0, encryptedKey, encryptedKeyA.length, encryptedKeyB.length);
+				System.arraycopy(encryptedKeyA, 0, encryptedKey, 0, 128);
+				System.arraycopy(encryptedKeyB, 0, encryptedKey, 128, 128);
 				
 				message = new Envelope("AESKEY");
 				message.addObject(encryptedKey);

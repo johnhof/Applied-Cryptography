@@ -360,7 +360,7 @@ public class GroupThread extends Thread
 			ObjectOutputStream localOutput = new ObjectOutputStream(toBytes);//Make an object outputstream to that bytestream
 			localOutput.writeObject(obj);//write to the bytearrayoutputstream
 			byte[] data = toBytes.toByteArray();//turn our object into byte[]
-			
+		
 			output.writeObject(data);//write the data to the client
 			toBytes.close();
 			localOutput.close();
