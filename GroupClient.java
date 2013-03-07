@@ -21,6 +21,7 @@ public class GroupClient extends Client implements GroupClientInterface {
 		
 		setKey();
 		assert aesKey != null;
+		
 		//i had this marked TODO, but i think its finished? -PHIL 3/6 18:06
 		return true;
 	}

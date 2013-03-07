@@ -133,12 +133,12 @@ public class GroupServer extends Server
 		}
 		catch(IOException e)
 		{
-			System.out.println("Error reading from resource file");
+			System.out.println("Error reading from groupList file");
 			System.exit(-1);
 		}
 		catch(ClassNotFoundException e)
 		{
-			System.out.println("Error reading from resouce file");
+			System.out.println("Error reading from groupList file");
 			System.exit(-1);
 		}
 
