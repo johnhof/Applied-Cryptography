@@ -5,10 +5,113 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.List;
+import java.security.*;
+import javax.crypto.*;
+import java.io.*;
 
 public class FileClient extends Client implements FileClientInterface 
 {
-
+	private CryptoEngine cEngine;
+	private Key serverPublicKey;
+	private KeyList keyList;
+	private Key aesSessionKey;
+	
+	public boolean connect(final String server, final int port, String username)
+	{
+		super.connect(server, port);
+		
+		String userFile = "UserKeys" + username + ".bin";
+		ObjectInputStream keyStream;
+		
+		try
+		{
+			FileInputStream fis = new FileInputStream(userFile);
+			keyStream = new ObjectInputStream(fis);
+			keyList = (KeyList)keyStream.readObject();
+			if(keyList.checkServer(server))
+			{
+				//we have connected before
+				serverPublicKey = keyList.getKey(server);
+				if(serverPublicKey.getEncoded() == setPublicKey().getEncoded())
+				{
+					System.out.println("FileServer verified.");
+				}
+				else
+				{
+					System.out.println("Public Keys Do Not Match. This is an unauthorized server.");
+					System.exit(-1);
+				}
+			}
+			else
+			{
+				System.out.println("This is a new file server. Requesting Public Key");
+				serverPublicKey = setPublicKey();
+				keyList.addKey(server, serverPublicKey);
+				ObjectOutputStream outStream = new ObjectOutputStream(new FileOutputStream("UserKeys" + username + ".bin"));
+				outStream.writeObject(keyList);
+				outStream.close();
+			}
+		}
+		catch(FileNotFoundException e)
+		{
+			System.out.println("UserKeys file does not exit. Creating new one.");
+			keyList = new KeyList();
+			System.out.println("This is a new file server. Requesting Public Key");
+			serverPublicKey = setPublicKey();
+			keyList.addKey(server, serverPublicKey);
+			try
+			{
+				ObjectOutputStream outStream = new ObjectOutputStream(new FileOutputStream("UserKeys" + username + ".bin"));
+				outStream.writeObject(keyList);
+				outStream.close();
+			}
+			catch(Exception ex)
+			{
+				System.out.println("ERROR: FILECLIENT: COULD NOT WRITE USERKEYS");
+				ex.printStackTrace();
+				System.exit(-1);
+			}
+		}
+		catch(Exception e)
+		{
+			System.out.println("ERROR: FILECLIENT: COULD NOT FINISH CONNECTION");
+			e.printStackTrace();
+			System.exit(-1);
+		}
+		
+		setAesKey();
+		return true;
+	}
+	
+	public void setAesKey()
+	{
+	
+	}
+	
+	public Key setPublicKey()
+	{
+		Envelope message, response;
+		Key answer = null;
+		try
+		{
+			message = new Envelope("PUBKEYREQ");
+			output.writeObject(message);
+			response = (Envelope)input.readObject();
+			if(response.getMessage().equals("OK"))
+			{
+				answer = (Key)response.getObjContents().get(0);
+				return answer;
+			}
+		}
+		catch(Exception e)
+		{
+			System.out.println("ERROR: FILECLIENT: FAILED TO RECEIVE PUBLIC KEY");
+			e.printStackTrace();
+			System.exit(-1);
+		}
+		return answer;
+	}
+	
 	public boolean delete(String filename, UserToken token) 
 	{
 		String remotePath;

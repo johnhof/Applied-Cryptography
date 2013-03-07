@@ -20,17 +20,6 @@ public class UI
 		
 		gUser.connect(gServer, gPort);
 		
-		FileClient fUser = new FileClient();
-		
-		System.out.println("What FileServer should we connect to?");
-		String fServer = keyboard.nextLine();
-		System.out.println("What port should we connect to the FileServer on?");
-		int fPort = Integer.parseInt(keyboard.nextLine());
-		
-		fUser.connect(fServer, fPort); 
-		
-		boolean connected = true;
-		//UI is connecting to localhost. May change with cmd line options later
 		boolean proceed;
 		Scanner in;
 		String username;
@@ -55,6 +44,19 @@ public class UI
 			}
 		}while(proceed);//asks for username again
 		
+		
+		FileClient fUser = new FileClient();
+		
+		System.out.println("What FileServer should we connect to?");
+		String fServer = keyboard.nextLine();
+		System.out.println("What port should we connect to the FileServer on?");
+		int fPort = Integer.parseInt(keyboard.nextLine());
+		
+		fUser.connect(fServer, fPort, username); 
+		
+		boolean connected = true;
+		//UI is connecting to localhost. May change with cmd line options later
+
 		do{	
 			System.out.println("What would you like to do now?");//Queries the user
 			System.out.print("Type F for File Server operations or G for Group Server operations");

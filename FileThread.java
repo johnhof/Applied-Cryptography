@@ -14,10 +14,14 @@ import java.io.ObjectOutputStream;
 public class FileThread extends Thread
 {
 	private final Socket socket;
+	private FileServer my_fs;
+	private CryptoEngine cEngine;
 
-	public FileThread(Socket _socket)
+	public FileThread(FileServer _fs, Socket _socket)
 	{
+		my_fs = _fs;
 		socket = _socket;
+		cEngine = new CryptoEngine();
 	}
 
 	public void run()
@@ -31,6 +35,18 @@ public class FileThread extends Thread
 			final ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
 			Envelope response;
 			
+			Envelope message = (Envelope)input.readObject();
+			if(message.getMessage().equals("PUBKEYREQ"))
+			{
+				response = new Envelope("OK");
+				response.addObject(my_fs.authKeys.getPublic());
+				output.writeObject(response);
+			}
+			else
+			{
+				System.out.println("ERROR: FILETHREAD: FAILED TO SEND PUBLIC KEY");
+				System.exit(-1);
+			}
 			//handle messages from the input stream(ie. socket)
 			do
 			{

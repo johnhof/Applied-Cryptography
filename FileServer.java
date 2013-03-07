@@ -42,15 +42,19 @@ public class FileServer extends Server
 	public static final int SERVER_PORT = 4321;
 	public static FileList fileList;
 	public static PublicKey signVerifyKey;
+	public KeyPair authKeys;
+	public CryptoEngine cEngine;
 	
 	public FileServer() 
 	{
 		super(SERVER_PORT, "FilePile");
+		cEngine = new CryptoEngine();
 	}
 
 	public FileServer(int _port) 
 	{
 		super(_port, "FilePile");
+		cEngine = new CryptoEngine();
 	}
 	
 	public void start() 
@@ -78,11 +82,20 @@ public class FileServer extends Server
 		}
 		catch(Exception e)
 		{
-			System.out.println("ERROR:  GROUPSERVER;  could not load resource file");
+			System.out.println("ERROR:  FILESERVER;  could not load resource file");
 			System.exit(-1);
 		}
 //----------------------------------------------------------------------------------------------------------------------
-
+		try
+		{
+			authKeys = cEngine.genRSAKeyPair();
+		}
+		catch(Exception e)
+		{
+			System.out.println("ERROR:FILESERVER; could not generate RSA Key Pair");
+			System.exit(-1);
+		}
+		
 		//Open user file to get user list
 		try
 		{
@@ -142,7 +155,7 @@ public class FileServer extends Server
 			{
 				sock = serverSock.accept();
 				//THREAD HANDLES CORE FUNCTIONALITY. SEE FileThread.java
-				thread = new FileThread(sock);
+				thread = new FileThread(this, sock);
 				thread.start();
 			}
 			
