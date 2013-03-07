@@ -27,7 +27,7 @@ public class UI
 		System.out.println("What port should we connect to the FileServer on?");
 		int fPort = Integer.parseInt(keyboard.nextLine());
 		
-		fUser.connect(fServer, fPort);
+		fUser.connect(fServer, fPort); 
 		
 		boolean connected = true;
 		//UI is connecting to localhost. May change with cmd line options later

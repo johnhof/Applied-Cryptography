@@ -13,7 +13,7 @@ public class GroupThread extends Thread
 {
 	private final Socket socket;
 	private GroupServer my_gs;
-	private CryptoEngine cEngine = my_gs.cEngine;
+	private CryptoEngine cEngine;
 	private AESKeySet aesKey = null;
 	
 	//These get spun off from GroupServer
@@ -21,6 +21,7 @@ public class GroupThread extends Thread
 	{
 		socket = _socket;
 		my_gs = _gs;
+		cEngine = my_gs.cEngine;
 	}
 	
 	public void run()
@@ -48,7 +49,7 @@ public class GroupThread extends Thread
 			{
 				Envelope message = (Envelope)readObject(input);
 				System.out.println("Request received: " + message.getMessage());
-				Envelope response;
+				Envelope response = null;
 				
 //--GET TOKEN---------------------------------------------------------------------------------------------------------
 				if(message.getMessage().equals("GET"))//Client wants a token
@@ -64,6 +65,10 @@ public class GroupThread extends Thread
 					else
 					{
 						UserToken yourToken = createToken(username); //Create a token
+
+						//validate token, terminate connection if failed
+						proceed = yourToken.verifySignature(my_gs.signKeys.getPublic(), cEngine);
+						if(!proceed) rejectToken(response, output);
 						
 						//Respond to the client. On error, the client will receive a null token
 						response = new Envelope("OK");
@@ -89,7 +94,11 @@ public class GroupThread extends Thread
 							{
 								String username = (String)message.getObjContents().get(0); //Extract the username
 								UserToken yourToken = (UserToken)message.getObjContents().get(1); //Extract the token
-								
+
+								//validate token, terminate connection if failed
+								proceed = yourToken.verifySignature(my_gs.signKeys.getPublic(), cEngine);
+								if(!proceed) rejectToken(response, output);
+
 								//create the user if the username/token allow it
 								if(createUser(username, yourToken))
 								{
@@ -118,6 +127,10 @@ public class GroupThread extends Thread
 							{
 								String username = (String)message.getObjContents().get(0); //Extract the username
 								UserToken yourToken = (UserToken)message.getObjContents().get(1); //Extract the token
+
+								//validate token, terminate connection if failed
+								proceed = yourToken.verifySignature(my_gs.signKeys.getPublic(), cEngine);
+								if(!proceed) rejectToken(response, output);
 								
 								if(isAdmin(yourToken) && my_gs.userList.allUsers().contains(username))
 								{
@@ -143,7 +156,11 @@ public class GroupThread extends Thread
 						{
 							String groupName = (String)message.getObjContents().get(0); //Extract the group name
 							UserToken yourToken = (UserToken)message.getObjContents().get(1); //Extract the token
-								
+
+							//validate token, terminate connection if failed
+							proceed = yourToken.verifySignature(my_gs.signKeys.getPublic(), cEngine);
+							if(!proceed) rejectToken(response, output);
+
 							//create the group if the it doesn't already exist
 							if(createGroup(groupName, yourToken))
 							{
@@ -166,6 +183,10 @@ public class GroupThread extends Thread
 						{
 							String groupName = (String)message.getObjContents().get(0); //Extract the group name
 							UserToken yourToken = (UserToken)message.getObjContents().get(1); //Extract the token
+
+							//validate token, terminate connection if failed
+							proceed = yourToken.verifySignature(my_gs.signKeys.getPublic(), cEngine);
+							if(!proceed) rejectToken(response, output);
 								
 							//create the group if the it doesn't already exist
 							if(deleteGroup(groupName, yourToken))
@@ -191,6 +212,9 @@ public class GroupThread extends Thread
 							String groupName = (String)message.getObjContents().get(0); //Extract the group name
 							UserToken yourToken = (UserToken)message.getObjContents().get(1); //Extract the token
 
+							//validate token, terminate connection if failed
+							proceed = yourToken.verifySignature(my_gs.signKeys.getPublic(), cEngine);
+							if(!proceed) rejectToken(response, output);
 
 							ArrayList<String> users = listMembers(groupName, yourToken);
 							if(users != null && users.size() > 0)
@@ -222,6 +246,10 @@ public class GroupThread extends Thread
 							String groupName = (String)message.getObjContents().get(1); //Extract the group name
 							UserToken yourToken = (UserToken)message.getObjContents().get(2); //Extract the token
 
+							//validate token, terminate connection if failed
+							proceed = yourToken.verifySignature(my_gs.signKeys.getPublic(), cEngine);
+							if(!proceed) rejectToken(response, output);
+
 							//verify the owner
 							if(my_gs.groupList.getGroupOwners(groupName).contains(yourToken.getSubject()))
 							{
@@ -251,6 +279,10 @@ public class GroupThread extends Thread
 							String groupName = (String)message.getObjContents().get(1); //Extract the group name
 							UserToken yourToken = (UserToken)message.getObjContents().get(2); //Extract the token
 
+							//validate token, terminate connection if failed
+							proceed = yourToken.verifySignature(my_gs.signKeys.getPublic(), cEngine);
+							if(!proceed) rejectToken(response, output);
+
 							//verify the owner
 							if(my_gs.groupList.getGroupOwners(groupName).contains(yourToken.getSubject()))
 							{
@@ -274,6 +306,11 @@ public class GroupThread extends Thread
 					if(message.getObjContents() != null)
 					{
 						UserToken theirToken = (UserToken)message.getObjContents().get(0);
+
+						//validate token, terminate connection if failed
+						proceed = theirToken.verifySignature(my_gs.signKeys.getPublic(), cEngine);
+						if(!proceed) rejectToken(response, output);
+
 						if(isAdmin(theirToken))//test if they are an admin
 						{
 							response = new Envelope("OK");
@@ -287,7 +324,6 @@ public class GroupThread extends Thread
 //--DISCONNECT----------------------------------------------------------------------------------------------------------
 				else if(message.getMessage().equals("DISCONNECT")) //Client wants to disconnect
 				{
-
 					socket.close(); //Close the socket
 					proceed = false; //End this communication loop
 				}
@@ -366,7 +402,7 @@ public class GroupThread extends Thread
 				if(message.getMessage().equals("AESKEY"))
 				{
 					byte[] aesKeyBytes = (byte[]) message.getObjContents().get(0);//This is sent as byte[]
-					aesKeyBytes = cEngine.RSADecrypt(aesKeyBytes, my_gs.signKeys.getPrivate());
+					aesKeyBytes = cEngine.RSADecrypt(aesKeyBytes, my_gs.signKeys.getPublic());
 					
 					ByteArrayInputStream fromBytes = new ByteArrayInputStream(aesKeyBytes);
 					ObjectInputStream localInput = new ObjectInputStream(fromBytes);
@@ -392,6 +428,10 @@ public class GroupThread extends Thread
 		{
 			//Issue a new token with server's name, user's name, and user's groups
 			UserToken yourToken = new UserToken(my_gs.name, username, my_gs.userList.getUserGroups(username));
+
+			//sign the token
+			yourToken.sign(my_gs.signKeys.getPrivate(), cEngine);
+			
 			return yourToken;
 		}
 		else
@@ -510,6 +550,22 @@ public class GroupThread extends Thread
 	private boolean disconnect(String userName, UserToken yourToken)
 	{
 		return false;
+	}
+
+	private void rejectToken(Envelope response, ObjectOutputStream output)
+	{
+
+		response = new Envelope("ERROR: Token signature Rejected");
+		response.addObject(null);
+		writeObject(output, response);
+		try
+		{
+			socket.close();
+		}
+		catch(Exception e)
+		{
+			System.out.println("WARNING: GroupThread; socket could not be closed");
+		}
 	}
 
 }

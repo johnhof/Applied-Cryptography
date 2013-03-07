@@ -29,7 +29,6 @@ public class UserToken implements UserTokenInterface, java.io.Serializable
 	private String subject; 
     private List<String> groups;
     private byte[] signature;
-    private CryptoEngine cEngine;
 
 	public UserToken(String Issuer, String Subject)
 	{
@@ -37,7 +36,6 @@ public class UserToken implements UserTokenInterface, java.io.Serializable
 		subject = Subject; 
         groups = null;
         signature = null;
-        cEngine = new CryptoEngine();
 	}
 
     public UserToken(String Issuer, String Subject, List<String> Groups)
@@ -46,7 +44,6 @@ public class UserToken implements UserTokenInterface, java.io.Serializable
         subject = Subject; 
         groups = Groups;
         signature = null;
-        cEngine = new CryptoEngine();
     }
 
     public String getIssuer()
@@ -93,15 +90,15 @@ public class UserToken implements UserTokenInterface, java.io.Serializable
 //-- SIGNING AND VERIFICATION 
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-    public void sign(PrivateKey key)
+    public void sign(PrivateKey key, CryptoEngine cEngine)
     {
-        signature = cEngine.RSASign(getContentsInBytes(), key);
+        signature = cEngine.RSASign(getContentsInBytes(cEngine), key);
     }
 
 
-    public boolean verifySignature(PublicKey key)
+    public boolean verifySignature(PublicKey key, CryptoEngine cEngine)
     {
-        return cEngine.RSAVerify(getContentsInBytes(),  signature, key);
+        return cEngine.RSAVerify(getContentsInBytes(cEngine),  signature, key);
     }
 
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -109,7 +106,7 @@ public class UserToken implements UserTokenInterface, java.io.Serializable
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
     //megre the token contents into an array
-    private byte[] getContentsInBytes()
+    private byte[] getContentsInBytes(CryptoEngine cEngine)
     {
         ArrayList<Object> contents = new ArrayList<Object>();
         contents.add(issuer);

@@ -83,11 +83,11 @@ public class test
 
     	UserToken token = new UserToken("issuer", "Subject");
 
-        token.sign(keys.getPrivate());
+        token.sign(keys.getPrivate(), cEngine);
 
-    	System.out.println("\nvalid signature from set: " + token.verifySignature(keys.getPublic()));
+    	System.out.println("\nvalid signature from set: " + token.verifySignature(keys.getPublic(),cEngine));
 
-        System.out.println("\nvalid signature: " + token.verifySignature(pk));
+        System.out.println("\nvalid signature: " + token.verifySignature(pk,cEngine));
     }
 
 }
