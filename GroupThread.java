@@ -40,7 +40,7 @@ public class GroupThread extends Thread
 			do
 			{
 				Envelope message = (Envelope)readObject(input);
-				System.out.println("Request received: " + message.getMessage());
+				System.out.println("\nRequest received: " + message.getMessage());
 				Envelope response = null;
 				
 //--GET TOKEN---------------------------------------------------------------------------------------------------------
@@ -50,37 +50,37 @@ public class GroupThread extends Thread
 					String pwd = (String)message.getObjContents().get(1);//get password
 					if(username == null)
 					{
+						System.out.println("     !No username");
 						response = new Envelope("FAIL: no username provided.");
 						writeObject(output, response);
 					}
 					else if(!my_gs.userList.checkUser(username))
 					{
+						System.out.println("     !Username not found");
 						response = new Envelope("FAIL: username not found.");
 						writeObject(output, response);
 					}
 					else if(pwd == null || pwd.length() == 0)
 					{
+						System.out.println("     !No password");
 						response = new Envelope("FAIL: no password.");
 						writeObject(output, response);
 					}
 					else if(!my_gs.userList.getUserPassword(username).equals(pwd))
 					{
+						System.out.println("     !Wrong password");
 						response = new Envelope("Wrong password.");
 						writeObject(output, response);
 					}
 					else
 					{
 						UserToken yourToken = createToken(username); //Create a token
-
-						//validate token, terminate connection if failed
-						proceed = yourToken.verifySignature(my_gs.signKeys.getPublic(), cEngine);
-        				System.out.println("Token Authenticated:"+proceed+"\n");
-						if(!proceed) rejectToken(response, output);
 						
 						//Respond to the client. On error, the client will receive a null token
 						response = new Envelope("OK");
 						response.addObject(yourToken);
 						writeObject(output, response);
+						System.out.println("     *Token sent");
 					}
 				}
 //--CREATE USER-------------------------------------------------------------------------------------------------------
@@ -104,13 +104,14 @@ public class GroupThread extends Thread
 								
 								//validate token, terminate connection if failed
 								proceed = yourToken.verifySignature(my_gs.signKeys.getPublic(), cEngine);
-        						System.out.println("Token Authenticated:"+proceed+"\n");
+        						  System.out.println("     *Token Authenticated:"+proceed);
 								if(!proceed) rejectToken(response, output);
 
-								//create the user if the username/token allow it
+									//create the user if the username/token allow it
 								if(createUser(username, pwd, yourToken))
 								{
 									response = new Envelope("OK"); //Success
+									System.out.println("     *User created");
 								}
 							}
 						}
@@ -122,6 +123,7 @@ public class GroupThread extends Thread
 				{					
 					if(message.getObjContents().size() < 2)
 					{
+						System.out.println("     !Message too short");
 						response = new Envelope("FAIL: user unable to be deleted -- message object size less than 2. ");
 					}
 					else
@@ -137,7 +139,7 @@ public class GroupThread extends Thread
 
 								//validate token, terminate connection if failed
 								proceed = yourToken.verifySignature(my_gs.signKeys.getPublic(), cEngine);
-        						System.out.println("Token Authenticated:"+proceed+"\n");
+        						  System.out.println("     *Token Authenticated:"+proceed);
 								if(!proceed) rejectToken(response, output);
 								
 								if(isAdmin(yourToken))
@@ -146,10 +148,19 @@ public class GroupThread extends Thread
 									{
 										my_gs.deleteUser(username);
 										response = new Envelope("OK");
+										System.out.println("     *User deleted");
 									}
-									else response = new Envelope("FAIL: user unable to be deleted -- username not found. ");
+									else 
+									{
+										System.out.println("     !Username not found");		
+										response = new Envelope("FAIL: user unable to be deleted -- username not found. ");
+									}
 								}
-								else response = new Envelope("FAIL: user unable to be deleted -- you do not have sufficient privileges. ");
+								else
+								{
+									System.out.println("     !Insufficient Priviledges");
+									response = new Envelope("FAIL: user unable to be deleted -- you do not have sufficient privileges. ");
+								}
 							}
 						}
 					}
@@ -170,13 +181,14 @@ public class GroupThread extends Thread
 
 							//validate token, terminate connection if failed
 							proceed = yourToken.verifySignature(my_gs.signKeys.getPublic(), cEngine);
-        					System.out.println("Token Authenticated:"+proceed+"\n");
+        					  System.out.println("     *Token Authenticated:"+proceed);
 							if(!proceed) rejectToken(response, output);
 
 							//create the group if the it doesn't already exist
 							if(createGroup(groupName, yourToken))
 							{
 								response = new Envelope("OK"); //Success
+								System.out.println("     *Group Created");
 							}
 						}
 					}
@@ -197,15 +209,20 @@ public class GroupThread extends Thread
 
 							//validate token, terminate connection if failed
 							proceed = yourToken.verifySignature(my_gs.signKeys.getPublic(), cEngine);
-        					System.out.println("Token Authenticated:"+proceed+"\n");
+        					  System.out.println("     *Token Authenticated:"+proceed);
 							if(!proceed) rejectToken(response, output);
 								
 							//create the group if the it doesn't already exist
 							if(deleteGroup(groupName, yourToken))
 							{
 								response = new Envelope("OK"); //Success
+								System.out.println("     *Group deleted");
 							}
-							else response = new Envelope("FAIL: group unable to be deleted. ");
+							else 
+							{
+								System.out.println("     !Could not delete group");
+								response = new Envelope("FAIL: group unable to be deleted. ");
+							}
 						}
 					}
 					writeObject(output, response);
@@ -225,7 +242,7 @@ public class GroupThread extends Thread
 
 							//validate token, terminate connection if failed
 							proceed = yourToken.verifySignature(my_gs.signKeys.getPublic(), cEngine);
-        					System.out.println("Token Authenticated:"+proceed+"\n");
+        					  System.out.println("     *Token Authenticated:"+proceed);
 							if(!proceed) rejectToken(response, output);
 
 							ArrayList<String> users = listMembers(groupName, yourToken);
@@ -233,9 +250,11 @@ public class GroupThread extends Thread
 							{
 								response = new Envelope("OK");
 								response.addObject(users);
+								System.out.println("     *Member list sent");
 							}
 							else//no files exist
 							{
+								System.out.println("     !No users to list");
 								response = new Envelope("FAIL -- no users detected. ");
 							}
 					
@@ -247,7 +266,7 @@ public class GroupThread extends Thread
 				else if(message.getMessage().equals("AUSERTOGROUP")) //Client wants to add user to a group
 				{
 					//if the message is too short, return failure
-					response = new Envelope("FAIL -- user unable to be added to group. ");
+					response = new Envelope("FAIL -- user unable to be added to group");
 					if(message.getObjContents().size() > 2)
 					{
 						//get the elements of the message
@@ -259,16 +278,25 @@ public class GroupThread extends Thread
 
 							//validate token, terminate connection if failed
 							proceed = yourToken.verifySignature(my_gs.signKeys.getPublic(), cEngine);
-        					System.out.println("Token Authenticated:"+proceed+"\n");
+        					  System.out.println("     *Token Authenticated:"+proceed);
 							if(!proceed) rejectToken(response, output);
 
-							//verify the owner
-							if(my_gs.groupList.getGroupOwners(groupName).contains(yourToken.getSubject()))
+							if(my_gs.groupList.checkGroup(groupName) != true)
 							{
-								//create the group if the it doesn't already exist
-								if(addToGroup(userName, groupName, yourToken))
+								System.out.println("     !No such group");
+								response = new Envelope("FAIL -- no such group");
+							}
+							else
+							{
+								//verify the owner
+								if(my_gs.groupList.getGroupOwners(groupName).contains(yourToken.getSubject()))
 								{
-									response = new Envelope("OK"); //Success
+									//create the group if the it doesn't already exist
+									if(addToGroup(userName, groupName, yourToken))
+									{
+										response = new Envelope("OK"); //Success
+										System.out.println("     *User added to group");	
+									}
 								}
 							}
 					
@@ -292,16 +320,26 @@ public class GroupThread extends Thread
 
 							//validate token, terminate connection if failed
 							proceed = yourToken.verifySignature(my_gs.signKeys.getPublic(), cEngine);
-        					System.out.println("Token Authenticated:"+proceed+"\n");
+        					  System.out.println("     *Token Authenticated:"+proceed);
 							if(!proceed) rejectToken(response, output);
 
-							//verify the owner
-							if(my_gs.groupList.getGroupOwners(groupName).contains(yourToken.getSubject()))
+
+							if(my_gs.groupList.checkGroup(groupName) != true)
 							{
-								//create the group if the it doesn't already exist
-								if(removeFromGroup(userName, groupName, yourToken))
+								System.out.println("     !No such group");
+								response = new Envelope("FAIL -- no such group");
+							}
+							else
+							{
+								//verify the owner
+								if(my_gs.groupList.getGroupOwners(groupName).contains(yourToken.getSubject()))
 								{
-									response = new Envelope("OK"); //Success
+									//create the group if the it doesn't already exist
+									if(removeFromGroup(userName, groupName, yourToken))
+									{
+										response = new Envelope("OK"); //Success
+										System.out.println("     *User removed from group");
+									}
 								}
 							}
 						}
@@ -319,7 +357,7 @@ public class GroupThread extends Thread
 
 						//validate token, terminate connection if failed
 						proceed = theirToken.verifySignature(my_gs.signKeys.getPublic(), cEngine);
-        				System.out.println("Token Authenticated:"+proceed+"\n");
+        				  System.out.println("     *Token Authenticated:"+proceed);
 						if(!proceed) rejectToken(response, output);
 
 						if(isAdmin(theirToken))//test if they are an admin
@@ -327,6 +365,7 @@ public class GroupThread extends Thread
 							response = new Envelope("OK");
 							ArrayList<String> usernameList = my_gs.userList.allUsers();
 							response.addObject(usernameList);
+							System.out.println("     *Full user list sent");
 						}
 					}
 					writeObject(output, response);
@@ -336,9 +375,12 @@ public class GroupThread extends Thread
 				{
 					socket.close(); //Close the socket
 					proceed = false; //End this communication loop
+					System.out.println("     *Disconnected");
 				}
+//--INVALID REQUEST------------------------------------------------------------------------------------------------------
 				else
 				{
+					System.out.println("     !Invalid request");
 					response = new Envelope("FAIL -- server does not understand client request. "); //Server does not understand client request
 					writeObject(output, response);
 				}
@@ -395,51 +437,65 @@ public class GroupThread extends Thread
 			Key rsaSessionPublic = my_gs.authKeys.getPublic();
 			Key rsaSessionPrivate = my_gs.authKeys.getPrivate();
 			//These keys exist just to encrypt/decrypt this specific session key for this user
-			
+
 			Envelope message;
 			Envelope response;
+			
+
+//---------------------------------------------------------------------------------------------------------------------
+//-- BEGIN CONNECTION SETUP
+//---------------------------------------------------------------------------------------------------------------------
+			
+//--RSA KEY REQUEST-----------------------------------------------------------------------------------------------------
 			message = (Envelope)input.readObject();
-			System.out.println("Request received: " + message.getMessage());
 			if(message.getMessage().equals("PUBKEYREQ"))
 			{
+				System.out.println("\nRequest received: " + message.getMessage());
 				response = new Envelope("PUBKEYANSW");
 				response.addObject(rsaSessionPublic);//send as Key not byte[]
 				output.writeObject(response);
+				System.out.println("     *public key sent");
+			}
 				
-				message = (Envelope)input.readObject();
+//--RECIEVE AES KEY---------------------------------------------------------------------------------------------------
+			message = (Envelope)input.readObject();
+			if(message.getMessage().equals("AESKEY"))
+			{
 				System.out.println("Request received: " + message.getMessage());
-				if(message.getMessage().equals("AESKEY"))
-				{
-					byte[] aesKeyBytes = (byte[]) message.getObjContents().get(0);//This is sent as byte[]
+				byte[] aesKeyBytes = (byte[]) message.getObjContents().get(0);//This is sent as byte[]
 
-					byte[] aesKeyBytesA = new byte[128];
-					byte[] aesKeyBytesB = new byte[128];
+				byte[] aesKeyBytesA = new byte[128];
+				byte[] aesKeyBytesB = new byte[128];
 					
-					System.arraycopy(aesKeyBytes, 0, aesKeyBytesA, 0, 128);
-					System.arraycopy(aesKeyBytes, 128, aesKeyBytesB, 0, 128);
+				System.arraycopy(aesKeyBytes, 0, aesKeyBytesA, 0, 128);
+				System.arraycopy(aesKeyBytes, 128, aesKeyBytesB, 0, 128);
 				
-					aesKeyBytesA = cEngine.RSADecrypt(aesKeyBytesA, rsaSessionPrivate);
-					aesKeyBytesB = cEngine.RSADecrypt(aesKeyBytesB, rsaSessionPrivate);
+				aesKeyBytesA = cEngine.RSADecrypt(aesKeyBytesA, rsaSessionPrivate);
+				aesKeyBytesB = cEngine.RSADecrypt(aesKeyBytesB, rsaSessionPrivate);
 					
-					System.arraycopy(aesKeyBytesA, 0, aesKeyBytes, 0, 100);
-					System.arraycopy(aesKeyBytesB, 0, aesKeyBytes, 100, 41);
-					
-					ByteArrayInputStream fromBytes = new ByteArrayInputStream(aesKeyBytes);
-					ObjectInputStream localInput = new ObjectInputStream(fromBytes);
-					aesKey = new AESKeySet((Key) localInput.readObject(), new IvParameterSpec((byte[])message.getObjContents().get(1)));
-					//get(1) contains the IV. localinput turned the byte[] back into a key
-					message=(Envelope)readObject(input);
-					if(message.getMessage().equals("CHALLENGE"))
-					{
-						Integer challenge = (Integer)message.getObjContents().get(0);
-						challenge = new Integer((challenge.intValue()+1));
-						response = new Envelope("OK");
-						response.addObject(challenge);
-						writeObject(output, response);
-						return true;
-					}
+				System.arraycopy(aesKeyBytesA, 0, aesKeyBytes, 0, 100);
+				System.arraycopy(aesKeyBytesB, 0, aesKeyBytes, 100, 41);
+				
+				ByteArrayInputStream fromBytes = new ByteArrayInputStream(aesKeyBytes);
+				ObjectInputStream localInput = new ObjectInputStream(fromBytes);
+				aesKey = new AESKeySet((Key) localInput.readObject(), new IvParameterSpec((byte[])message.getObjContents().get(1)));
+
+				//get(1) contains the IV. localinput turned the byte[] back into a key
+				message=(Envelope)readObject(input);
+				System.out.println("     *AES keyset recieved and stored");
+
+//--CHALLENGE---------------------------------------------------------------------------------------------------------
+				//THE AES KEY IS NOW SET
+				if(message.getMessage().equals("CHALLENGE"))
+				{
+					Integer challenge = (Integer)message.getObjContents().get(0);
+					challenge = new Integer((challenge.intValue()+1));
+					response = new Envelope("OK");
+					response.addObject(challenge);
+					writeObject(output, response);
+					System.out.println("     *Challenge answered");
+					return true;
 				}
-				else {return false;}
 			}
 			else {return false;}
 		}
@@ -448,7 +504,7 @@ public class GroupThread extends Thread
 			e.printStackTrace();
 			System.exit(-1);
 		}
-		return false;
+			return false;
 	}
 	
 	//Method to create tokens
