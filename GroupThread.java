@@ -27,6 +27,8 @@ public class GroupThread extends Thread
 	public void run()
 	{
 		boolean proceed = true;
+    	String groupFolder = "Group_Server_Resources/";
+		String resourceFile = groupFolder+"GroupResources.bin";
 		
 		try
 		{
@@ -35,7 +37,16 @@ public class GroupThread extends Thread
 			final ObjectInputStream input = new ObjectInputStream(socket.getInputStream());
 			final ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
 			
-			setKey(input, output);
+
+			if(setKey(input, output) == false)
+			{
+				socket.close(); //Close the socket
+				proceed = false; //End this communication loop
+				System.out.println("     !Failed to connect");
+				return;
+			} 
+			System.out.println("\n*** Setup Finished: " + socket.getInetAddress() + ":" + socket.getPort() + "***");
+			
 			//handle messages from the input stream(ie. socket)
 			do
 			{
@@ -376,6 +387,7 @@ public class GroupThread extends Thread
 					socket.close(); //Close the socket
 					proceed = false; //End this communication loop
 					System.out.println("     *Disconnected");
+					System.out.println("\n*** Disconnected: " + socket.getInetAddress() + ":" + socket.getPort() + "***");
 				}
 //--INVALID REQUEST------------------------------------------------------------------------------------------------------
 				else

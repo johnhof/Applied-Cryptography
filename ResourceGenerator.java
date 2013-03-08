@@ -33,6 +33,8 @@ public class ResourceGenerator
 {
     public static void main (String[] args)
     {
+    	String publicFolder = "Public_Resources";
+    	String groupFolder = "Group_Server_Resources";
 		String resourceFile = "GroupResources.bin";
 		String keyDisrtoFile = "GroupPublicKey.bin";
 		ObjectOutputStream outStream;
@@ -54,6 +56,13 @@ public class ResourceGenerator
 			return;
 		}
 
+	    //create the folders
+		File file = new File(publicFolder);
+		file.mkdir();
+
+		file = new File(groupFolder);
+		file.mkdir();
+
 		//gen keys
 	    CryptoEngine cEngine = new CryptoEngine();
 		KeyPair keys = cEngine.genRSAKeyPair();
@@ -62,10 +71,10 @@ public class ResourceGenerator
 		//save keys
 		try
 		{
-			outStream = new ObjectOutputStream(new FileOutputStream(resourceFile));
+			outStream = new ObjectOutputStream(new FileOutputStream(groupFolder+"/"+resourceFile));
 			outStream.writeObject(keys);
 
-			outStream = new ObjectOutputStream(new FileOutputStream(keyDisrtoFile));
+			outStream = new ObjectOutputStream(new FileOutputStream(publicFolder+"/"+keyDisrtoFile));
 			outStream.writeObject(pkey);	
 		}
 		catch(Exception e)

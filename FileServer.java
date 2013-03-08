@@ -1,19 +1,7 @@
 /* FileServer loads files from FileList.bin.  Stores files in shared_files directory. */
 
 import java.nio.charset.Charset;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.Key;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.security.SecureRandom;
-import java.security.Security;
-import java.security.Signature;
-import java.security.SignatureException;
-import java.security.PublicKey;
-import java.security.PrivateKey;
+import java.security.*;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -39,7 +27,7 @@ public class FileServer extends Server
 {
 	
 	//IMPORTANT: server listens on port 4321
-	public static final int SERVER_PORT = 4321;
+	public static final int SERVER_PORT = 4444;
 	public static FileList fileList;
 	public static PublicKey signVerifyKey;
 	public KeyPair authKeys;
@@ -59,8 +47,22 @@ public class FileServer extends Server
 	
 	public void start() 
 	{
-		String fileFile = "FileList.bin";
-        String keyDistroFile = "GroupPublicKey.bin";
+    	String publicFolder = "Public_Resources/";
+		String serverFolder = name+"_Server_Resources/";
+		File file = new File(serverFolder);
+		file.mkdir();
+
+		//open the resource folder, remove it if it had to be generated
+		file = new File(publicFolder);
+		if(file.mkdir())
+		{
+            file.delete();
+			System.out.println("\nResourceGenerator must be run before continuing\n");
+			return;
+		}
+
+		String fileFile = serverFolder+"FileList.bin";
+        String keyDistroFile = publicFolder+"GroupPublicKey.bin";
 		ObjectInputStream fileStream;
 		ObjectInputStream sigKeyStream;
 		
@@ -120,7 +122,7 @@ public class FileServer extends Server
 		}
 		
 		//Create or find a directory named "shared_files"
-		File file = new File("shared_files");
+		file = new File(serverFolder+"shared_files");
 		if (file.mkdir()) 
 		{
 			System.out.println("Created new shared_files directory");
@@ -184,13 +186,17 @@ class ShutDownListenerFS implements Runnable
 
 	public void run()
 	{
+		String serverFolder = my_fs.name+"_Server_Resources/";
+		String fileFile = serverFolder+"FileList.bin";
+
 		System.out.println("Shutting down server");
+
 		ObjectOutputStream outStream;
 
 		//write the filelist to FileList.bin
 		try
 		{
-			outStream = new ObjectOutputStream(new FileOutputStream("FileList.bin"));
+			outStream = new ObjectOutputStream(new FileOutputStream(fileFile));
 			outStream.writeObject(FileServer.fileList);
 		}
 		catch(Exception e)
@@ -212,6 +218,9 @@ class AutoSaveFS extends Thread
 
 	public void run()
 	{
+		String serverFolder = my_fs.name+"_Server_Resources/";
+		String fileFile = serverFolder+"FileList.bin";
+
 		do
 		{
 			try
@@ -223,7 +232,7 @@ class AutoSaveFS extends Thread
 				//write the filelist to FileList.bin
 				try
 				{
-					outStream = new ObjectOutputStream(new FileOutputStream("FileList.bin"));
+					outStream = new ObjectOutputStream(new FileOutputStream(fileFile));
 					outStream.writeObject(FileServer.fileList);
 				}
 				catch(Exception e)

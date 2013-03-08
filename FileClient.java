@@ -1,9 +1,5 @@
 /* FileClient provides all the client functionality regarding the file server */
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.util.List;
 import java.security.*;
 import javax.crypto.*;
@@ -28,14 +24,20 @@ public class FileClient extends Client implements FileClientInterface
 		token = newtoken;
 		
 		cEngine = new CryptoEngine();
-		String userFile = "UserKeys" + username + ".bin";
+		String userFolder = "User_Resources/";
+		String userFile = userFolder+"UserKeys" + username + ".bin";
 		ObjectInputStream keyStream;
 		
 		try
 		{
-			FileInputStream fis = new FileInputStream(userFile);
+			//Create or find a directory named "shared_files"
+			File file = new File("User_Resources");
+			file.mkdir();
+
+			FileInputStream fis = new FileInputStream("User_Resources/"+userFile);
 			keyStream = new ObjectInputStream(fis);
 			keyList = (KeyList)keyStream.readObject();
+
 			if(keyList.checkServer(server))
 			{
 				//we have connected before
@@ -56,7 +58,7 @@ public class FileClient extends Client implements FileClientInterface
 				System.out.println("This is a new file server. Requesting Public Key");
 				serverPublicKey = setPublicKey();
 				keyList.addKey(server, serverPublicKey);
-				ObjectOutputStream outStream = new ObjectOutputStream(new FileOutputStream("UserKeys" + username + ".bin"));
+				ObjectOutputStream outStream = new ObjectOutputStream(new FileOutputStream(userFolder+"UserKeys" + username + ".bin"));
 				outStream.writeObject(keyList);
 				outStream.close();
 			}
@@ -70,7 +72,7 @@ public class FileClient extends Client implements FileClientInterface
 			keyList.addKey(server, serverPublicKey);
 			try
 			{
-				ObjectOutputStream outStream = new ObjectOutputStream(new FileOutputStream("UserKeys" + username + ".bin"));
+				ObjectOutputStream outStream = new ObjectOutputStream(new FileOutputStream(userFolder+"UserKeys" + username + ".bin"));
 				outStream.writeObject(keyList);
 				outStream.close();
 			}

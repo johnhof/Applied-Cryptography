@@ -13,19 +13,7 @@
 
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.Key;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.security.SecureRandom;
-import java.security.Security;
-import java.security.Signature;
-import java.security.SignatureException;
-import java.security.PublicKey;
-import java.security.PrivateKey;
+import java.security.*;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -58,7 +46,7 @@ NOTE: this is probably not the right way to do this, but I'm at a loss for alter
 public class GroupServer extends Server 
 {
 
-	public static final int SERVER_PORT = 8766;
+	public static final int SERVER_PORT = 5555;
 
 	public KeyPair signKeys;
 	public KeyPair authKeys;
@@ -84,13 +72,23 @@ public class GroupServer extends Server
 	{
 		// Overwrote server.start() because if no user file exists, initial admin account needs to be created
 		
-		String resourceFile = "GroupResources.bin";
-		String userFile = "UserList.bin";
-		String groupFile = "GroupList.bin";
+    	String groupFolder = "Group_Server_Resources/";
+		String resourceFile = groupFolder+"GroupResources.bin";
+		String userFile = groupFolder+"UserList.bin";
+		String groupFile = groupFolder+"GroupList.bin";
 		Scanner console = new Scanner(System.in);
 		ObjectInputStream userStream;
 		ObjectInputStream groupStream;
 		ObjectInputStream resourceStream;
+
+		//open the resource folder, remove it if it had to be generated
+		File file = new File(groupFolder);
+		if(file.mkdir())
+		{
+            file.delete();
+			System.out.println("\nResourceGenerator must be run before continuing\n");
+			return;
+		}
 
 		//This runs a thread that saves the lists on program exit
 		Runtime runtime = Runtime.getRuntime();
@@ -304,6 +302,11 @@ public class GroupServer extends Server
 //This thread saves the user list
 class ShutDownListener extends Thread
 {
+    String groupFolder = "Group_Server_Resources/";
+	String resourceFile = groupFolder+"GroupResources.bin";
+	String userFile = groupFolder+"UserList.bin";
+	String groupFile = groupFolder+"GroupList.bin";
+
 	public GroupServer my_gs;
 	
 	public ShutDownListener (GroupServer _gs) {
@@ -317,13 +320,13 @@ class ShutDownListener extends Thread
 		ObjectOutputStream outStream;
 		try
 		{
-			outStream = new ObjectOutputStream(new FileOutputStream("UserList.bin"));
+			outStream = new ObjectOutputStream(new FileOutputStream(userFile));
 			outStream.writeObject(my_gs.userList);
 
 //----------------------------------------------------------------------------------------------------------------------
 //-- ADDED: groupList storage
 //----------------------------------------------------------------------------------------------------------------------
-			outStream = new ObjectOutputStream(new FileOutputStream("GroupList.bin"));
+			outStream = new ObjectOutputStream(new FileOutputStream(groupFile));
 			outStream.writeObject(my_gs.groupList);
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -338,6 +341,11 @@ class ShutDownListener extends Thread
 
 class AutoSave extends Thread
 {
+    String groupFolder = "Group_Server_Resources/";
+	String resourceFile = groupFolder+"GroupResources.bin";
+	String userFile = groupFolder+"UserList.bin";
+	String groupFile = groupFolder+"GroupList.bin";
+
 	public GroupServer my_gs;
 	
 	public AutoSave (GroupServer _gs) {
@@ -356,13 +364,13 @@ class AutoSave extends Thread
 				ObjectOutputStream outStream;
 				try
 				{
-					outStream = new ObjectOutputStream(new FileOutputStream("UserList.bin"));
+					outStream = new ObjectOutputStream(new FileOutputStream(userFile));
 					outStream.writeObject(my_gs.userList);
 
 //----------------------------------------------------------------------------------------------------------------------
 //-- ADDED: groupList storage
 //----------------------------------------------------------------------------------------------------------------------
-					outStream = new ObjectOutputStream(new FileOutputStream("GroupList.bin"));
+					outStream = new ObjectOutputStream(new FileOutputStream(groupFile));
 					outStream.writeObject(my_gs.groupList);
 //----------------------------------------------------------------------------------------------------------------------
 				}

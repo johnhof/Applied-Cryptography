@@ -32,6 +32,8 @@ public class FileThread extends Thread
 
 	public void run()
 	{
+		String serverFolder = my_fs.name+"_Server_Resources/";
+
 		boolean proceed = true;
 		try
 		{
@@ -274,7 +276,8 @@ public class FileThread extends Thread
 							//create file and handle upload
 							else  
 							{
-								File file = new File("shared_files/" + remotePath.replace('/', '_'));
+	System.out.println(serverFolder+"shared_files/" + remotePath.replace('/', '_'));
+								File file = new File(serverFolder+"shared_files/" + remotePath.replace('/', '_'));
 								file.createNewFile();
 								FileOutputStream fos = new FileOutputStream(file);
 								System.out.printf("     *Successfully created file %s\n", remotePath.replace('/', '_'));
@@ -341,8 +344,9 @@ public class FileThread extends Thread
 					{
 						try
 						{
+	System.out.println(serverFolder+"shared_files/_" + remotePath.replace('/', '_'));
 							//try to grab the file
-							File f = new File("shared_files/_"+remotePath.replace('/', '_'));
+							File f = new File(serverFolder+"shared_files/_" + remotePath.replace('/', '_'));
 							if (!f.exists()) 
 							{
 								System.out.printf("     !file %s missing from disk\n", "_"+remotePath.replace('/', '_'));
@@ -445,7 +449,8 @@ public class FileThread extends Thread
 						//attempt to delete the file
 						try
 						{
-							File f = new File("shared_files/"+"_"+remotePath.replace('/', '_'));
+	System.out.println(serverFolder+"shared_files/_" + remotePath.replace('/', '_'));
+							File f = new File(serverFolder+"shared_files/_" + remotePath.replace('/', '_'));
 
 							if (!f.exists()) 
 							{
@@ -483,6 +488,7 @@ public class FileThread extends Thread
 					socket.close();
 					proceed = false;
 	        		System.out.println("     *Disconnected");
+					System.out.println("\n*** Disconnected: " + socket.getInetAddress() + ":" + socket.getPort() + "***");
 				}
 			} while(proceed);
 		}
