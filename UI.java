@@ -4,75 +4,43 @@ import java.util.*;
 
 public class UI
 {
+	//group server tools
+	private static GroupClient gUser;
+	private static String gServer;
+	private static int gPort;
+
+	//file server tools
+	private static FileClient fUser;
+	private static String fServer;
+	private static int fPort;
+
+	//shared tools
+	private static String username;
+	private static UserToken token;
+
+	//utility tools
+	private static Scanner in;
+
+
 	public static void main(String[] args)
 	{
-		//GroupServer is named "ALPHA" and is on 8766
-		//FileServer is named "FilePile" and is on 4321
 
-		System.out.println("Attempting to connect to GroupServer.");
-		GroupClient gUser = new GroupClient();
-		Scanner keyboard = new Scanner(System.in);
-		
-		System.out.println("What GroupServer should we connect to?");
-		String gServer = keyboard.nextLine();
-		System.out.println("What port should we connect to the GroupServer on?");
-		int gPort = Integer.parseInt(keyboard.nextLine());
-		
-		try
+		gUser = new GroupClient();
+		fUser = new FileClient();
+		in = new Scanner(System.in);
+
+		//GroupServer is named "ALPHA" and is on 5555
+		//FileServer is named "FilePile" and is on 4444		
+
+		if(connectionSetup() == false)
 		{
-			gUser.connect(gServer, gPort);
-		}
-		catch(Exception e)
-		{
-			System.out.println("\nfailed to connect to server");
+			System.out.println("\nSomething went wrong during connect. exiting...");
+			return;
 		}
 
-		boolean proceed;
-		Scanner in;
-		String username;
-		UserToken token;
-		
-		do
+		while(true)//loop until the user exits
 		{
-			System.out.println("Please enter a username.");
-			in = new Scanner(System.in);
-			proceed = false;
-
-			username = in.nextLine();
-
-			System.out.println("Please enter your password.");
-			String pwd = in.nextLine();
-
-			token = gUser.getToken(username, pwd);
-			if (token == null)
-			{
-				proceed = true;
-				System.out.println("Invalid Username");
-			}
-		}while(proceed);//asks for username again
-		
-		
-		FileClient fUser = new FileClient();
-		
-		System.out.println("What FileServer should we connect to?");
-		String fServer = keyboard.nextLine();
-		System.out.println("What port should we connect to the FileServer on?");
-		int fPort = Integer.parseInt(keyboard.nextLine());
-		
-		try
-		{
-			fUser.connect(fServer, fPort, username, token); 
-		}
-		catch(Exception e)
-		{
-			System.out.println("\nfailed to connect to server");
-		}
-
-		boolean connected = true;
-		//UI is connecting to localhost. May change with cmd line options later
-
-		do{	
-			System.out.println("What would you like to do now?");//Queries the user
+			System.out.println("\nWhat would you like to do now?");//Queries the user
 			System.out.print("Type F for File Server operations or G for Group Server operations");
 			System.out.println(" or D to disconnect.");
 			String input = in.nextLine();
@@ -259,9 +227,116 @@ public class UI
 			{
 				gUser.disconnect();	
 				fUser.disconnect();
-				connected = false;
+				break;
 			}
 			else System.out.println("Could not understand your input");
-		} while(connected);//forever
+		}
+	}
+
+
+//---------------------------------------------------------------------------------------------------------------------
+//-- CONNECTION SETUP
+//---------------------------------------------------------------------------------------------------------------------
+
+	private static boolean connectionSetup()
+	{
+		boolean debug = false;
+
+
+		//skip server options and use defaults
+		System.out.println("\nuse debug defaults? [y,n]");
+		if(in.nextLine().equalsIgnoreCase("y"))
+		{
+			debug = true;
+		} 
+
+
+//--GROUP SERVER CONNECT-----------------------------------------------------------------------------------------------
+
+
+		//get input
+		if(debug == false)
+		{
+			System.out.println("\nWhat Group Server should we connect to?");
+			gServer = in.nextLine();
+
+			System.out.println("What port should we connect to the Group Server on?");
+			gPort = Integer.parseInt(in.nextLine());	
+		}
+		else
+		{
+			gServer = "localhost";
+			gPort = 5555;
+		}
+
+		//attempt to connect
+		try
+		{
+			System.out.println("Attempting to connect to Group Server.");
+			gUser.connect(gServer, gPort);
+		}
+		catch(Exception e)
+		{
+			System.out.println("\nfailed to connect to server");
+			return false;
+		}
+
+		System.out.println("\n*** Group server connection successful: NAME: " + gServer + "; PORT:" + gPort + " ***");
+
+
+//--lOGIN & TOKEN RETRIEVAL--------------------------------------------------------------------------------------------
+
+		boolean proceed;
+
+		do
+		{
+			System.out.println("\nPlease enter a username.");
+			proceed = false;
+
+			username = in.nextLine();
+
+			System.out.println("Please enter your password.");
+			String pwd = in.nextLine();
+
+			token = gUser.getToken(username, pwd);
+			if (token == null)
+			{
+				proceed = true;
+				System.out.println("Invalid Username");
+			}
+		}while(proceed);//asks for username again
+
+		System.out.println("\n*** Token obtained ***");
+		
+//--FILE SERVER CONNECT------------------------------------------------------------------------------------------------
+		
+		//get input
+		if(debug == false)
+		{
+			System.out.println("\nWhat File Server should we connect to?");
+			fServer = in.nextLine();
+			System.out.println("What port should we connect to the File Server on?");
+			fPort = Integer.parseInt(in.nextLine());
+		}
+		else
+		{
+			fServer = "localhost";
+			fPort = 4444;
+		}
+
+		//attempt to connect
+		try
+		{
+			System.out.println("Attempting to connect to File Server.");
+			fUser.connect(fServer, fPort, username, token); 
+		}
+		catch(Exception e)
+		{
+			System.out.println("\nfailed to connect to server");
+			return false;
+		}
+		System.out.println("\n*** File server connection successful: NAME: " + gServer + "; PORT:" + gPort + " ***");
+
+		return true;
 	}
 }

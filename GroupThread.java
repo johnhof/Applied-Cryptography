@@ -33,7 +33,7 @@ public class GroupThread extends Thread
 		try
 		{
 			//Announces connection and opens object streams
-			System.out.println("*** New connection from " + socket.getInetAddress() + ":" + socket.getPort() + "***");
+			System.out.println("\n*** New connection from " + socket.getInetAddress() + ":" + socket.getPort() + "***");
 			final ObjectInputStream input = new ObjectInputStream(socket.getInputStream());
 			final ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
 			
@@ -473,7 +473,7 @@ public class GroupThread extends Thread
 			message = (Envelope)input.readObject();
 			if(message.getMessage().equals("AESKEY"))
 			{
-				System.out.println("Request received: " + message.getMessage());
+				System.out.println("\nRequest received: " + message.getMessage());
 				byte[] aesKeyBytes = (byte[]) message.getObjContents().get(0);//This is sent as byte[]
 
 				byte[] aesKeyBytesA = new byte[128];
