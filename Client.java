@@ -11,6 +11,9 @@ public class Client extends ClientInterface
 	{
 		System.out.print("Attempting to connect... ");
 
+		serverName = server;
+		serverPort = port;
+
 //my attempt starts here
 		try
 		{
@@ -55,9 +58,12 @@ public class Client extends ClientInterface
 			try
 			{
 				Envelope message = new Envelope("DISCONNECT");
+				System.out.println("\nRequest Sent: DISCONNECT");
 				output.writeObject(message);
 				sock.close();//I don't see why we shouldn't attempt 
 				//to close the socket on both the server and client sides
+
+				System.out.println("\n*** Group server disconnect successful: NAME: " + serverName + "; PORT:" + serverPort + " ***");
 			}
 			catch(Exception e)
 			{

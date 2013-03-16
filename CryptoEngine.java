@@ -290,5 +290,15 @@ class CryptoEngine
         }
         return obj;
     }
+
+    public String formatAsError(String input)
+    {
+    	return ("     !"+input);
+    }
+
+    public String formatAsSuccess(String input)
+    {
+    	return ("     *"+input);
+    }
 }
 

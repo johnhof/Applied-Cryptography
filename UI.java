@@ -146,7 +146,7 @@ public class UI
 				boolean works;
 				if(input.equals("1"))
 				{
-					System.out.println("What user would you like to create?");
+					System.out.println("\nWhat user would you like to create?");
 					input = in.nextLine();
 					System.out.println("What password should they have?");
 					String pwd = in.nextLine();
@@ -156,7 +156,7 @@ public class UI
 				}
 				else if(input.equals("2"))
 				{
-					System.out.println("What user would you like to delete?");
+					System.out.println("\nWhat user would you like to delete?");
 					input = in.nextLine();
 					works = gUser.deleteUser(input, token);
 					if(!works) System.out.println("Deletion failed");
@@ -164,7 +164,7 @@ public class UI
 				}
 				else if(input.equals("3"))
 				{
-					System.out.println("What group would you like to create?");
+					System.out.println("\nWhat group would you like to create?");
 					input = in.nextLine();
 					works = gUser.createGroup(input, token);
 					if(!works) System.out.println("Creation failed");
@@ -172,7 +172,7 @@ public class UI
 				}
 				else if(input.equals("4"))
 				{
-					System.out.println("What group would you like to delete?");
+					System.out.println("\nWhat group would you like to delete?");
 					input = in.nextLine();
 					works = gUser.deleteGroup(input, token);
 					if(!works) System.out.println("Deletion failed");
@@ -180,7 +180,7 @@ public class UI
 				}
 				else if(input.equals("5"))
 				{
-					System.out.println("What group would you like to know the members of?");
+					System.out.println("\nWhat group would you like to know the members of?");
 					input = in.nextLine();
 					ArrayList<String> members = (ArrayList<String>)gUser.listMembers(input, token);
 					if(members != null){
@@ -193,7 +193,7 @@ public class UI
 				}
 				else if(input.equals("6"))
 				{
-					System.out.println("What user would you like to add to a group?");
+					System.out.println("\nWhat user would you like to add to a group?");
 					input = in.nextLine();
 					System.out.println("To which group?");
 					String input2 = in.nextLine();
@@ -203,7 +203,7 @@ public class UI
 				}
 				else if(input.equals("7"))
 				{
-					System.out.println("What user would you like to delete from a group?");
+					System.out.println("\nWhat user would you like to delete from a group?");
 					input = in.nextLine();
 					System.out.println("From which group?");
 					String input2 = in.nextLine();

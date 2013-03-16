@@ -10,10 +10,17 @@ public abstract class ClientInterface
 	protected Socket sock;
 	protected ObjectOutputStream output;
 	protected ObjectInputStream input;
+	protected String serverName;
+	protected int serverPort;
 
 	public boolean connect(final String server, final int port) 
 	{
+
+		serverName = server;
+		serverPort = port;
+
 		System.out.println("attempting to connect");
+				System.out.println("\n!!!THIS SHOULD NEVER RUN. WHY WAN'T THIS OVERWRITTEN???!!!");
 
 		/* TODO: Write this method */
 		return false;
@@ -38,7 +45,9 @@ public abstract class ClientInterface
 			try
 			{
 				Envelope message = new Envelope("DISCONNECT");
+				System.out.println("\nRequest Sent: DISCONNECT");//this line is really just here for consistency
 				output.writeObject(message);
+				System.out.println("\n*** Group server disconnect successful: NAME: " + serverName + "; PORT:" + serverPort + " ***");
 			}
 			catch(Exception e)
 			{
