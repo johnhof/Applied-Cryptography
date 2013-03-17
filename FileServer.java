@@ -2,27 +2,14 @@
 
 import java.nio.charset.Charset;
 import java.security.*;
-
-import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
-import javax.crypto.KeyGenerator;
-import javax.crypto.spec.IvParameterSpec;
-
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import javax.crypto.*;
+import java.net.*;
+import java.io.*;
+import java.util.*;
 
 //import org.bouncycastle.crypto.paddings.PaddedBufferedBlockCipher;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.io.*;
-import java.util.*;
 public class FileServer extends Server 
 {
 	
@@ -30,19 +17,15 @@ public class FileServer extends Server
 	public static final int SERVER_PORT = 4444;
 	public static FileList fileList;
 	public static PublicKey signVerifyKey;
-	public KeyPair authKeys;
-	public CryptoEngine cEngine;
 	
 	public FileServer() 
 	{
 		super(SERVER_PORT, "FilePile");
-		cEngine = new CryptoEngine();
 	}
 
 	public FileServer(int _port) 
 	{
 		super(_port, "FilePile");
-		cEngine = new CryptoEngine();
 	}
 	
 	public void start() 
@@ -93,15 +76,6 @@ public class FileServer extends Server
 			System.exit(-1);
 		}
 //----------------------------------------------------------------------------------------------------------------------
-		try
-		{
-			authKeys = cEngine.genRSAKeyPair();
-		}
-		catch(Exception e)
-		{
-			System.out.println("ERROR:FILESERVER; could not generate RSA Key Pair");
-			System.exit(-1);
-		}
 		
 		//Open user file to get user list
 		try

@@ -22,155 +22,36 @@ public class FileThread extends ServerThread
 
 	public FileThread(FileServer _fs, Socket _socket)
 	{
-		super(_socket);
+		super((Server)_fs, _socket);
 		my_fs = _fs;
 	}
 
 	public void run()
 	{
 		String serverFolder = my_fs.name+"_Server_Resources/";
+		String resourceFile = serverFolder+"FileResources.bin";
 
 		boolean proceed = true;
 		try
 		{
-			//setup IO streams to bind with the sockets
-			System.out.println("*** New connection from " + socket.getInetAddress() + ":" + socket.getPort() + " ***");
-			final ObjectInputStream input = new ObjectInputStream(socket.getInputStream());
-			final ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
 			Envelope response = null;
 
-//---------------------------------------------------------------------------------------------------------------------
-//-- BEGIN CONNECTION SETUP
-//---------------------------------------------------------------------------------------------------------------------
-			
-//--RSA KEY REQUEST-----------------------------------------------------------------------------------------------------
-			Envelope message = (Envelope)input.readObject();
-			if(message.getMessage().equals("PUBKEYREQ"))
+//--SET UP CONNECTION------------------------------------------------------------------------------------------------
+			System.out.println("\n*** New connection from " + socket.getInetAddress() + ":" + socket.getPort() + " ***");
+			if(setUpConection())
 			{
-				System.out.println("\nRequest received: " + message.getMessage());
-				response = new Envelope("OK");
-				response.addObject(my_fs.authKeys.getPublic());
-				output.writeObject(response);
-				System.out.println(cEngine.formatAsSuccess("public key sent"));
+				System.out.println("\n!!! Setup Failed: " + socket.getInetAddress() + ":" + socket.getPort() + " !!!");
+				return;
 			}
-
-//--RECIEVE AES KEY---------------------------------------------------------------------------------------------------
-
-			//This is wrong, they are still sending this as an envelope
-			message = (Envelope)input.readObject();
-			//The Client has encrypted a message for us with our public key.
-			if(message.getMessage().equals("AESKEY"))
-			{
-				System.out.println("\nRequest received: " + message.getMessage());
-				//check packet integrity and token signature
-				if(message.getObjContents().size() < 2)
-				{
-					response = genAndPrintErrorEnvelope("Not enough data");
-					System.exit(-1);
-				}
-				else
-				{
-					if(message.getObjContents().get(0) == null) 
-					{
-						response = genAndPrintErrorEnvelope("Token missing");
-						System.exit(-1);
-					}
-					else
-					{
-						//retrieve the contents of the envelope
-						UserToken yourToken = (UserToken)message.getObjContents().get(0); //Extract token
-
-						//validate token, terminate connection if failed
-						proceed = yourToken.verifySignature(my_fs.signVerifyKey, cEngine);
-	        			System.out.println(cEngine.formatAsSuccess("Token Authenticated:"+proceed));
-						if(!proceed)
-						{
-							rejectToken(response, output);
-							System.exit(-1);
-						}
-					}
-				}
-
-				byte[] aesKeyBytes = (byte[]) message.getObjContents().get(1);//This is sent as byte[]
-
-				byte[] aesKeyBytesA = new byte[128];
-				byte[] aesKeyBytesB = new byte[128];
-					
-				System.arraycopy(aesKeyBytes, 0, aesKeyBytesA, 0, 128);
-				System.arraycopy(aesKeyBytes, 128, aesKeyBytesB, 0, 128);
-				
-				aesKeyBytesA = cEngine.RSADecrypt(aesKeyBytesA, my_fs.authKeys.getPrivate());
-				aesKeyBytesB = cEngine.RSADecrypt(aesKeyBytesB, my_fs.authKeys.getPrivate());
-					
-				System.arraycopy(aesKeyBytesA, 0, aesKeyBytes, 0, 100);
-				System.arraycopy(aesKeyBytesB, 0, aesKeyBytes, 100, 41);
-					
-				ByteArrayInputStream fromBytes = new ByteArrayInputStream(aesKeyBytes);
-				ObjectInputStream localInput = new ObjectInputStream(fromBytes);
-				aesKey = new AESKeySet((Key) localInput.readObject(), new IvParameterSpec((byte[])message.getObjContents().get(2)));
-				//get(1) contains the IV. localinput turned the byte[] back into a key
-
-				System.out.println(cEngine.formatAsSuccess("AES keyset recieved and stored"));
-				
-//--CHALLENGE---------------------------------------------------------------------------------------------------------
-				//THE AES KEY IS NOW SET
-				message = (Envelope)readObject(input);
-				if(message.getMessage().equals("CHALLENGE"));
-				{
-				System.out.println("\nRequest received: " + message.getMessage());
-					//check packet integrity and token signature
-					if(message.getObjContents().size() < 2)
-					{
-						response = genAndPrintErrorEnvelope("Not enough data sent");
-						System.exit(-1);
-					}
-					else
-					{
-						if(message.getObjContents().get(0) == null) 
-						{
-							response = genAndPrintErrorEnvelope("Token missing");
-							System.exit(-1);
-						}
-						else
-						{
-							//retrieve the contents of the envelope
-							UserToken yourToken = (UserToken)message.getObjContents().get(0); //Extract token
-
-							//validate token, terminate connection if failed
-							proceed = yourToken.verifySignature(my_fs.signVerifyKey, cEngine);
-		        			 System.out.println(cEngine.formatAsSuccess("Token Authenticated:"+proceed));
-							if(!proceed)
-							{
-								rejectToken(response, output);
-								System.exit(-1);
-							}
-						}
-					}
-					Integer challenge = (Integer)message.getObjContents().get(1);
-					challenge = new Integer((challenge.intValue()+1));
-					response = new Envelope("OK");
-					response.addObject(challenge);
-					java.sql.Timestamp currentTime = new java.sql.Timestamp(Calendar.getInstance().getTime().getTime());
-					response.addObject(currentTime);
-					writeObject(output, response);
-					System.out.println(cEngine.formatAsSuccess("Challenge answered"));
-				}
-			}
-			else
-			{
-				System.out.println(cEngine.formatAsError("Failed to setup AES key"));
-				System.exit(-1);
-			}
-			
 			System.out.println("\n*** Setup Finished: " + socket.getInetAddress() + ":" + socket.getPort() + " ***");
 			
-//---------------------------------------------------------------------------------------------------------------------
-//-- END SETUP, BEGIN LOOP
-//---------------------------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------------
+//-- REQUEST HANDLING LOOP
+//----------------------------------------------------------------------------------------------------------------------
 			//handle messages from the input stream(ie. socket)
 			do
 			{
-				Envelope envelope = (Envelope)input.readObject();
+				Envelope envelope = (Envelope)readObject();
 				System.out.println("\nRequest received: " + envelope.getMessage());
 
 				// Handler to list files that this user is allowed to see
@@ -477,47 +358,13 @@ public class FileThread extends ServerThread
 			ex.printStackTrace(System.err);
 		}
 	}
-
-	private Object readObject(ObjectInputStream input)
-	{
-		Object obj = null;
-		try
-		{
-			byte[] eData = (byte[])input.readObject();
-			byte[] data = cEngine.AESDecrypt(eData, aesKey);
-			obj = cEngine.deserialize(data);
-		}
-		catch(Exception ex)
-		{
-			ex.printStackTrace();
-		}
-		
-		return obj;
-	}
-	
-	private boolean writeObject(ObjectOutputStream output, Object obj)
-	{
-		try
-		{
-			byte[] data = cEngine.serialize(obj);
-			
-			byte[] eData = cEngine.AESEncrypt(data, aesKey);//encrypt the data
-			output.writeObject(eData);//write the data to the client
-		}
-		catch(Exception ex)
-		{
-			ex.printStackTrace();
-			return false;
-		}
-		return true;
-	}
 	
 	private void rejectToken(Envelope response, ObjectOutputStream output)
 	{
 
 		response = new Envelope("ERROR: Token signature Rejected");
 		response.addObject(null);
-		writeObject(output, response);
+		writeObject(response);
 		try
 		{
 			socket.close();

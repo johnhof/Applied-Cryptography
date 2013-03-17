@@ -11,61 +11,34 @@
  
  //It seems that all that needs done is a group list save process similar to the userlist
 
-import java.io.UnsupportedEncodingException;
+
 import java.nio.charset.Charset;
 import java.security.*;
-
-import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
-import javax.crypto.KeyGenerator;
-import javax.crypto.spec.IvParameterSpec;
-
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import javax.crypto.*;
+import java.net.*;
+import java.io.*;
+import java.util.*;
 
 //import org.bouncycastle.crypto.paddings.PaddedBufferedBlockCipher;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.io.*;
-import java.util.*;
-
-/*ADDED ELEMENTS:
--groupList: string to easily check group existence
--groupExists: return true if the group exists
-
-NOTE: this is probably not the right way to do this, but I'm at a loss for alternatives
-*/
-
 public class GroupServer extends Server 
 {
 
-	public static final int SERVER_PORT = 5555;
-
+	public static final int SERVER_PORT = 6666;
 	public KeyPair signKeys;
-	public KeyPair authKeys;
 	public UserList userList;
 	public GroupList groupList;
 	//^^^^This should really be a database...
-
-	public CryptoEngine cEngine;
     
 	public GroupServer() 
 	{
 		super(SERVER_PORT, "ALPHA");
-    	cEngine = new CryptoEngine();
 	}
 	
 	public GroupServer(int _port) 
 	{
 		super(_port, "ALPHA");
-    	cEngine = new CryptoEngine();
 	}
 	
 	public void start() 

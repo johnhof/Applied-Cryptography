@@ -157,6 +157,13 @@ public class Client extends ClientInterface
 //-- CONNECTION SETUP FUNCIONS
 //----------------------------------------------------------------------------------------------------------------------
 
+/*
+-> PUBKEYREQ {}
+<- OK {public key}
+-> AESKEY {key, IV, challenge}
+<- OK {challenge}
+*/
+
 	protected boolean setUpServer(String server, String userFile)
 	{
 
@@ -263,7 +270,7 @@ public class Client extends ClientInterface
 			writePlainText(message);
 			//THE AES KEY IS NOW SET
 
-			response = (Envelope)readPlainText();
+			response = (Envelope)readEncrypted();
 			if(response.getMessage().equals("OK"))
 			{
 				if((challenge.intValue()+1) != ((Integer)response.getObjContents().get(0)).intValue())
@@ -279,7 +286,7 @@ public class Client extends ClientInterface
 		}
 		catch(Exception e)
 		{
-			System.out.println("ERROR:FILECLIENT: COULD NOT SEND AESKEY");
+			System.out.println("ERROR:CLIENT: COULD NOT SEND AESKEY");
 			e.printStackTrace();
 			return false;
 		}
@@ -333,6 +340,7 @@ public class Client extends ClientInterface
 		
 			byte[] encryptedKeyA = cEngine.RSAEncrypt(aesKeyBytesA, serverPublicKey);
 			byte[] encryptedKeyB = cEngine.RSAEncrypt(aesKeyBytesB, serverPublicKey);
+			System.out.println(cEngine.formatAsSuccess("AES key encrypted with private key"));
 		
 			byte[] encryptedKey = new byte[encryptedKeyA.length + encryptedKeyB.length];
 			System.arraycopy(encryptedKeyA, 0, encryptedKey, 0, encryptedKeyA.length);

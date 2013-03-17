@@ -16,7 +16,7 @@ public class GroupThread extends ServerThread
 	//These get spun off from GroupServer
 	public GroupThread(Socket _socket, GroupServer _gs)
 	{
-		super(_socket);
+		super((Server)_gs,_socket);
 		my_gs = _gs;
 	}
 	
@@ -25,28 +25,27 @@ public class GroupThread extends ServerThread
 		boolean proceed = true;
     	String groupFolder = "Group_Server_Resources/";
 		String resourceFile = groupFolder+"GroupResources.bin";
+
 		
 		try
 		{
-			//Announces connection and opens object streams
-			System.out.println("\n*** New connection from " + socket.getInetAddress() + ":" + socket.getPort() + " ***");
-			final ObjectInputStream input = new ObjectInputStream(socket.getInputStream());
-			final ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
-			
 
-			if(setKey(input, output) == false)
+//--SET UP CONNECTION------------------------------------------------------------------------------------------------
+			System.out.println("\n*** New connection from " + socket.getInetAddress() + ":" + socket.getPort() + " ***");
+			if(setUpConection() == false)
 			{
-				socket.close(); //Close the socket
-				proceed = false; //End this communication loop
-				System.out.println(cEngine.formatAsError("Failed to connect"));
+				System.out.println("\n!!! Setup Failed: " + socket.getInetAddress() + ":" + socket.getPort() + " !!!");
 				return;
-			} 
+			}
 			System.out.println("\n*** Setup Finished: " + socket.getInetAddress() + ":" + socket.getPort() + " ***");
 			
+//----------------------------------------------------------------------------------------------------------------------
+//-- REQUEST HANDLING LOOP
+//----------------------------------------------------------------------------------------------------------------------
 			//handle messages from the input stream(ie. socket)
 			do
 			{
-				Envelope message = (Envelope)readObject(input);
+				Envelope message = (Envelope)readObject();
 				System.out.println("\nRequest received: " + message.getMessage());
 				Envelope response = null;
 				
@@ -59,25 +58,25 @@ public class GroupThread extends ServerThread
 					{
 						System.out.println(cEngine.formatAsError("No username"));
 						response = new Envelope("FAIL: no username provided.");
-						writeObject(output, response);
+						writeObject(response);
 					}
 					else if(!my_gs.userList.checkUser(username))
 					{
 						System.out.println(cEngine.formatAsError("Username not found"));
 						response = new Envelope("FAIL: username not found.");
-						writeObject(output, response);
+						writeObject(response);
 					}
 					else if(pwd == null || pwd.length() == 0)
 					{
 						System.out.println(cEngine.formatAsError("No password"));
 						response = new Envelope("FAIL: no password.");
-						writeObject(output, response);
+						writeObject(response);
 					}
 					else if(!my_gs.userList.getUserPassword(username).equals(pwd))
 					{
 						System.out.println(cEngine.formatAsError("Wrong password"));
 						response = new Envelope("Wrong password.");
-						writeObject(output, response);
+						writeObject(response);
 					}
 					else
 					{
@@ -86,7 +85,7 @@ public class GroupThread extends ServerThread
 						//Respond to the client. On error, the client will receive a null token
 						response = new Envelope("OK");
 						response.addObject(yourToken);
-						writeObject(output, response);
+						writeObject(response);
 						System.out.println(cEngine.formatAsSuccess("Token sent"));
 					}
 				}
@@ -123,7 +122,7 @@ public class GroupThread extends ServerThread
 							}
 						}
 					}
-					writeObject(output, response);
+					writeObject(response);
 				}
 //--DELETE USER---------------------------------------------------------------------------------------------------------
 				else if(message.getMessage().equals("DUSER")) //Client wants to delete a user
@@ -171,7 +170,7 @@ public class GroupThread extends ServerThread
 							}
 						}
 					}
-					writeObject(output, response);
+					writeObject(response);
 				}
 //--CREATE GROUP---------------------------------------------------------------------------------------------------------
 				else if(message.getMessage().equals("CGROUP")) //Client wants to create a group
@@ -199,7 +198,7 @@ public class GroupThread extends ServerThread
 							}
 						}
 					}
-					writeObject(output, response);
+					writeObject(response);
 				}
 //--DELETE GROUP--------------------------------------------------------------------------------------------------------
 				else if(message.getMessage().equals("DGROUP")) //Client wants to delete a group
@@ -232,7 +231,7 @@ public class GroupThread extends ServerThread
 							}
 						}
 					}
-					writeObject(output, response);
+					writeObject(response);
 				}
 //--LIST MEMBERS--------------------------------------------------------------------------------------------------------
 				else if(message.getMessage().equals("LMEMBERS")) //Client wants a list of members in a group
@@ -267,7 +266,7 @@ public class GroupThread extends ServerThread
 					
 						}
 					}
-					writeObject(output, response);
+					writeObject(response);
 				}
 //--ADD TO GROUP--------------------------------------------------------------------------------------------------------
 				else if(message.getMessage().equals("AUSERTOGROUP")) //Client wants to add user to a group
@@ -309,7 +308,7 @@ public class GroupThread extends ServerThread
 					
 						}
 					}		
-					writeObject(output, response);
+					writeObject(response);
 				}
 //--REMOVE FROM GROUP----------------------------------------------------------------------------------------------------
 				else if(message.getMessage().equals("RUSERFROMGROUP")) //Client wants to remove user from a group
@@ -351,7 +350,7 @@ public class GroupThread extends ServerThread
 							}
 						}
 					}
-					writeObject(output, response);
+					writeObject(response);
 				}
 				
 //--SEE ALL USERS----------------------------------------------------------------------------------------------------
@@ -375,7 +374,7 @@ public class GroupThread extends ServerThread
 							System.out.println(cEngine.formatAsSuccess("Full user list sent"));
 						}
 					}
-					writeObject(output, response);
+					writeObject(response);
 				}
 //--DISCONNECT----------------------------------------------------------------------------------------------------------
 				else if(message.getMessage().equals("DISCONNECT")) //Client wants to disconnect
@@ -390,7 +389,7 @@ public class GroupThread extends ServerThread
 				{
 					System.out.println(cEngine.formatAsError("Invalid request"));
 					response = new Envelope("FAIL -- server does not understand client request. "); //Server does not understand client request
-					writeObject(output, response);
+					writeObject(response);
 				}
 			}
 			while(proceed);	
@@ -400,121 +399,7 @@ public class GroupThread extends ServerThread
 			System.err.println("Error: " + e.getMessage());
 			e.printStackTrace(System.err);
 		}
-	}
-	//Method to write objects
-	private boolean writeObject(ObjectOutputStream output, Object obj)
-	{
-		try
-		{
-			byte[] data = cEngine.serialize(obj);
-			
-			byte[] eData = cEngine.AESEncrypt(data, aesKey);//encrypt the data
-			output.writeObject(eData);//write the data to the client
-		}
-		catch(Exception e)
-		{
-			e.printStackTrace();
-			return false;
-		}
-		return true;
-	}
-	
-	//Method to read objects
-	private Object readObject(ObjectInputStream input)
-	{
-		Object obj = null;
-		try
-		{
-			byte[] eData = (byte[])input.readObject();
-			byte[] data = cEngine.AESDecrypt(eData, aesKey);
-			obj = cEngine.deserialize(data);
-		}
-		catch(Exception e)
-		{
-			e.printStackTrace();
-		}
-		
-		return obj;
-	}
-	
-	//Method to receive and establish an AESKey from the client
-	private boolean setKey(ObjectInputStream input, ObjectOutputStream output)
-	{
-		try
-		{
-			Key rsaSessionPublic = my_gs.authKeys.getPublic();
-			Key rsaSessionPrivate = my_gs.authKeys.getPrivate();
-			//These keys exist just to encrypt/decrypt this specific session key for this user
-
-			Envelope message;
-			Envelope response;
-			
-
-//---------------------------------------------------------------------------------------------------------------------
-//-- BEGIN CONNECTION SETUP
-//---------------------------------------------------------------------------------------------------------------------
-			
-//--RSA KEY REQUEST-----------------------------------------------------------------------------------------------------
-			message = (Envelope)input.readObject();
-			if(message.getMessage().equals("PUBKEYREQ"))
-			{
-				System.out.println("\nRequest received: " + message.getMessage());
-				response = new Envelope("PUBKEYANSW");
-				response.addObject(rsaSessionPublic);//send as Key not byte[]
-				output.writeObject(response);
-				System.out.println(cEngine.formatAsSuccess("public key sent"));
-			}
-				
-//--RECIEVE AES KEY---------------------------------------------------------------------------------------------------
-			message = (Envelope)input.readObject();
-			if(message.getMessage().equals("AESKEY"))
-			{
-				System.out.println("\nRequest received: " + message.getMessage());
-				byte[] aesKeyBytes = (byte[]) message.getObjContents().get(0);//This is sent as byte[]
-
-				byte[] aesKeyBytesA = new byte[128];
-				byte[] aesKeyBytesB = new byte[128];
-					
-				System.arraycopy(aesKeyBytes, 0, aesKeyBytesA, 0, 128);
-				System.arraycopy(aesKeyBytes, 128, aesKeyBytesB, 0, 128);
-				
-				aesKeyBytesA = cEngine.RSADecrypt(aesKeyBytesA, rsaSessionPrivate);
-				aesKeyBytesB = cEngine.RSADecrypt(aesKeyBytesB, rsaSessionPrivate);
-					
-				System.arraycopy(aesKeyBytesA, 0, aesKeyBytes, 0, 100);
-				System.arraycopy(aesKeyBytesB, 0, aesKeyBytes, 100, 41);
-				
-				ByteArrayInputStream fromBytes = new ByteArrayInputStream(aesKeyBytes);
-				ObjectInputStream localInput = new ObjectInputStream(fromBytes);
-				aesKey = new AESKeySet((Key) localInput.readObject(), new IvParameterSpec((byte[])message.getObjContents().get(1)));
-
-				//get(1) contains the IV. localinput turned the byte[] back into a key
-				message=(Envelope)readObject(input);
-				System.out.println(cEngine.formatAsSuccess("AES keyset recieved and stored"));
-
-//--CHALLENGE---------------------------------------------------------------------------------------------------------
-				//THE AES KEY IS NOW SET
-				if(message.getMessage().equals("CHALLENGE"))
-				{
-					System.out.println("\nRequest received: " + message.getMessage());
-					Integer challenge = (Integer)message.getObjContents().get(0);
-					challenge = new Integer((challenge.intValue()+1));
-					response = new Envelope("OK");
-					response.addObject(challenge);
-					writeObject(output, response);
-					System.out.println(cEngine.formatAsSuccess("Challenge answered"));
-					return true;
-				}
-			}
-			else {return false;}
-		}
-		catch(Exception e)
-		{
-			e.printStackTrace();
-			System.exit(-1);
-		}
-			return false;
-	}
+	}	
 	
 	//Method to create tokens
 	private UserToken createToken(String username) 
@@ -656,7 +541,7 @@ public class GroupThread extends ServerThread
 
 		response = new Envelope("ERROR: Token signature Rejected");
 		response.addObject(null);
-		writeObject(output, response);
+		writeObject(response);
 		try
 		{
 			socket.close();

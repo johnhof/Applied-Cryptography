@@ -269,7 +269,7 @@ public class UI
 		else
 		{
 			gServer = "localhost";
-			gPort = 5555;
+			gPort = 6666;
 		}
 
 		//attempt to connect
