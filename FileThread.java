@@ -16,18 +16,14 @@ import java.io.*;
 import java.util.*;
 
 //These threads are spun off by FileServer.java
-public class FileThread extends Thread
+public class FileThread extends ServerThread
 {
-	private final Socket socket;
 	private FileServer my_fs;
-	private CryptoEngine cEngine;
-	private AESKeySet aesKey;
 
 	public FileThread(FileServer _fs, Socket _socket)
 	{
+		super(_socket);
 		my_fs = _fs;
-		socket = _socket;
-		cEngine = new CryptoEngine();
 	}
 
 	public void run()
@@ -69,16 +65,14 @@ public class FileThread extends Thread
 				//check packet integrity and token signature
 				if(message.getObjContents().size() < 2)
 				{
-					response = new Envelope("FAIL -- not enough data. ");
-					message = (Envelope)readObject(input);
+					response = genAndPrintErrorEnvelope("Not enough data");
 					System.exit(-1);
 				}
 				else
 				{
 					if(message.getObjContents().get(0) == null) 
 					{
-						response = new Envelope("FAIL -- Token. ");
-						message = (Envelope)readObject(input);
+						response = genAndPrintErrorEnvelope("Token missing");
 						System.exit(-1);
 					}
 					else
@@ -88,7 +82,7 @@ public class FileThread extends Thread
 
 						//validate token, terminate connection if failed
 						proceed = yourToken.verifySignature(my_fs.signVerifyKey, cEngine);
-	        			  System.out.println(cEngine.formatAsSuccess("Token Authenticated:"+proceed));
+	        			System.out.println(cEngine.formatAsSuccess("Token Authenticated:"+proceed));
 						if(!proceed)
 						{
 							rejectToken(response, output);
@@ -127,16 +121,14 @@ public class FileThread extends Thread
 					//check packet integrity and token signature
 					if(message.getObjContents().size() < 2)
 					{
-						response = new Envelope("FAIL -- not enough data. ");
-						message = (Envelope)readObject(input);
+						response = genAndPrintErrorEnvelope("Not enough data sent");
 						System.exit(-1);
 					}
 					else
 					{
 						if(message.getObjContents().get(0) == null) 
 						{
-							response = new Envelope("FAIL -- Token. ");
-							message = (Envelope)readObject(input);
+							response = genAndPrintErrorEnvelope("Token missing");
 							System.exit(-1);
 						}
 						else
@@ -178,29 +170,29 @@ public class FileThread extends Thread
 			//handle messages from the input stream(ie. socket)
 			do
 			{
-				Envelope e = (Envelope)input.readObject();
-				System.out.println("\nRequest received: " + e.getMessage());
+				Envelope envelope = (Envelope)input.readObject();
+				System.out.println("\nRequest received: " + envelope.getMessage());
 
 				// Handler to list files that this user is allowed to see
 //--LIST FILES---------------------------------------------------------------------------------------------------------
 				
-				if(e.getMessage().equals("LFILES"))
+				if(envelope.getMessage().equals("LFILES"))
 				{
 
-					if(e.getObjContents().size() < 1)
+					if(envelope.getObjContents().size() < 1)
 					{
-						response = new Envelope("FAIL -- not enough data. ");
+						response = genAndPrintErrorEnvelope("Not enough data sent");
 					}
 					else
 					{
-						if(e.getObjContents().get(0) == null) 
+						if(envelope.getObjContents().get(0) == null) 
 						{
-							response = new Envelope("FAIL -- Token. ");
+							response = genAndPrintErrorEnvelope("Token missing");
 						}
 						else
 						{
 							//retrieve the contents of the envelope
-							UserToken yourToken = (UserToken)e.getObjContents().get(0); //Extract token
+							UserToken yourToken = (UserToken)envelope.getObjContents().get(0); //Extract token
 
 							//validate token, terminate connection if failed
 							proceed = yourToken.verifySignature(my_fs.signVerifyKey, cEngine);
@@ -228,50 +220,45 @@ public class FileThread extends Thread
 
 //--UPLOAD FILE--------------------------------------------------------------------------------------------------------
 				
-				if(e.getMessage().equals("UPLOADF"))
+				if(envelope.getMessage().equals("UPLOADF"))
 				{
-					if(e.getObjContents().size() < 3)
+					if(envelope.getObjContents().size() < 3)
 					{
-						System.out.println(cEngine.formatAsError("Message too small"));
-						response = new Envelope("FAIL -- bad contents. ");
+						response = genAndPrintErrorEnvelope("Not enough data sent");
 					}
 					else
 					{
-						if(e.getObjContents().get(0) == null) 
+						if(envelope.getObjContents().get(0) == null) 
 						{
-							System.out.println(cEngine.formatAsError("Bad path"));
-							response = new Envelope("FAIL -- bad path. ");
+							response = genAndPrintErrorEnvelope("bad path");
 						}
-						if(e.getObjContents().get(1) == null) 
+						if(envelope.getObjContents().get(1) == null) 
 						{
-							System.out.println(cEngine.formatAsError("Bad group"));
-							response = new Envelope("FAIL -- bad group. ");
+							response = genAndPrintErrorEnvelope("bad group");
 						}
-						if(e.getObjContents().get(2) == null) 
+						if(envelope.getObjContents().get(2) == null) 
 						{
-							System.out.println(cEngine.formatAsError("bad token"));
-							response = new Envelope("FAIL -- bad token. ");
+							response = genAndPrintErrorEnvelope("bad token");
 						}
 						else {
 							//retrieve the contents of the envelope
-							String remotePath = (String)e.getObjContents().get(0);
-							String group = (String)e.getObjContents().get(1);
-							UserToken yourToken = (UserToken)e.getObjContents().get(2); //Extract token
+							String remotePath = (String)envelope.getObjContents().get(0);
+							String group = (String)envelope.getObjContents().get(1);
+							UserToken yourToken = (UserToken)envelope.getObjContents().get(2); //Extract token
 
 							//validate token, terminate connection if failed
 							proceed = yourToken.verifySignature(my_fs.signVerifyKey, cEngine);
-	        				  System.out.println(cEngine.formatAsSuccess("Token Authenticated:"+proceed));
+	        				System.out.println(cEngine.formatAsSuccess("Token Authenticated:"+proceed));
+							
 							if(!proceed) rejectToken(response, output);
 
 							if (FileServer.fileList.checkFile(remotePath)) 
 							{
-								System.out.printf("%sFile already exists at %s\n", cEngine.formatAsError(""), remotePath);
-								response = new Envelope("FAIL -- file already exists. "); //Success
+								response = genAndPrintErrorEnvelope("File already exists");
 							}
 							else if (!yourToken.getGroups().contains(group)) 
 							{
-								System.out.printf("%sUser missing valid token for group %s\n", cEngine.formatAsError(""), group);
-								response = new Envelope("FAIL -- unauthorized user token for group. "); //Success
+								response = genAndPrintErrorEnvelope("Token does not have permissions for group: " + group);
 							}
 							//create file and handle upload
 							else  
@@ -287,26 +274,25 @@ public class FileThread extends Thread
 								output.writeObject(response);
 
 								//recieve and write the file to the directory
-								e = (Envelope)input.readObject();
-								while (e.getMessage().compareTo("CHUNK") == 0) 
+								envelope = (Envelope)input.readObject();
+								while (envelope.getMessage().compareTo("CHUNK") == 0) 
 								{
-									fos.write((byte[])e.getObjContents().get(0), 0, (Integer)e.getObjContents().get(1));
+									fos.write((byte[])envelope.getObjContents().get(0), 0, (Integer)envelope.getObjContents().get(1));
 									response = new Envelope("READY"); //Success
 									output.writeObject(response);
-									e = (Envelope)input.readObject();
+									envelope = (Envelope)input.readObject();
 								}
 
 								//end of file identifier expected, inform the user of status
-								if(e.getMessage().compareTo("EOF") == 0) 
+								if(envelope.getMessage().compareTo("EOF") == 0) 
 								{
 									System.out.printf("%sTransfer successful file %s\n", cEngine.formatAsSuccess(""), remotePath);
 									FileServer.fileList.addFile(yourToken.getSubject(), group, remotePath);
 									response = new Envelope("OK"); //Success
 								}
 								else 
-									{
-									System.out.printf("%sFailed to read filee %s from client\n", cEngine.formatAsSuccess(""), remotePath);
-									response = new Envelope("ERROR -- failed attempt at reading file from client. "); //Success
+								{
+									response = genAndPrintErrorEnvelope("Failed to read the file  from the client: "+remotePath); //Success
 								}
 								fos.close();
 							}
@@ -316,29 +302,25 @@ public class FileThread extends Thread
 					output.writeObject(response);
 				}
 //--DOWNLOAD FILE------------------------------------------------------------------------------------------------------
-				else if (e.getMessage().compareTo("DOWNLOADF") == 0) 
+				else if (envelope.getMessage().compareTo("DOWNLOADF") == 0) 
 				{
 					//retrieve the contents of the envelope, and attampt to access the requested file
-					String remotePath = (String)e.getObjContents().get(0);
-					UserToken t = (UserToken)e.getObjContents().get(1);
+					String remotePath = (String)envelope.getObjContents().get(0);
+					UserToken t = (UserToken)envelope.getObjContents().get(1);
 					ShareFile sf = FileServer.fileList.getFile("/" + remotePath);
 
 					//validate token, terminate connection if failed
 					proceed = t.verifySignature(my_fs.signVerifyKey, cEngine);
-	        		  System.out.println(cEngine.formatAsSuccess("Token Authenticated:"+proceed));
+	        		System.out.println(cEngine.formatAsSuccess("Token Authenticated:"+proceed));
 					if(!proceed) rejectToken(response, output);
 
 					if (sf == null) 
 					{
-						System.out.printf("%sFile %s doesn't exist\n", cEngine.formatAsError(""), remotePath);
-						e = new Envelope("ERROR -- file missing. ");
-						output.writeObject(e);
+						output.writeObject(genAndPrintErrorEnvelope("File ("+remotePath+") does not exist"));
 					}
 					else if (!t.getGroups().contains(sf.getGroup()))
 					{
-						System.out.printf("%suser %s doesn't have permission\n", cEngine.formatAsError(""), t.getSubject());
-						e = new Envelope("ERROR -- insufficient user permissions. ");
-						output.writeObject(e);
+						output.writeObject(genAndPrintErrorEnvelope("Token does not have permissions for group: " + sf.getGroup()));
 					}
 					else 
 					{
@@ -349,9 +331,8 @@ public class FileThread extends Thread
 							File f = new File(serverFolder+"shared_files/_" + remotePath.replace('/', '_'));
 							if (!f.exists()) 
 							{
-								System.out.printf("%sfile %s missing from disk\n", cEngine.formatAsError(""), "_"+remotePath.replace('/', '_'));
-								e = new Envelope("ERROR -- file not on disk. ");
-								output.writeObject(e);
+								envelope = genAndPrintErrorEnvelope("file ("+remotePath.replace('/', '_')+") missing from disk:");
+								output.writeObject(envelope);
 							}
 							else 
 							{
@@ -361,12 +342,12 @@ public class FileThread extends Thread
 								do 
 								{
 									byte[] buf = new byte[4096];
-									if (e.getMessage().compareTo("DOWNLOADF") != 0) 
+									if (envelope.getMessage().compareTo("DOWNLOADF") != 0) 
 									{
-										System.out.printf("%sServer error: %s\n", cEngine.formatAsError(""), e.getMessage());
+										System.out.printf("%sServer error: %s\n", cEngine.formatAsError(""), envelope.getMessage());
 										break;
 									}
-									e = new Envelope("CHUNK");
+									envelope = new Envelope("CHUNK");
 									int n = fis.read(buf); //can throw an IOException
 									if (n > 0) 
 									{
@@ -378,54 +359,56 @@ public class FileThread extends Thread
 									}
 
 									//tack the chunk onto the envelope and write it
-									e.addObject(buf);
-									e.addObject(new Integer(n));
-									output.writeObject(e);
+									envelope.addObject(buf);
+									envelope.addObject(new Integer(n));
+									output.writeObject(envelope);
 
 									//get response
-									e = (Envelope)input.readObject();
+									envelope = (Envelope)input.readObject();
 								}
 								while (fis.available() > 0);
 
 								//If server indicates success, return the member list
-								if(e.getMessage().compareTo("DOWNLOADF") == 0)
+								if(envelope.getMessage().compareTo("DOWNLOADF") == 0)
 								{
 									//send the end of file identifier
-									e = new Envelope("EOF -- end of file. ");
-									output.writeObject(e);
+									envelope = new Envelope("EOF");
+									output.writeObject(envelope);
 
 									//accept response
-									e = (Envelope)input.readObject();
-									if(e.getMessage().compareTo("OK") == 0) 
+									envelope = (Envelope)input.readObject();
+									if(envelope.getMessage().compareTo("OK") == 0) 
 									{
 										System.out.printf(cEngine.formatAsSuccess("File transfer successful\n"));
 									}
 									else 
 									{
-										System.out.printf("%stransfer failed: %s\n", cEngine.formatAsError(""), e.getMessage());
+										System.out.println(cEngine.formatAsError("Transfer failed: " + envelope.getMessage()));
 									}
 								}
 								else 
 								{
-
-									System.out.printf("%stransfer failed: %s\n", cEngine.formatAsError(""), e.getMessage());
+									System.out.println(cEngine.formatAsError("Transfer failed: " + envelope.getMessage()));
 								}
 							}
 						}
-						catch(Exception e1)
+						catch(Exception ex)
 						{
-							System.err.println("Error: " + e.getMessage());
-							e1.printStackTrace(System.err);
+							System.out.println(cEngine.formatAsError("error during file sending"));
+							/*System.err.println("Error: " + ex.getMessage());
+							ex.printStackTrace(System.err);*/
+
+							//NOTE: should we be sending a message here?
 
 						}
 					}
 				}
 //--DELETE FILE--------------------------------------------------------------------------------------------------------
-				else if (e.getMessage().compareTo("DELETEF")==0) 
+				else if (envelope.getMessage().compareTo("DELETEF")==0) 
 				{
 					//retrieve the contents of the envelope, and attampt to access the requested file
-					String remotePath = (String)e.getObjContents().get(0);
-					UserToken t = (UserToken)e.getObjContents().get(1);
+					String remotePath = (String)envelope.getObjContents().get(0);
+					UserToken t = (UserToken)envelope.getObjContents().get(1);
 					ShareFile sf = FileServer.fileList.getFile("/"+remotePath);
 					
 					//validate token, terminate connection if failed
@@ -433,16 +416,13 @@ public class FileThread extends Thread
 	        		System.out.println(cEngine.formatAsSuccess("Token Authenticated:"+proceed));
 					if(!proceed) rejectToken(response, output);
 
-
 					if (sf == null) 
 					{	
-						System.out.printf("%sFile %s doesn't exist\n", cEngine.formatAsError(""), remotePath);
-						e = new Envelope("ERROR -- file does not exists. ");
+						envelope = genAndPrintErrorEnvelope("File (" + remotePath + ") does not exist");
 					}
 					else if (!t.getGroups().contains(sf.getGroup()))
 					{
-						System.out.printf("%suser %s doesn't have permission\n", cEngine.formatAsError(""), t.getSubject());
-						e = new Envelope("ERROR -- insufficient user permissions. ");
+						envelope = genAndPrintErrorEnvelope("Token does not have permissions for group: " + sf.getGroup());
 					}
 					else 
 					{
@@ -454,36 +434,35 @@ public class FileThread extends Thread
 
 							if (!f.exists()) 
 							{
-								System.out.printf("%sfile %s missing from disk\n", cEngine.formatAsError(""), "_"+remotePath.replace('/', '_'));
-								e = new Envelope("ERROR -- insufficient user permissions. ");
+								envelope = genAndPrintErrorEnvelope("file ("+remotePath.replace('/', '_')+") missing from disk:");
 							}
 							else if (f.delete()) 
 							{
-								System.out.printf("%sFile %s deleted from disk\n", cEngine.formatAsSuccess(""), "_"+remotePath.replace('/', '_'));
+								System.out.println(cEngine.formatAsSuccess("File ("+remotePath.replace('/', '_')+") deleted from disk"));
 								FileServer.fileList.removeFile("/"+remotePath);
-								e = new Envelope("OK");
+								envelope = new Envelope("OK");
 							}
 							else 
 							{
-								System.out.printf("%sFailure deleting file %s from disk\n", cEngine.formatAsError(""), "_"+remotePath.replace('/', '_'));
-								e = new Envelope("ERROR -- file unable to be deleted from disk. ");
+								envelope = genAndPrintErrorEnvelope("Failure deleting file ("+remotePath.replace('/', '_')+")from disk. ");
 							}
 
 
 						}
 						catch(Exception e1)
 						{
-							System.err.println("Error: " + e1.getMessage());
+							/*System.err.println("Error: " + e1.getMessage());
 							e1.printStackTrace(System.err);
-							e = new Envelope(e1.getMessage());
+							envelope = new Envelope(e1.getMessage());*/
+							envelope =  genAndPrintErrorEnvelope("Exception thrown. file ("+remotePath.replace('/', '_')+") may not exist");
 						}
 
 
 					}
-					output.writeObject(e);
+					output.writeObject(envelope);
 
 				}
-				else if(e.getMessage().equals("DISCONNECT"))
+				else if(envelope.getMessage().equals("DISCONNECT"))
 				{
 					socket.close();
 					proceed = false;
@@ -492,10 +471,10 @@ public class FileThread extends Thread
 				}
 			} while(proceed);
 		}
-		catch(Exception e)
+		catch(Exception ex)
 		{
-			System.err.println("Error: " + e.getMessage());
-			e.printStackTrace(System.err);
+			System.err.println("Error: " + ex.getMessage());
+			ex.printStackTrace(System.err);
 		}
 	}
 
@@ -508,9 +487,9 @@ public class FileThread extends Thread
 			byte[] data = cEngine.AESDecrypt(eData, aesKey);
 			obj = cEngine.deserialize(data);
 		}
-		catch(Exception e)
+		catch(Exception ex)
 		{
-			e.printStackTrace();
+			ex.printStackTrace();
 		}
 		
 		return obj;
@@ -525,9 +504,9 @@ public class FileThread extends Thread
 			byte[] eData = cEngine.AESEncrypt(data, aesKey);//encrypt the data
 			output.writeObject(eData);//write the data to the client
 		}
-		catch(Exception e)
+		catch(Exception ex)
 		{
-			e.printStackTrace();
+			ex.printStackTrace();
 			return false;
 		}
 		return true;
@@ -543,7 +522,7 @@ public class FileThread extends Thread
 		{
 			socket.close();
 		}
-		catch(Exception e)
+		catch(Exception ex)
 		{
 			System.out.println("WARNING: GroupThread; socket could not be closed");
 		}

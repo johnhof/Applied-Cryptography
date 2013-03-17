@@ -47,6 +47,11 @@ public class FileServer extends Server
 	
 	public void start() 
 	{
+		
+		System.out.println("\n\n***********************************************************\n"+
+								"****                    New Session                    ****\n"+
+								"***********************************************************\n");
+		
     	String publicFolder = "Public_Resources/";
 		String serverFolder = name+"_Server_Resources/";
 		File file = new File(serverFolder);
@@ -226,7 +231,7 @@ class AutoSaveFS extends Thread
 			try
 			{
 				Thread.sleep(300000); //Save group and user lists every 5 minutes
-				System.out.println("Autosave file list...");
+				System.out.println("\nAutosave file list...");
 				ObjectOutputStream outStream;
 
 				//write the filelist to FileList.bin
@@ -244,7 +249,7 @@ class AutoSaveFS extends Thread
 			}
 			catch(Exception e)
 			{
-				System.out.println("Autosave Interrupted");
+				System.out.println("\nAutosave Interrupted");
 			}
 		}
 		while(true);

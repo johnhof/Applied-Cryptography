@@ -31,6 +31,9 @@ public class UI
 
 		//GroupServer is named "ALPHA" and is on 5555
 		//FileServer is named "FilePile" and is on 4444		
+		System.out.println("\n\n***********************************************************\n"+
+								"****                    New Session                    ****\n"+
+								"***********************************************************\n");
 
 		if(connectionSetup() == false)
 		{
@@ -75,7 +78,7 @@ public class UI
 								System.out.println(file.getPath());
 							}
 						}
-						else System.out.println("No files found");
+						else System.out.println("\nNo files found");
 					break;
 
 					case 2:
@@ -272,7 +275,6 @@ public class UI
 		//attempt to connect
 		try
 		{
-			System.out.println("Attempting to connect to Group Server.");
 			gUser.connect(gServer, gPort);
 		}
 		catch(Exception e)
@@ -281,7 +283,6 @@ public class UI
 			return false;
 		}
 
-		System.out.println("\n*** Group server connection successful: NAME: " + gServer + "; PORT:" + gPort + " ***");
 
 
 //--lOGIN & TOKEN RETRIEVAL--------------------------------------------------------------------------------------------
@@ -305,8 +306,6 @@ public class UI
 				System.out.println("Invalid Username");
 			}
 		}while(proceed);//asks for username again
-
-		System.out.println("\n*** Token obtained ***");
 		
 //--FILE SERVER CONNECT------------------------------------------------------------------------------------------------
 		
@@ -327,7 +326,6 @@ public class UI
 		//attempt to connect
 		try
 		{
-			System.out.println("Attempting to connect to File Server.");
 			fUser.connect(fServer, fPort, username, token); 
 		}
 		catch(Exception e)
@@ -335,7 +333,6 @@ public class UI
 			System.out.println("\nfailed to connect to server");
 			return false;
 		}
-		System.out.println("\n*** File server connection successful: NAME: " + gServer + "; PORT:" + gPort + " ***");
 
 		return true;
 	}

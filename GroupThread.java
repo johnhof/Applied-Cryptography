@@ -9,19 +9,15 @@ import java.security.*;
 import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
 
-public class GroupThread extends Thread 
+public class GroupThread extends ServerThread 
 {
-	private final Socket socket;
 	private GroupServer my_gs;
-	private CryptoEngine cEngine;
-	private AESKeySet aesKey = null;
 	
 	//These get spun off from GroupServer
 	public GroupThread(Socket _socket, GroupServer _gs)
 	{
-		socket = _socket;
+		super(_socket);
 		my_gs = _gs;
-		cEngine = my_gs.cEngine;
 	}
 	
 	public void run()
@@ -500,6 +496,7 @@ public class GroupThread extends Thread
 				//THE AES KEY IS NOW SET
 				if(message.getMessage().equals("CHALLENGE"))
 				{
+					System.out.println("\nRequest received: " + message.getMessage());
 					Integer challenge = (Integer)message.getObjContents().get(0);
 					challenge = new Integer((challenge.intValue()+1));
 					response = new Envelope("OK");

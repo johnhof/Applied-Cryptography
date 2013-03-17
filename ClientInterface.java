@@ -47,7 +47,7 @@ public abstract class ClientInterface
 				Envelope message = new Envelope("DISCONNECT");
 				System.out.println("\nRequest Sent: DISCONNECT");//this line is really just here for consistency
 				output.writeObject(message);
-				System.out.println("\n*** Group server disconnect successful: NAME: " + serverName + "; PORT:" + serverPort + " ***");
+				System.out.println("\n*** Server disconnect successful: NAME: " + serverName + "; PORT:" + serverPort + " ***");
 			}
 			catch(Exception e)
 			{

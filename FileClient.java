@@ -11,23 +11,23 @@ import java.util.*;
 
 public class FileClient extends Client implements FileClientInterface 
 {
-	private CryptoEngine cEngine;
 	private Key serverPublicKey;
 	private KeyList keyList;
-	private AESKeySet aesKey;
 	private UserToken token;
 	
 	public boolean connect(final String server, final int port, String username, UserToken newtoken)
 	{
+		System.out.println("\n*** Attempting to connect to File Server: NAME: " + server + "; PORT: " + port + " ***");
 		super.connect(server, port);
 
 		token = newtoken;
 		
-		cEngine = new CryptoEngine();
 		String userFolder = "User_Resources/";
 		String userFile = userFolder+"UserKeys" + username + ".bin";
 		ObjectInputStream keyStream;
 		
+		System.out.println("\nSetting up resources");
+
 		try
 		{
 			//Create or find a directory named "shared_files"
@@ -45,17 +45,17 @@ public class FileClient extends Client implements FileClientInterface
 				Key allegedKey = setPublicKey();
 				if(serverPublicKey.toString().equals(allegedKey.toString()))
 				{
-					System.out.println("FileServer verification step 1 complete.");
+					System.out.println(cEngine.formatAsSuccess("FileServer verification step 1 complete"));
 				}
 				else
 				{
-					System.out.println("Public Keys Do Not Match. This is an unauthorized server.");
+					System.out.println(cEngine.formatAsError("Public Keys Do Not Match. This is an unauthorized server"));
 					System.exit(-1);
 				}
 			}
 			else
 			{
-				System.out.println("This is a new file server. Requesting Public Key");
+				System.out.println(cEngine.formatAsSuccess("This is a new file server. Requesting Public Key"));
 				serverPublicKey = setPublicKey();
 				keyList.addKey(server, serverPublicKey);
 				ObjectOutputStream outStream = new ObjectOutputStream(new FileOutputStream(userFolder+"UserKeys" + username + ".bin"));
@@ -65,9 +65,9 @@ public class FileClient extends Client implements FileClientInterface
 		}
 		catch(FileNotFoundException e)
 		{
-			System.out.println("UserKeys file does not exit. Creating new one.");
+			System.out.println(cEngine.formatAsSuccess("UserKeys file does not exist. Creating new one"));
 			keyList = new KeyList();
-			System.out.println("This is a new file server. Requesting Public Key");
+			System.out.println(cEngine.formatAsSuccess("This is a new file server. Requesting Public Key"));
 			serverPublicKey = setPublicKey();
 			keyList.addKey(server, serverPublicKey);
 			try
@@ -92,6 +92,8 @@ public class FileClient extends Client implements FileClientInterface
 		
 		setAesKey(token);
 		
+		System.out.println("\n*** File server connection successful: NAME: " + serverName + "; PORT: " + serverPort + " ***");
+
 		return true;
 	}
 
@@ -131,32 +133,37 @@ public class FileClient extends Client implements FileClientInterface
 			message.addObject(encryptedKey);
 			message.addObject(aesKey.getIV().getIV());
 		
-			output.writeObject(message);
+			System.out.println("\nFile Server Request Sent: AESKEY");
+			writePlainText(message);
 			//THE AES KEY IS NOW SET
+
+
 			message = new Envelope("CHALLENGE");
 			Integer challenge = new Integer((new SecureRandom()).nextInt());
 			message.addObject(token);
 			message.addObject(challenge);
-			writeObject(message);
-			response = (Envelope)readObject();
+			System.out.println("\nFile Server Request Sent: CHALLENGE");
+			writeEncrypted(message);
+
+			response = (Envelope)readEncrypted();
 			if(response.getMessage().equals("OK"))
 			{
 				if((challenge.intValue()+1) != ((Integer)response.getObjContents().get(0)).intValue())
 				{
-					System.out.println("CHALLENGE FAILED");
+					System.out.println(cEngine.formatAsError("Challenge failed"));
 					System.exit(-1);
 				}
 				else
 				{
-					System.out.println("Challenge succeeded");
+					System.out.println(cEngine.formatAsSuccess("Challenge passed"));
 					java.sql.Timestamp challengeTime = (java.sql.Timestamp)response.getObjContents().get(1);
 					if((System.currentTimeMillis() - challengeTime.getTime())/(1000*60) < 5 )
 					{
-						System.out.println("Fresh timestamp");
+						System.out.println(cEngine.formatAsSuccess("Fresh timestamp returned"));
 					}
 					else
 					{
-						System.out.println("Old timestamp");
+						System.out.println(cEngine.formatAsError("Old timestamp"));
 						System.exit(-1);
 					}
 				}
@@ -170,41 +177,6 @@ public class FileClient extends Client implements FileClientInterface
 		}
 	}
 	
-	private boolean writeObject(Object obj)
-	{
-		try
-		{
-			byte[] data = cEngine.serialize(obj);
-			
-			byte[] eData = cEngine.AESEncrypt(data, aesKey);//encrypt the data
-			output.writeObject(eData);//write the data to the client
-		}
-		catch(Exception e)
-		{
-			e.printStackTrace();
-			return false;
-		}
-		return true;
-	}
-	
-	//Method to read objects
-	private Object readObject()
-	{
-		Object obj = null;
-		try
-		{
-			byte[] eData = (byte[])input.readObject();
-			
-			byte[] data = cEngine.AESDecrypt(eData, aesKey);
-			obj = cEngine.deserialize(data);
-		}
-		catch(Exception e)
-		{
-			e.printStackTrace();
-		}
-		
-		return obj;
-	}
 	
 	public Key setPublicKey()
 	{
@@ -213,11 +185,13 @@ public class FileClient extends Client implements FileClientInterface
 		try
 		{
 			message = new Envelope("PUBKEYREQ");
-			output.writeObject(message);
-			response = (Envelope)input.readObject();
+			System.out.println("\nFile Server Request Sent: PUBKEYREQ");
+			writePlainText(message);
+			response = (Envelope)readPlainText();
 			if(response.getMessage().equals("OK"))
 			{
 				answer = (Key)response.getObjContents().get(0);
+				System.out.println(cEngine.formatAsSuccess("public key obtained"));
 				return answer;
 			}
 		}
@@ -249,26 +223,22 @@ public class FileClient extends Client implements FileClientInterface
 	    env.addObject(token);
 
 	    //send the envelope and output the result
-	    try 
-	    {
-			output.writeObject(env);
-		    env = (Envelope)input.readObject();
+
+		System.out.println("\nFile Server Request Sent: DELETEF");
+		writePlainText(env);
+		//writeEncrypted(env);
+		//SWTICH
+
+	    env = (Envelope)readPlainText();
 		    
-			if (env.getMessage().compareTo("OK")==0) 
-			{
-				System.out.printf("File %s deleted successfully\n", filename);				
-			}
-			else 
-			{
-				System.out.printf("Error deleting file %s (%s)\n", filename, env.getMessage());
-				return false;
-			}			
-		} catch (IOException e1) 
+		if (env.getMessage().compareTo("OK")==0) 
 		{
-			e1.printStackTrace();
-		} catch (ClassNotFoundException e1) 
+			System.out.printf("File %s deleted successfully\n", filename);				
+		}
+		else 
 		{
-			e1.printStackTrace();
+			System.out.printf("%sError deleting file %s (%s)\n", cEngine.formatAsError(""), filename, env.getMessage());
+			return false;
 		}
 	    	
 		return true;
@@ -295,10 +265,14 @@ public class FileClient extends Client implements FileClientInterface
 			    Envelope env = new Envelope("DOWNLOADF"); //Success
 			    env.addObject(sourceFile);
 			    env.addObject(token);
-			    output.writeObject(env); 
+				System.out.println("\nFile Server Request Sent: DOWNLOADF");
+			    writePlainText(env); 
+				//writeEncrypted(env);
+				//SWTICH
+
 						
 				//retreive the incoming evelope
-			    env = (Envelope)input.readObject();
+			    env = (Envelope)readPlainText();
 						    
 				//read the body of the file one envelope at a time
 				while (env.getMessage().compareTo("CHUNK")==0) 
@@ -306,8 +280,10 @@ public class FileClient extends Client implements FileClientInterface
 					fos.write((byte[])env.getObjContents().get(0), 0, (Integer)env.getObjContents().get(1));
 					System.out.printf(".");
 					env = new Envelope("DOWNLOADF"); //Success
-					output.writeObject(env);
-					env = (Envelope)input.readObject();									
+					writePlainText(env);
+					//writeEncrypted(env);
+					//SWTICH
+					env = (Envelope)readPlainText();									
 				}										
 				fos.close();
 						
@@ -317,29 +293,27 @@ public class FileClient extends Client implements FileClientInterface
 				    fos.close();
 					System.out.printf("\nTransfer successful file %s\n", sourceFile);
 					env = new Envelope("OK"); //Success
-					output.writeObject(env);
+					writePlainText(env);
+					//writeEncrypted(env);
+					//SWTICH
 				}
 				else 
 				{
-					System.out.printf("Error reading file %s (%s)\n", sourceFile, env.getMessage());
+					System.out.printf("%sError reading file %s (%s)\n", cEngine.formatAsError(""), sourceFile, env.getMessage());
 					file.delete();
 					return false;								
 				}
 			}    		 
 			else 
 			{
-			    System.out.printf("Error couldn't create file %s\n", destFile);
+			    System.out.printf("%scouldn't create file %s\n", cEngine.formatAsError(""), destFile);
 				return false;
 			}	
 		} 
 		catch (IOException e1) 
 		{
-		   	System.out.printf("Error couldn't create file %s\n", destFile);
+		   	System.out.printf("%scouldn't create file %s\n", cEngine.formatAsError(""), destFile);
 		  	return false;
-		}
-		catch (ClassNotFoundException e1) 
-		{
-			e1.printStackTrace();
 		}
 		return true;
 	}
@@ -349,30 +323,33 @@ public class FileClient extends Client implements FileClientInterface
 	{
 		 try
 		 {
-			 Envelope message = null, e = null;
-			 //Tell the server to return the member list
-			 message = new Envelope("LFILES");
-			 message.addObject(token); //Add requester's token
-			 output.writeObject(message); 
+			Envelope message = null, e = null;
+			//Tell the server to return the member list
+			message = new Envelope("LFILES");
+			message.addObject(token); //Add requester's token
+			System.out.println("\nFile Server Request Sent: LFILES");
+			writePlainText(message); 
+			//writeEncrypted(message);
+			//SWTICH
 			 
-			 e = (Envelope)input.readObject();
+			e = (Envelope)readPlainText();
 			 
-			 //If server indicates success, return the member list
-			 if(e.getMessage().equals("OK"))
-			 { 
-
+			//If server indicates success, return the member list
+			if(e.getMessage().equals("OK"))
+			{ 
+				System.out.println(cEngine.formatAsSuccess("Files returned"));
 				return (List<ShareFile>)e.getObjContents().get(0); //This cast creates compiler warnings. Sorry.
-			 }
-				
-			 return null;
+			}
+			System.out.println(cEngine.formatAsError("No files returned"));
+			return null;
 			 
 		 }
 		 catch(Exception e)
-			{
-				System.err.println("Error: " + e.getMessage());
-				e.printStackTrace(System.err);
-				return null;
-			}
+		{
+			System.err.println(cEngine.formatAsError("Exception encountered"));
+			e.printStackTrace(System.err);
+			return null;
+		}
 	}
 
 	public boolean upload(String sourceFile, String destFile, String group,
@@ -392,12 +369,15 @@ public class FileClient extends Client implements FileClientInterface
 			message.addObject(destFile);
 			message.addObject(group);
 			message.addObject(token); //Add requester's token
-			output.writeObject(message);
+			System.out.println("\nFile Server Request Sent: UPLOADF");
+			writePlainText(message);
+			//writeEncrypted(message);
+			//SWTICH
 			
 			 
 			FileInputStream fis = new FileInputStream(sourceFile);
 			 
-			env = (Envelope)input.readObject();
+			env = (Envelope)readPlainText();
 			 
 			//If server indicates success, return the member list
 			if(env.getMessage().equals("READY"))
@@ -418,7 +398,7 @@ public class FileClient extends Client implements FileClientInterface
 				byte[] buf = new byte[4096];
 				if (env.getMessage().compareTo("READY")!=0) 
 				{
-					System.out.printf("Server error: %s\n", env.getMessage());
+					System.out.printf("%sServer error: %s\n", cEngine.formatAsError(""), env.getMessage());
 					return false;
 				}
 				message = new Envelope("CHUNK");
@@ -429,16 +409,18 @@ public class FileClient extends Client implements FileClientInterface
 				} 
 				else if (n < 0) 
 				{
-					System.out.println("Read error");
+					System.out.println(cEngine.formatAsError("Read error"));
 					return false;
 				}
 					
 				message.addObject(buf);
 				message.addObject(new Integer(n));
 					
-				output.writeObject(message);
+				writePlainText(message);
+				//writeEncrypted(message);
+				//SWTICH
 						
-				env = (Envelope)input.readObject();
+				env = (Envelope)readPlainText();
 					
 										
 			 }
@@ -450,30 +432,33 @@ public class FileClient extends Client implements FileClientInterface
 				
 				//tell the sever we're done
 				message = new Envelope("EOF");
-				output.writeObject(message);
+				writePlainText(message);
+				//writeEncrypted(message);
+				//SWTICH
+	        	System.out.println(cEngine.formatAsSuccess("EOF sent"));
 				
-				env = (Envelope)input.readObject();
+				env = (Envelope)readPlainText();
 				if(env.getMessage().compareTo("OK")==0) 
 				{
-					System.out.printf("\nFile data upload successful\n");
+					System.out.printf("%sFile data upload successful: %s\n", cEngine.formatAsSuccess(""), sourceFile+" -> "+destFile);
 				}
 				else 
 				{
-					System.out.printf("\nUpload failed: %s\n", env.getMessage());
+					System.out.printf("%sUpload failed: %s\n", cEngine.formatAsError(""), env.getMessage());
 					return false;
 				}
 				
 			}
 			else {
 				
-				System.out.printf("Upload failed: %s\n", env.getMessage());
+				System.out.printf("%sUpload failed: %s\n", cEngine.formatAsError(""), env.getMessage());
 				return false;
 			}	 
 		}
 		catch(Exception e1)
 		{
-			System.err.println("Error: " + e1.getMessage());
-			e1.printStackTrace(System.err);
+			//NOTE: this may be some other problem, I dont know what other exceptions are being thrown here
+			System.out.println(cEngine.formatAsError("Exception encountered, make sure the file exists"));
 			return false;
 		}
 		return true;

@@ -70,6 +70,11 @@ public class GroupServer extends Server
 	
 	public void start() 
 	{
+
+		System.out.println("\n\n***********************************************************\n"+
+								"****                    New Session                    ****\n"+
+								"***********************************************************\n");
+
 		// Overwrote server.start() because if no user file exists, initial admin account needs to be created
 		
     	String groupFolder = "Group_Server_Resources/";
@@ -360,7 +365,7 @@ class AutoSave extends Thread
 			try
 			{
 				Thread.sleep(300000); //Save group and user lists every 5 minutes
-				System.out.println("Autosave group and user lists...");
+				System.out.println("\nAutosave group and user lists...");
 				ObjectOutputStream outStream;
 				try
 				{
@@ -382,7 +387,7 @@ class AutoSave extends Thread
 			}
 			catch(Exception e)
 			{
-				System.out.println("Autosave Interrupted");
+				System.out.println("\nAutosave Interrupted");
 			}
 		}while(true);
 	}
