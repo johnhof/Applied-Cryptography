@@ -4,93 +4,39 @@ import java.util.List;
 import java.security.*;
 import javax.crypto.*;
 import java.io.*;
-import javax.crypto.spec.IvParameterSpec;
-import java.util.Random;
-import java.security.SecureRandom;
 import java.util.*;
+
+/*
+SUPER METHODS USED
+
+-boolean writePlainText()
+-boolean writeEncrypted()
+-byte[] readPlainText()
+-byte[] readEncrypted()
+
+-boolean setUpServer()
+*/
+
 
 public class FileClient extends Client implements FileClientInterface 
 {
-	private Key serverPublicKey;
-	private KeyList keyList;
 	private UserToken token;
 	
 	public boolean connect(final String server, final int port, String username, UserToken newtoken)
 	{
 		System.out.println("\n*** Attempting to connect to File Server: NAME: " + server + "; PORT: " + port + " ***");
-		super.connect(server, port);
+		
+		super.connect(server, port, username);
 
 		token = newtoken;
 		
-		String userFolder = "User_Resources/";
-		String userFile = userFolder+"UserKeys" + username + ".bin";
-		ObjectInputStream keyStream;
+		String userFile = userFolder+"FSKeys_" + userName + ".bin";
 		
-		System.out.println("\nSetting up resources");
-
-		try
+		if(setUpServer(server, userFile)==false)
 		{
-			//Create or find a directory named "shared_files"
-			File file = new File("User_Resources");
-			file.mkdir();
-
-			FileInputStream fis = new FileInputStream("User_Resources/"+userFile);
-			keyStream = new ObjectInputStream(fis);
-			keyList = (KeyList)keyStream.readObject();
-
-			if(keyList.checkServer(server))
-			{
-				//we have connected before
-				serverPublicKey = keyList.getKey(server);
-				Key allegedKey = setPublicKey();
-				if(serverPublicKey.toString().equals(allegedKey.toString()))
-				{
-					System.out.println(cEngine.formatAsSuccess("FileServer verification step 1 complete"));
-				}
-				else
-				{
-					System.out.println(cEngine.formatAsError("Public Keys Do Not Match. This is an unauthorized server"));
-					System.exit(-1);
-				}
-			}
-			else
-			{
-				System.out.println(cEngine.formatAsSuccess("This is a new file server. Requesting Public Key"));
-				serverPublicKey = setPublicKey();
-				keyList.addKey(server, serverPublicKey);
-				ObjectOutputStream outStream = new ObjectOutputStream(new FileOutputStream(userFolder+"UserKeys" + username + ".bin"));
-				outStream.writeObject(keyList);
-				outStream.close();
-			}
+			System.out.println("\n!!! File server connection failed: NAME: " + serverName + "; PORT: " + serverPort + " !!!");
+			return false;
 		}
-		catch(FileNotFoundException e)
-		{
-			System.out.println(cEngine.formatAsSuccess("UserKeys file does not exist. Creating new one"));
-			keyList = new KeyList();
-			System.out.println(cEngine.formatAsSuccess("This is a new file server. Requesting Public Key"));
-			serverPublicKey = setPublicKey();
-			keyList.addKey(server, serverPublicKey);
-			try
-			{
-				ObjectOutputStream outStream = new ObjectOutputStream(new FileOutputStream(userFolder+"UserKeys" + username + ".bin"));
-				outStream.writeObject(keyList);
-				outStream.close();
-			}
-			catch(Exception ex)
-			{
-				System.out.println("ERROR: FILECLIENT: COULD NOT WRITE USERKEYS");
-				ex.printStackTrace();
-				System.exit(-1);
-			}
-		}
-		catch(Exception e)
-		{
-			System.out.println("ERROR: FILECLIENT: COULD NOT FINISH CONNECTION");
-			e.printStackTrace();
-			System.exit(-1);
-		}
-		
-		setAesKey(token);
 		
 		System.out.println("\n*** File server connection successful: NAME: " + serverName + "; PORT: " + serverPort + " ***");
 
@@ -102,107 +48,6 @@ public class FileClient extends Client implements FileClientInterface
 		token = newtoken;
 	}
 	
-	//This function also authenticats the fileserver
-	public void setAesKey(UserToken token)
-	{
-		try{
-			Envelope message, response;
-			aesKey = cEngine.genAESKeySet();
-			ByteArrayOutputStream toBytes = new ByteArrayOutputStream();//create ByteArrayOutputStream
-			ObjectOutputStream localOutput = new ObjectOutputStream(toBytes);//Make an object outputstream to that bytestream
-			
-			localOutput.writeObject(aesKey.getKey());//write to the bytearrayoutputstream
-		
-			byte[] aesKeyBytes = toBytes.toByteArray();
-		
-			byte[] aesKeyBytesA = new byte[100];
-			byte[] aesKeyBytesB = new byte[41];
-		
-			System.arraycopy(aesKeyBytes, 0, aesKeyBytesA, 0, aesKeyBytesA.length);
-			System.arraycopy(aesKeyBytes, 100, aesKeyBytesB, 0, aesKeyBytes.length-100);
-		
-			byte[] encryptedKeyA = cEngine.RSAEncrypt(aesKeyBytesA, serverPublicKey);
-			byte[] encryptedKeyB = cEngine.RSAEncrypt(aesKeyBytesB, serverPublicKey);
-	
-			byte[] encryptedKey = new byte[encryptedKeyA.length + encryptedKeyB.length];
-			System.arraycopy(encryptedKeyA, 0, encryptedKey, 0, encryptedKeyA.length);
-			System.arraycopy(encryptedKeyB, 0, encryptedKey, encryptedKeyA.length, encryptedKeyB.length);
-		
-			message = new Envelope("AESKEY");
-			message.addObject(token);
-			message.addObject(encryptedKey);
-			message.addObject(aesKey.getIV().getIV());
-		
-			System.out.println("\nFile Server Request Sent: AESKEY");
-			writePlainText(message);
-			//THE AES KEY IS NOW SET
-
-
-			message = new Envelope("CHALLENGE");
-			Integer challenge = new Integer((new SecureRandom()).nextInt());
-			message.addObject(token);
-			message.addObject(challenge);
-			System.out.println("\nFile Server Request Sent: CHALLENGE");
-			writeEncrypted(message);
-
-			response = (Envelope)readEncrypted();
-			if(response.getMessage().equals("OK"))
-			{
-				if((challenge.intValue()+1) != ((Integer)response.getObjContents().get(0)).intValue())
-				{
-					System.out.println(cEngine.formatAsError("Challenge failed"));
-					System.exit(-1);
-				}
-				else
-				{
-					System.out.println(cEngine.formatAsSuccess("Challenge passed"));
-					java.sql.Timestamp challengeTime = (java.sql.Timestamp)response.getObjContents().get(1);
-					if((System.currentTimeMillis() - challengeTime.getTime())/(1000*60) < 5 )
-					{
-						System.out.println(cEngine.formatAsSuccess("Fresh timestamp returned"));
-					}
-					else
-					{
-						System.out.println(cEngine.formatAsError("Old timestamp"));
-						System.exit(-1);
-					}
-				}
-			}
-		}
-		catch(Exception e)
-		{
-			System.out.println("ERROR:FILECLIENT: COULD NOT SEND AESKEY");
-			e.printStackTrace();
-			System.exit(-1);
-		}
-	}
-	
-	
-	public Key setPublicKey()
-	{
-		Envelope message, response;
-		Key answer = null;
-		try
-		{
-			message = new Envelope("PUBKEYREQ");
-			System.out.println("\nFile Server Request Sent: PUBKEYREQ");
-			writePlainText(message);
-			response = (Envelope)readPlainText();
-			if(response.getMessage().equals("OK"))
-			{
-				answer = (Key)response.getObjContents().get(0);
-				System.out.println(cEngine.formatAsSuccess("public key obtained"));
-				return answer;
-			}
-		}
-		catch(Exception e)
-		{
-			System.out.println("ERROR: FILECLIENT: FAILED TO RECEIVE PUBLIC KEY");
-			e.printStackTrace();
-			System.exit(-1);
-		}
-		return answer;
-	}
 	
 	public boolean delete(String filename, UserToken token) 
 	{

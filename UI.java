@@ -275,7 +275,7 @@ public class UI
 		//attempt to connect
 		try
 		{
-			gUser.connect(gServer, gPort);
+			gUser.connect(gServer, gPort, username);
 		}
 		catch(Exception e)
 		{

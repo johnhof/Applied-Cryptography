@@ -1,25 +1,39 @@
 /* Implements the GroupClient Interface */
 
-import java.util.ArrayList;
 import java.util.List;
-import java.io.ObjectInputStream;
 import java.security.*;
 import javax.crypto.*;
 import java.io.*;
+import java.util.*;
+
+/*
+SUPER METHODS USED
+
+-boolean writePlainText()
+-boolean writeEncrypted()
+-byte[] readPlainText()
+-byte[] readEncrypted()
+
+-boolean setUpServer()
+*/
 
 public class GroupClient extends Client implements GroupClientInterface {
  	
-	public boolean connect(final String server, final int port)
+	public boolean connect(final String server, final int port, String username)
 	{
 		System.out.println("\n*** Attempting to connect to Group Server: NAME: " + server + "; PORT:" + port + " ***");
-		super.connect(server, port);
 
-		boolean keyNeedsSet = true;
+		super.connect(server, port, username);
+
+		String userFile = userFolder+"GSKeys_" + userName + ".bin";
 		
-		setKey();
-		assert aesKey != null;
-
+		if(setUpServer(server, userFile)==false)
+		{
+			System.out.println("\n!!! Group server connection failed: NAME: " + serverName + "; PORT: " + serverPort + " !!!");
+			return false;
+		}
 		System.out.println("\n*** Group Server connection successful: NAME: " + serverName + "; PORT:" + serverPort + " ***");
+
 		return true;
 	}
 	
