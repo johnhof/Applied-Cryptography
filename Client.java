@@ -69,7 +69,7 @@ public class Client extends ClientInterface
 			try
 			{
 				Envelope message = new Envelope("DISCONNECT");
-				System.out.println("\nRequest Sent: DISCONNECT");
+				System.out.println("\n>> Sending Request: DISCONNECT");
 				output.writeObject(message);
 				sock.close();//I don't see why we shouldn't attempt 
 				//to close the socket on both the server and client sides
@@ -82,72 +82,6 @@ public class Client extends ClientInterface
 				e.printStackTrace(System.err);
 			}
 		}
-	}
-
-
-
-//----------------------------------------------------------------------------------------------------------------------
-//-- COMMUNICATION FUNCITONS
-//----------------------------------------------------------------------------------------------------------------------
-
-	protected boolean writePlainText(Object obj)
-	{
-		try
-		{
-			output.writeObject(obj);
-			return true;
-		}
-		catch(Exception e)
-		{
-			System.out.println(cEngine.formatAsError("IO/ClassNotFound Exception when writing (Unencrypted) data"));
-		}
-		return false;
-	}
-	protected boolean writeEncrypted(Object obj)
-	{
-		try
-		{
-			byte[] eData = cEngine.AESEncrypt(cEngine.serialize(obj), aesKey);//encrypt the data
-			
-			System.out.println(cEngine.formatAsSuccess("AES encryption successful"));
-
-			output.writeObject(eData);//write the data to the client
-			return true;
-		}
-		catch(Exception e)
-		{
-			System.out.println(cEngine.formatAsError("IO/ClassNotFound Exception when writing (Encrypted) data"));
-		}
-		return false;
-	}
-	
-	protected Object readPlainText()
-	{
-		try
-		{
-			return input.readObject();
-		}
-		catch(Exception e)
-		{
-			System.out.println(cEngine.formatAsError("IO/ClassNotFound Exception when reading (Unencrypted) data"));
-		}
-		return null;
-	}
-	protected Object readEncrypted()
-	{
-		try
-		{
-			byte[] data = cEngine.AESDecrypt((byte[])input.readObject(), aesKey);
-
-			System.out.println(cEngine.formatAsSuccess("AES decryption successful"));
-
-			return cEngine.deserialize(data);
-		}
-		catch(Exception e)
-		{
-			System.out.println(cEngine.formatAsError("IO/ClassNotFound Exception when reading (Encrypted) data"));
-		}
-		return null;
 	}
 
 
@@ -220,7 +154,7 @@ public class Client extends ClientInterface
 			System.out.println(cEngine.formatAsSuccess("UserKeys file does not exist. Creating new one"));
 			
 			//Retrieve the key
-			System.out.println(cEngine.formatAsSuccess("This is a new file server. Requesting Public Key"));
+			System.out.println(cEngine.formatAsSuccess("This is a new server. Requesting Public Key"));
 			serverPublicKey = getPublicKey();
 			if(serverPublicKey == null) return false;
 			
@@ -259,17 +193,18 @@ public class Client extends ClientInterface
 			Integer challenge = new Integer((new SecureRandom()).nextInt());
 
 			//send the key to the server
-			message = new Envelope("AESKEY");
-			System.out.println("\nSending Request: AESKEY");
-			message.addObject(AESKeyToByte());
+			message = new Envelope("SET_AESKEY");
+			System.out.println("\n>> Sending Request: SET_AESKEY");
+			message.addObject(cEngine.RSAEncrypt(cEngine.serialize(aesKey.getKey()), serverPublicKey));
 			message.addObject(aesKey.getIV().getIV());
-			message.addObject(challenge);
+			message.addObject(cEngine.RSAEncrypt(cEngine.serialize(challenge), serverPublicKey));
+			System.out.println(cEngine.formatAsSuccess("RSA encryption successful, IV sent in plaintext"));
 		
-			writePlainText(message);
+			cEngine.writePlainText(message, output);
 			//THE AES KEY IS NOW SET
 
-			System.out.println("Recieving Response: OK");
-			response = (Envelope)readEncrypted();
+			System.out.println("<< Recieving Response: OK");
+			response = (Envelope)cEngine.readAESEncrypted(aesKey, input);
 			if(response.getMessage().equals("OK"))
 			{
 				if((challenge.intValue()+1) != ((Integer)response.getObjContents().get(0)).intValue())
@@ -299,13 +234,13 @@ public class Client extends ClientInterface
 		Key answer = null;
 		try
 		{
-			message = new Envelope("PUBKEYREQ");
-			System.out.println("\nSending Request: PUBKEYREQ");
-			writePlainText(message);
-			response = (Envelope)readPlainText();
+			message = new Envelope("GET_PUBKEY");
+			System.out.println("\n>> Sending Request: GET_PUBKEY");
+			cEngine.writePlainText(message, output);
+			response = (Envelope)cEngine.readPlainText(input);
 			if(response.getMessage().equals("OK"))
 			{
-				System.out.println("Recieving Response: OK");
+				System.out.println("<< Recieving Response: OK");
 				answer = (Key)response.getObjContents().get(0);
 				System.out.println(cEngine.formatAsSuccess("public key obtained"));
 				return answer;
@@ -319,39 +254,5 @@ public class Client extends ClientInterface
 		}
 		return answer;
 	}
-
-//--CONVERT KEY TO BYTE ARRAY------------------------------------------------------------------------------------------
-	protected byte[] AESKeyToByte()
-	{
-		try
-		{
-			ByteArrayOutputStream toBytes = new ByteArrayOutputStream();//create ByteArrayOutputStream
-			ObjectOutputStream localOutput = new ObjectOutputStream(toBytes);//Make an object outputstream to that bytestream
-				
-			localOutput.writeObject(aesKey.getKey());//write to the bytearrayoutputstream
-			
-			byte[] aesKeyBytes = toBytes.toByteArray();
-			
-			byte[] aesKeyBytesA = new byte[100];
-			byte[] aesKeyBytesB = new byte[41];
-			
-			System.arraycopy(aesKeyBytes, 0, aesKeyBytesA, 0, aesKeyBytesA.length);
-			System.arraycopy(aesKeyBytes, 100, aesKeyBytesB, 0, aesKeyBytes.length-100);
-		
-			byte[] encryptedKeyA = cEngine.RSAEncrypt(aesKeyBytesA, serverPublicKey);
-			byte[] encryptedKeyB = cEngine.RSAEncrypt(aesKeyBytesB, serverPublicKey);
-			System.out.println(cEngine.formatAsSuccess("AES key encrypted with private key"));
-		
-			byte[] encryptedKey = new byte[encryptedKeyA.length + encryptedKeyB.length];
-			System.arraycopy(encryptedKeyA, 0, encryptedKey, 0, encryptedKeyA.length);
-			System.arraycopy(encryptedKeyB, 0, encryptedKey, encryptedKeyA.length, encryptedKeyB.length);
-
-			return encryptedKey;
-		}
-		catch(Exception exc)
-		{
-			System.out.println("ERROR:FILECLIENT: AESKEY TO BYTE STREAM CONVERSION FAILED");
-			return null;
-		}
-	}
+ 
 }

@@ -10,9 +10,9 @@ import java.util.*;
 SUPER METHODS USED
 
 -boolean writePlainText()
--boolean writeEncrypted()
+-boolean writeAESEncrypted()
 -byte[] readPlainText()
--byte[] readEncrypted()
+-byte[] readAESEncrypted()
 
 -boolean setUpServer()
 */
@@ -69,16 +69,16 @@ public class FileClient extends Client implements FileClientInterface
 
 	    //send the envelope and output the result
 
-		System.out.println("\nSending File Server Request: DELETEF");
-		writePlainText(env);
-		//writeEncrypted(env);
+		System.out.println("\n>> Sending File Server Request: DELETEF");
+		cEngine.writePlainText(env, output);
+		//writeAESEncrypted(env);
 		//SWTICH
 
-	    env = (Envelope)readPlainText();
+	    env = (Envelope)cEngine.readPlainText(input);
 		    
 		if (env.getMessage().compareTo("OK")==0) 
 		{
-			System.out.println("\nRecieving File Server Response: OK");
+			System.out.println("<< Recieving File Server Response: OK");
 			System.out.printf("File %s deleted successfully\n", filename);				
 		}
 		else 
@@ -111,14 +111,14 @@ public class FileClient extends Client implements FileClientInterface
 			    Envelope env = new Envelope("DOWNLOADF"); //Success
 			    env.addObject(sourceFile);
 			    env.addObject(token);
-				System.out.println("\nSending File Server Request: DOWNLOADF");
-			    writePlainText(env); 
-				//writeEncrypted(env);
+				System.out.println("\n>> Sending File Server Request: DOWNLOADF");
+			    cEngine.writePlainText(env, output); 
+				//writeAESEncrypted(env);
 				//SWTICH
 
 						
 				//retreive the incoming evelope
-			    env = (Envelope)readPlainText();
+			    env = (Envelope)cEngine.readPlainText(input);
 						    
 				//read the body of the file one envelope at a time
 				while (env.getMessage().compareTo("CHUNK")==0) 
@@ -126,22 +126,22 @@ public class FileClient extends Client implements FileClientInterface
 					fos.write((byte[])env.getObjContents().get(0), 0, (Integer)env.getObjContents().get(1));
 					System.out.printf(".");
 					env = new Envelope("DOWNLOADF"); //Success
-					writePlainText(env);
-					//writeEncrypted(env);
+					cEngine.writePlainText(env, output);
+					//writeAESEncrypted(env);
 					//SWTICH
-					env = (Envelope)readPlainText();									
+					env = (Envelope)cEngine.readPlainText(input);									
 				}										
 				fos.close();
 						
 				//when the end of file is detected, close and display the appropriate message
 				if(env.getMessage().compareTo("EOF")==0) 
 				{
-					System.out.println("\nRecieving File Server Response: EOF");
+					System.out.println("<< Recieving File Server Response: EOF");
 				    fos.close();
 					System.out.printf("\nTransfer successful file %s\n", sourceFile);
 					env = new Envelope("OK"); //Success
-					writePlainText(env);
-					//writeEncrypted(env);
+					cEngine.writePlainText(env, output);
+					//writeAESEncrypted(env);
 					//SWTICH
 				}
 				else 
@@ -174,17 +174,17 @@ public class FileClient extends Client implements FileClientInterface
 			//Tell the server to return the member list
 			message = new Envelope("LFILES");
 			message.addObject(token); //Add requester's token
-			System.out.println("\nSending File Server Request: LFILES");
-			writePlainText(message); 
-			//writeEncrypted(message);
+			System.out.println("\n>> Sending File Server Request: LFILES");
+			cEngine.writePlainText(message, output); 
+			//cEngine.writeAESEncrypted(message, aesKey, output);
 			//SWTICH
 			 
-			e = (Envelope)readPlainText();
+			e = (Envelope)cEngine.readPlainText(input);
 			 
 			//If server indicates success, return the member list
 			if(e.getMessage().equals("OK"))
 			{ 
-				System.out.println("\nRecieving File Server Response: OK");
+				System.out.println("<< Recieving File Server Response: OK");
 				System.out.println(cEngine.formatAsSuccess("Files returned"));
 				return (List<ShareFile>)e.getObjContents().get(0); //This cast creates compiler warnings. Sorry.
 			}
@@ -217,15 +217,15 @@ public class FileClient extends Client implements FileClientInterface
 			message.addObject(destFile);
 			message.addObject(group);
 			message.addObject(token); //Add requester's token
-			System.out.println("\nSending File Server Request: UPLOADF");
-			writePlainText(message);
-			//writeEncrypted(message);
+			System.out.println("\n>> Sending File Server Request: UPLOADF");
+			cEngine.writePlainText(message, output);
+			//cEngine.writeAESEncrypted(message, aesKey, output);
 			//SWTICH
 			
 			 
 			FileInputStream fis = new FileInputStream(sourceFile);
 			 
-			env = (Envelope)readPlainText();
+			env = (Envelope)cEngine.readPlainText(input);
 			 
 			//If server indicates success, return the member list
 			if(env.getMessage().equals("READY"))
@@ -264,11 +264,11 @@ public class FileClient extends Client implements FileClientInterface
 				message.addObject(buf);
 				message.addObject(new Integer(n));
 					
-				writePlainText(message);
-				//writeEncrypted(message);
+				cEngine.writePlainText(message, output);
+				//cEngine.writeAESEncrypted(message, aesKey, output);
 				//SWTICH
 						
-				env = (Envelope)readPlainText();
+				env = (Envelope)cEngine.readPlainText(input);
 					
 										
 			 }
@@ -280,15 +280,15 @@ public class FileClient extends Client implements FileClientInterface
 				
 				//tell the sever we're done
 				message = new Envelope("EOF");
-				writePlainText(message);
-				//writeEncrypted(message);
+				cEngine.writePlainText(message, output);
+				//cEngine.writeAESEncrypted(message, aesKey, output);
 				//SWTICH
 	        	System.out.println(cEngine.formatAsSuccess("EOF sent"));
 				
-				env = (Envelope)readPlainText();
+				env = (Envelope)cEngine.readPlainText(input);
 				if(env.getMessage().compareTo("OK")==0) 
 				{
-					System.out.println("\nRecieving File Server Response: OK");
+					System.out.println("<< Recieving File Server Response: OK");
 					System.out.printf("%sFile data upload successful: %s\n", cEngine.formatAsSuccess(""), sourceFile+" -> "+destFile);
 				}
 				else 

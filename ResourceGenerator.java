@@ -40,7 +40,7 @@ public class ResourceGenerator
 		ObjectOutputStream outStream;
 	    InputStreamReader reader = new InputStreamReader(System.in);
 	    BufferedReader in = new BufferedReader(reader);
-
+/*
 		try
 		{
 			System.out.println("\nAre you sure you want to overwrite old groupserver signing keys? [y/n] ");
@@ -54,7 +54,7 @@ public class ResourceGenerator
 		{
 			System.out.println("IO Error");
 			return;
-		}
+		}*/
 
 	    //create the folders
 		File file = new File(publicFolder);

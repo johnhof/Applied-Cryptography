@@ -1,36 +1,12 @@
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.Key;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.security.SecureRandom;
-import java.security.Security;
-import java.security.Signature;
-import java.security.SignatureException;
-import java.security.PublicKey;
-import java.security.PrivateKey;
-import java.security.MessageDigest;
-
-import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
-import javax.crypto.KeyGenerator;
+import java.security.*;
+import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
-
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
 
 //import org.bouncycastle.crypto.paddings.PaddedBufferedBlockCipher;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-
 
 class CryptoEngine
 {
@@ -206,12 +182,48 @@ class CryptoEngine
 	{
 		Cipher cipher = null;
 		byte[]result = null;
+		byte[]encryptedChunk = null;
+		int inputSize = bytes.length;
+		int byteIndex;
 
 		try 
 		{
-			cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-			cipher.init(mode, key);	
-			result = cipher.doFinal(bytes);	
+			//en/decrypt in 128 byte chunks
+			for(byteIndex = 128; byteIndex < inputSize; byteIndex+=128)
+			{
+				cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+				cipher.init(mode, key);	
+
+				//get the encrypted chunk and append it to the result
+				encryptedChunk = cipher.doFinal(Arrays.copyOfRange(bytes, byteIndex-128, byteIndex));
+
+				//backup the existing array
+				byte[] temp = new byte[result.length];
+				System.arraycopy(result, 0,  temp, 0, result.length);	
+
+				//resize and append to the result array
+				result = new byte[temp.length+encryptedChunk.length];
+				System.arraycopy(temp, 0,  result, 0, temp.length);	
+				System.arraycopy(encryptedChunk, 0,  result, 0, encryptedChunk.length);	
+			}
+			//en/decrypt the last junk
+			if(byteIndex>inputSize)
+			{
+				cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+				cipher.init(mode, key);	
+
+				//get the encrypted chunk and append it to the result
+				encryptedChunk = cipher.doFinal(Arrays.copyOfRange(bytes, byteIndex-128, byteIndex));
+
+				//backup the existing array
+				byte[] temp = new byte[result.length];
+				System.arraycopy(result, 0,  temp, 0, result.length);	
+
+				//resize and append to the result array
+				result = new byte[temp.length+encryptedChunk.length];
+				System.arraycopy(temp, 0,  result, 0, temp.length);	
+				System.arraycopy(encryptedChunk, 0,  result, 0, encryptedChunk.length);	
+			}
 		} 
 		catch (Exception e) 
 		{
@@ -268,6 +280,7 @@ class CryptoEngine
         catch(Exception e)
         {
 			System.out.println("WARNING:  CRYPTOENGINE;  serializing error, NULL returned");
+			e.printStackTrace();
         	return null;
         }
         return byteArray;
@@ -300,5 +313,102 @@ class CryptoEngine
     {
     	return ("     *"+input);
     }
+
+//----------------------------------------------------------------------------------------------------------------------
+//-- COMMUNICATION FUNCITONS
+//----------------------------------------------------------------------------------------------------------------------
+
+	protected boolean writePlainText(Object obj, ObjectOutputStream output)
+	{
+		try
+		{
+			output.writeObject(obj);
+			return true;
+		}
+		catch(Exception e)
+		{
+			System.out.println(formatAsError("IO/ClassNotFound Exception when writing (Unencrypted) data"));
+		}
+		return false;
+	}
+	protected boolean writeAESEncrypted(Object obj, AESKeySet key, ObjectOutputStream output)
+	{
+		try
+		{
+			byte[] eData = AESEncrypt(serialize(obj), key);//encrypt the data
+			
+			System.out.println(formatAsSuccess("AES encryption successful"));
+
+			output.writeObject(eData);//write the data to the client
+			return true;
+		}
+		catch(Exception e)
+		{
+			System.out.println(formatAsError("IO/ClassNotFound Exception when writing (Encrypted) data"));
+		}
+		return false;
+	}
+	protected boolean writeRSAEncrypted(Object obj, Key key, ObjectOutputStream output)
+	{
+		try
+		{
+			byte[] eData = RSAEncrypt(serialize(obj), key);//encrypt the data
+			
+			System.out.println(formatAsSuccess("RSA encryption successful"));
+
+			output.writeObject(eData);//write the data to the client
+			return true;
+		}
+		catch(Exception e)
+		{
+			System.out.println(formatAsError("IO/ClassNotFound Exception when writing (Encrypted) data"));
+		}
+		return false;
+	}
+	
+	protected Object readPlainText(ObjectInputStream input)
+	{
+		try
+		{
+			return input.readObject();
+		}
+		catch(Exception e)
+		{
+			System.out.println(formatAsError("IO/ClassNotFound Exception when reading (Unencrypted) data"));
+		}
+		return null;
+	}
+	protected Object readAESEncrypted(AESKeySet key, ObjectInputStream input)
+	{
+		try
+		{
+			byte[] data = AESDecrypt((byte[])input.readObject(), key);
+
+			System.out.println(formatAsSuccess("AES decryption successful"));
+
+			return deserialize(data);
+		}
+		catch(Exception e)
+		{
+			System.out.println(formatAsError("IO/ClassNotFound Exception when reading (Encrypted) data"));
+		}
+		return null;
+	}
+	protected Object readRSAEncrypted(Key key, ObjectInputStream input)
+	{
+		try
+		{
+			byte[] data = RSADecrypt((byte[])input.readObject(), key);
+
+			System.out.println(formatAsSuccess("RSA decryption successful"));
+
+			return deserialize(data);
+		}
+		catch(Exception e)
+		{
+			System.out.println(formatAsError("IO/ClassNotFound Exception when reading (Encrypted) data"));
+		}
+		return null;
+	}
 }
 

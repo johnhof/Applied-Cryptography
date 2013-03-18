@@ -2,18 +2,11 @@
 
 import java.lang.Thread;
 import java.net.Socket;
-import java.util.List;
-import java.util.ArrayList;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.util.*;
+import java.io.*;
 import java.security.*;
 import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
-import java.io.*;
-import java.util.*;
 
 //These threads are spun off by FileServer.java
 public class ServerThread extends Thread
@@ -68,13 +61,14 @@ public class ServerThread extends Thread
 		{
 			//These keys exist just to encrypt/decrypt this specific session key for this user
 
-			 message = (Envelope)input.readObject();
-			if(message.getMessage().equals("PUBKEYREQ"))
+			message = (Envelope)cEngine.readPlainText(input);
+			if(message.getMessage().equals("GET_PUBKEY"))
 			{
-				System.out.println("\nRequest received: " + message.getMessage());
+				System.out.println("\n<< Request Recieved: " + message.getMessage());
 				response = new Envelope("OK");
+				System.out.println(">> Sending Reponse: OK");
 				response.addObject(myPublicKey);
-				output.writeObject(response);
+				cEngine.writePlainText(response, output);
 				System.out.println(cEngine.formatAsSuccess("public key sent"));
 			}
 			else
@@ -94,24 +88,27 @@ public class ServerThread extends Thread
 //--RECIEVE AES KEY---------------------------------------------------------------------------------------------------
 		try
 		{
-			message = (Envelope)input.readObject();
-			if(message.getMessage().equals("AESKEY"))
+			message = (Envelope)cEngine.readPlainText(input);
+			if(message.getMessage().equals("SET_AESKEY"))
 			{
-				System.out.println("\nRequest received: " + message.getMessage());
+				System.out.println("\n<< Request Received: " + message.getMessage());
 
-				//convert the session key back from a byte array
-				aesKey = byteToAESKey((byte[]) message.getObjContents().get(0), new IvParameterSpec((byte[])message.getObjContents().get(1)));
-
+				//decrypt the key and challenge
+				aesKey = new AESKeySet((Key) cEngine.deserialize(cEngine.RSADecrypt((byte[])message.getObjContents().get(0), myPrivateKey)), 
+										(IvParameterSpec)message.getObjContents().get(1));
+				Integer challenge = (Integer)cEngine.deserialize(cEngine.RSADecrypt((byte[])message.getObjContents().get(2), myPrivateKey));
+				
+				System.out.println(cEngine.formatAsSuccess("RSA decryption successful,"));
 				System.out.println(cEngine.formatAsSuccess("AES keyset recieved and stored"));
 				//THE AES KEY IS NOW SET
 
 	//--CHALLENGE---------------------------------------------------------------------------------------------------------
-				Integer challenge = (Integer)message.getObjContents().get(2);
 				challenge = new Integer((challenge.intValue()+1));
 
 				response = new Envelope("OK");
+				System.out.println(">> Sending Reponse: OK");
 				response.addObject(challenge);
-				writeObject(response);
+				cEngine.writeAESEncrypted(response, aesKey, output);
 				System.out.println(cEngine.formatAsSuccess("Challenge answered"));
 			}
 			else 
@@ -126,81 +123,6 @@ public class ServerThread extends Thread
 		}
 
 		return true;
-	}
-
-	//--CONVERT KEY TO BYTE ARRAY------------------------------------------------------------------------------------------
-	protected AESKeySet byteToAESKey(byte[] aesKeyBytes, IvParameterSpec IV)
-	{
-		try
-		{
-			byte[] aesKeyBytesA = new byte[128];
-			byte[] aesKeyBytesB = new byte[128];
-				
-			System.arraycopy(aesKeyBytes, 0, aesKeyBytesA, 0, 128);
-			System.arraycopy(aesKeyBytes, 128, aesKeyBytesB, 0, 128);
-				
-			aesKeyBytesA = cEngine.RSADecrypt(aesKeyBytesA, myPrivateKey);
-			aesKeyBytesB = cEngine.RSADecrypt(aesKeyBytesB, myPrivateKey);
-			
-			System.out.println(cEngine.formatAsSuccess("AES key decrypted with private key"));
-					
-			System.arraycopy(aesKeyBytesA, 0, aesKeyBytes, 0, 100);
-			System.arraycopy(aesKeyBytesB, 0, aesKeyBytes, 100, 41);
-				
-			ByteArrayInputStream fromBytes = new ByteArrayInputStream(aesKeyBytes);
-			ObjectInputStream localInput = new ObjectInputStream(fromBytes);
-
-			return new AESKeySet((Key) localInput.readObject(), IV);
-		}
-		catch(Exception exc)
-		{
-			System.out.println("ERROR:FILECLIENT; AESKEY TO BYTE STREAM CONVERSION FAILED");
-			return null;
-		}
-	}
-
-//----------------------------------------------------------------------------------------------------------------------
-//-- COMMUNICATION FUNCITONS
-//----------------------------------------------------------------------------------------------------------------------
-
-	//Method to write objects
-	protected boolean writeObject(Object obj)
-	{
-		try
-		{			
-			byte[] eData = cEngine.AESEncrypt(cEngine.serialize(obj), aesKey);//encrypt the data
-
-			System.out.println(cEngine.formatAsSuccess("AES encryption successful"));
-
-			output.writeObject(eData);//write the data to the client
-		}
-		catch(Exception e)
-		{
-			System.out.println(cEngine.formatAsError("IO/ClassNotFound Exception when writing (Encrypted) data"));
-			return false;
-		}
-		return true;
-	}
-
-
-	protected Object readObject()
-	{
-		Object obj = null;
-		try
-		{
-			byte[] data = cEngine.AESDecrypt((byte[])input.readObject(), aesKey);
-
-			System.out.println(cEngine.formatAsSuccess("AES decryption successful"));
-
-			obj = cEngine.deserialize(data);
-		}
-		catch(Exception ex)
-		{
-			System.out.println(cEngine.formatAsError("IO/ClassNotFound Exception when reading (Encrypted) data"));
-			ex.printStackTrace();
-		}
-		
-		return obj;
 	}
 	
 }

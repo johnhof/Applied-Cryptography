@@ -51,7 +51,7 @@ public class FileThread extends ServerThread
 			//handle messages from the input stream(ie. socket)
 			do
 			{
-				Envelope envelope = (Envelope)readObject();
+				Envelope envelope = (Envelope)cEngine.readAESEncrypted(aesKey, input);
 				System.out.println("\nRequest received: " + envelope.getMessage());
 
 				// Handler to list files that this user is allowed to see
@@ -86,14 +86,14 @@ public class FileThread extends ServerThread
 								response = new Envelope("OK");//success (check FileClient line 140 to see why this is the message
 								response.addObject(theFiles);//See FileClient for protocol
 								
-								output.writeObject(response);
+								cEngine.writeAESEncrypted(response, aesKey, output);
 								System.out.println(cEngine.formatAsSuccess("File list sent"));
 							}
 							else	//no files exist
 							{
 								System.out.println(cEngine.formatAsError("No files exist"));
 								response = new Envelope("FAIL -- no files exist. ");
-								output.writeObject(response);
+								cEngine.writeAESEncrypted(response, aesKey, output);
 							}
 						}
 					}
@@ -152,7 +152,7 @@ public class FileThread extends ServerThread
 
 								//request file contents
 								response = new Envelope("READY"); //Success
-								output.writeObject(response);
+								cEngine.writeAESEncrypted(response, aesKey, output);
 
 								//recieve and write the file to the directory
 								envelope = (Envelope)input.readObject();
@@ -160,7 +160,7 @@ public class FileThread extends ServerThread
 								{
 									fos.write((byte[])envelope.getObjContents().get(0), 0, (Integer)envelope.getObjContents().get(1));
 									response = new Envelope("READY"); //Success
-									output.writeObject(response);
+									cEngine.writeAESEncrypted(response, aesKey, output);
 									envelope = (Envelope)input.readObject();
 								}
 
@@ -180,7 +180,7 @@ public class FileThread extends ServerThread
 						}
 					}
 
-					output.writeObject(response);
+					cEngine.writeAESEncrypted(response, aesKey, output);
 				}
 //--DOWNLOAD FILE------------------------------------------------------------------------------------------------------
 				else if (envelope.getMessage().compareTo("DOWNLOADF") == 0) 
@@ -197,11 +197,11 @@ public class FileThread extends ServerThread
 
 					if (sf == null) 
 					{
-						output.writeObject(genAndPrintErrorEnvelope("File ("+remotePath+") does not exist"));
+						cEngine.writeAESEncrypted(genAndPrintErrorEnvelope("File ("+remotePath+") does not exist"), aesKey, output);
 					}
 					else if (!t.getGroups().contains(sf.getGroup()))
 					{
-						output.writeObject(genAndPrintErrorEnvelope("Token does not have permissions for group: " + sf.getGroup()));
+						cEngine.writeAESEncrypted(genAndPrintErrorEnvelope("Token does not have permissions for group: " + sf.getGroup()), aesKey, output);
 					}
 					else 
 					{
@@ -212,8 +212,7 @@ public class FileThread extends ServerThread
 							File f = new File(serverFolder+"shared_files/_" + remotePath.replace('/', '_'));
 							if (!f.exists()) 
 							{
-								envelope = genAndPrintErrorEnvelope("file ("+remotePath.replace('/', '_')+") missing from disk:");
-								output.writeObject(envelope);
+								cEngine.writeAESEncrypted(genAndPrintErrorEnvelope("file ("+remotePath.replace('/', '_')+") missing from disk:"), aesKey, output);
 							}
 							else 
 							{
@@ -242,7 +241,7 @@ public class FileThread extends ServerThread
 									//tack the chunk onto the envelope and write it
 									envelope.addObject(buf);
 									envelope.addObject(new Integer(n));
-									output.writeObject(envelope);
+									cEngine.writeAESEncrypted(envelope, aesKey, output);
 
 									//get response
 									envelope = (Envelope)input.readObject();
@@ -254,7 +253,7 @@ public class FileThread extends ServerThread
 								{
 									//send the end of file identifier
 									envelope = new Envelope("EOF");
-									output.writeObject(envelope);
+									cEngine.writeAESEncrypted(envelope, aesKey, output);
 
 									//accept response
 									envelope = (Envelope)input.readObject();
@@ -340,7 +339,7 @@ public class FileThread extends ServerThread
 
 
 					}
-					output.writeObject(envelope);
+					cEngine.writeAESEncrypted(envelope, aesKey, output);
 
 				}
 				else if(envelope.getMessage().equals("DISCONNECT"))
@@ -364,7 +363,7 @@ public class FileThread extends ServerThread
 
 		response = new Envelope("ERROR: Token signature Rejected");
 		response.addObject(null);
-		writeObject(response);
+		cEngine.writeAESEncrypted(response, aesKey, output);
 		try
 		{
 			socket.close();

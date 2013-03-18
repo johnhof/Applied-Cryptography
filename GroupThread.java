@@ -45,12 +45,12 @@ public class GroupThread extends ServerThread
 			//handle messages from the input stream(ie. socket)
 			do
 			{
-				Envelope message = (Envelope)readObject();
-				System.out.println("\nRequest received: " + message.getMessage());
+				Envelope message = (Envelope)cEngine.readAESEncrypted(aesKey, input);
+				System.out.println("\n<< Request Received: " + message.getMessage());
 				Envelope response = null;
 				
 //--GET TOKEN---------------------------------------------------------------------------------------------------------
-				if(message.getMessage().equals("GET"))//Client wants a token
+				if(message.getMessage().equals("TOKEN"))//Client wants a token
 				{
 					String username = (String)message.getObjContents().get(0); //Get the username
 					String pwd = (String)message.getObjContents().get(1);//get password
@@ -58,25 +58,25 @@ public class GroupThread extends ServerThread
 					{
 						System.out.println(cEngine.formatAsError("No username"));
 						response = new Envelope("FAIL: no username provided.");
-						writeObject(response);
+						cEngine.writeAESEncrypted(response, aesKey, output);
 					}
 					else if(!my_gs.userList.checkUser(username))
 					{
 						System.out.println(cEngine.formatAsError("Username not found"));
 						response = new Envelope("FAIL: username not found.");
-						writeObject(response);
+						cEngine.writeAESEncrypted(response, aesKey, output);
 					}
 					else if(pwd == null || pwd.length() == 0)
 					{
 						System.out.println(cEngine.formatAsError("No password"));
 						response = new Envelope("FAIL: no password.");
-						writeObject(response);
+						cEngine.writeAESEncrypted(response, aesKey, output);
 					}
 					else if(!my_gs.userList.getUserPassword(username).equals(pwd))
 					{
 						System.out.println(cEngine.formatAsError("Wrong password"));
 						response = new Envelope("Wrong password.");
-						writeObject(response);
+						cEngine.writeAESEncrypted(response, aesKey, output);
 					}
 					else
 					{
@@ -85,7 +85,7 @@ public class GroupThread extends ServerThread
 						//Respond to the client. On error, the client will receive a null token
 						response = new Envelope("OK");
 						response.addObject(yourToken);
-						writeObject(response);
+						cEngine.writeAESEncrypted(response, aesKey, output);
 						System.out.println(cEngine.formatAsSuccess("Token sent"));
 					}
 				}
@@ -122,7 +122,7 @@ public class GroupThread extends ServerThread
 							}
 						}
 					}
-					writeObject(response);
+					cEngine.writeAESEncrypted(response, aesKey, output);
 				}
 //--DELETE USER---------------------------------------------------------------------------------------------------------
 				else if(message.getMessage().equals("DUSER")) //Client wants to delete a user
@@ -170,7 +170,7 @@ public class GroupThread extends ServerThread
 							}
 						}
 					}
-					writeObject(response);
+					cEngine.writeAESEncrypted(response, aesKey, output);
 				}
 //--CREATE GROUP---------------------------------------------------------------------------------------------------------
 				else if(message.getMessage().equals("CGROUP")) //Client wants to create a group
@@ -198,7 +198,7 @@ public class GroupThread extends ServerThread
 							}
 						}
 					}
-					writeObject(response);
+					cEngine.writeAESEncrypted(response, aesKey, output);
 				}
 //--DELETE GROUP--------------------------------------------------------------------------------------------------------
 				else if(message.getMessage().equals("DGROUP")) //Client wants to delete a group
@@ -231,7 +231,7 @@ public class GroupThread extends ServerThread
 							}
 						}
 					}
-					writeObject(response);
+					cEngine.writeAESEncrypted(response, aesKey, output);
 				}
 //--LIST MEMBERS--------------------------------------------------------------------------------------------------------
 				else if(message.getMessage().equals("LMEMBERS")) //Client wants a list of members in a group
@@ -266,7 +266,7 @@ public class GroupThread extends ServerThread
 					
 						}
 					}
-					writeObject(response);
+					cEngine.writeAESEncrypted(response, aesKey, output);
 				}
 //--ADD TO GROUP--------------------------------------------------------------------------------------------------------
 				else if(message.getMessage().equals("AUSERTOGROUP")) //Client wants to add user to a group
@@ -308,7 +308,7 @@ public class GroupThread extends ServerThread
 					
 						}
 					}		
-					writeObject(response);
+					cEngine.writeAESEncrypted(response, aesKey, output);
 				}
 //--REMOVE FROM GROUP----------------------------------------------------------------------------------------------------
 				else if(message.getMessage().equals("RUSERFROMGROUP")) //Client wants to remove user from a group
@@ -350,7 +350,7 @@ public class GroupThread extends ServerThread
 							}
 						}
 					}
-					writeObject(response);
+					cEngine.writeAESEncrypted(response, aesKey, output);
 				}
 				
 //--SEE ALL USERS----------------------------------------------------------------------------------------------------
@@ -374,7 +374,7 @@ public class GroupThread extends ServerThread
 							System.out.println(cEngine.formatAsSuccess("Full user list sent"));
 						}
 					}
-					writeObject(response);
+					cEngine.writeAESEncrypted(response, aesKey, output);
 				}
 //--DISCONNECT----------------------------------------------------------------------------------------------------------
 				else if(message.getMessage().equals("DISCONNECT")) //Client wants to disconnect
@@ -389,7 +389,7 @@ public class GroupThread extends ServerThread
 				{
 					System.out.println(cEngine.formatAsError("Invalid request"));
 					response = new Envelope("FAIL -- server does not understand client request. "); //Server does not understand client request
-					writeObject(response);
+					cEngine.writeAESEncrypted(response, aesKey, output);
 				}
 			}
 			while(proceed);	
@@ -541,7 +541,7 @@ public class GroupThread extends ServerThread
 
 		response = new Envelope("ERROR: Token signature Rejected");
 		response.addObject(null);
-		writeObject(response);
+		cEngine.writeAESEncrypted(response, aesKey, output);
 		try
 		{
 			socket.close();
