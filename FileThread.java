@@ -38,7 +38,7 @@ public class FileThread extends ServerThread
 
 //--SET UP CONNECTION------------------------------------------------------------------------------------------------
 			System.out.println("\n*** New connection from " + socket.getInetAddress() + ":" + socket.getPort() + " ***");
-			if(setUpConection())
+			if(setUpConection() == false)
 			{
 				System.out.println("\n!!! Setup Failed: " + socket.getInetAddress() + ":" + socket.getPort() + " !!!");
 				return;

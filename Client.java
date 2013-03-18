@@ -95,7 +95,6 @@ public class Client extends ClientInterface
 		try
 		{
 			output.writeObject(obj);
-			System.out.println(cEngine.formatAsSuccess("Message sent in plaintext"));
 			return true;
 		}
 		catch(Exception e)
@@ -126,7 +125,6 @@ public class Client extends ClientInterface
 	{
 		try
 		{
-			System.out.println(cEngine.formatAsSuccess("Message recieved in plaintext"));
 			return input.readObject();
 		}
 		catch(Exception e)
@@ -262,14 +260,15 @@ public class Client extends ClientInterface
 
 			//send the key to the server
 			message = new Envelope("AESKEY");
+			System.out.println("\nSending Request: AESKEY");
 			message.addObject(AESKeyToByte());
 			message.addObject(aesKey.getIV().getIV());
 			message.addObject(challenge);
 		
-			System.out.println("\nFile Server Request Sent: AESKEY");
 			writePlainText(message);
 			//THE AES KEY IS NOW SET
 
+			System.out.println("Recieving Response: OK");
 			response = (Envelope)readEncrypted();
 			if(response.getMessage().equals("OK"))
 			{
@@ -301,11 +300,12 @@ public class Client extends ClientInterface
 		try
 		{
 			message = new Envelope("PUBKEYREQ");
-			System.out.println("\nFile Server Request Sent: PUBKEYREQ");
+			System.out.println("\nSending Request: PUBKEYREQ");
 			writePlainText(message);
 			response = (Envelope)readPlainText();
 			if(response.getMessage().equals("OK"))
 			{
+				System.out.println("Recieving Response: OK");
 				answer = (Key)response.getObjContents().get(0);
 				System.out.println(cEngine.formatAsSuccess("public key obtained"));
 				return answer;

@@ -69,7 +69,7 @@ public class FileClient extends Client implements FileClientInterface
 
 	    //send the envelope and output the result
 
-		System.out.println("\nFile Server Request Sent: DELETEF");
+		System.out.println("\nSending File Server Request: DELETEF");
 		writePlainText(env);
 		//writeEncrypted(env);
 		//SWTICH
@@ -78,6 +78,7 @@ public class FileClient extends Client implements FileClientInterface
 		    
 		if (env.getMessage().compareTo("OK")==0) 
 		{
+			System.out.println("\nRecieving File Server Response: OK");
 			System.out.printf("File %s deleted successfully\n", filename);				
 		}
 		else 
@@ -110,7 +111,7 @@ public class FileClient extends Client implements FileClientInterface
 			    Envelope env = new Envelope("DOWNLOADF"); //Success
 			    env.addObject(sourceFile);
 			    env.addObject(token);
-				System.out.println("\nFile Server Request Sent: DOWNLOADF");
+				System.out.println("\nSending File Server Request: DOWNLOADF");
 			    writePlainText(env); 
 				//writeEncrypted(env);
 				//SWTICH
@@ -135,6 +136,7 @@ public class FileClient extends Client implements FileClientInterface
 				//when the end of file is detected, close and display the appropriate message
 				if(env.getMessage().compareTo("EOF")==0) 
 				{
+					System.out.println("\nRecieving File Server Response: EOF");
 				    fos.close();
 					System.out.printf("\nTransfer successful file %s\n", sourceFile);
 					env = new Envelope("OK"); //Success
@@ -172,7 +174,7 @@ public class FileClient extends Client implements FileClientInterface
 			//Tell the server to return the member list
 			message = new Envelope("LFILES");
 			message.addObject(token); //Add requester's token
-			System.out.println("\nFile Server Request Sent: LFILES");
+			System.out.println("\nSending File Server Request: LFILES");
 			writePlainText(message); 
 			//writeEncrypted(message);
 			//SWTICH
@@ -182,6 +184,7 @@ public class FileClient extends Client implements FileClientInterface
 			//If server indicates success, return the member list
 			if(e.getMessage().equals("OK"))
 			{ 
+				System.out.println("\nRecieving File Server Response: OK");
 				System.out.println(cEngine.formatAsSuccess("Files returned"));
 				return (List<ShareFile>)e.getObjContents().get(0); //This cast creates compiler warnings. Sorry.
 			}
@@ -214,7 +217,7 @@ public class FileClient extends Client implements FileClientInterface
 			message.addObject(destFile);
 			message.addObject(group);
 			message.addObject(token); //Add requester's token
-			System.out.println("\nFile Server Request Sent: UPLOADF");
+			System.out.println("\nSending File Server Request: UPLOADF");
 			writePlainText(message);
 			//writeEncrypted(message);
 			//SWTICH
@@ -285,6 +288,7 @@ public class FileClient extends Client implements FileClientInterface
 				env = (Envelope)readPlainText();
 				if(env.getMessage().compareTo("OK")==0) 
 				{
+					System.out.println("\nRecieving File Server Response: OK");
 					System.out.printf("%sFile data upload successful: %s\n", cEngine.formatAsSuccess(""), sourceFile+" -> "+destFile);
 				}
 				else 
