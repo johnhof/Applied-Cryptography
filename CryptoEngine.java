@@ -4,6 +4,8 @@ import java.security.*;
 import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
 import java.io.*;
+import java.util.*;
+import java.lang.*;
 
 //import org.bouncycastle.crypto.paddings.PaddedBufferedBlockCipher;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -147,7 +149,7 @@ class CryptoEngine
 		return DriverCoreFunction(cipherText, Cipher.DECRYPT_MODE, keySet);
 	}
 	//performs encryption and decryption for aAES
-	public byte[] DriverCoreFunction(byte[] bytes, int mode, AESKeySet keySet) 
+	private byte[] DriverCoreFunction(byte[] bytes, int mode, AESKeySet keySet) 
 	{
 		Cipher cipher = null;
 		byte[]result = null;
@@ -178,60 +180,55 @@ class CryptoEngine
 	}
 
 	//performs encryption and decryption for RSA
-	public byte[] DriverCoreFunction(byte[] bytes,  int mode, Key key) 
+	private byte[] DriverCoreFunction(byte[] bytes,  int mode, Key key) 
 	{
-		Cipher cipher = null;
-		byte[]result = null;
-		byte[]encryptedChunk = null;
-		int inputSize = bytes.length;
+		byte[] result = new byte [0];
 		int byteIndex;
+		int chunkSize = 117;
+		int inputSize = bytes.length;
+		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
+			//en/decrypt in 128 byte chunks
+			for(byteIndex = 0; byteIndex <= (inputSize-chunkSize); byteIndex+=chunkSize)
+			{
+				System.out.println("\nloop");
+				result = cryptNextChunkRSA(Arrays.copyOfRange(bytes, byteIndex, byteIndex+chunkSize), result, mode, key);
+			}
+			//en/decrypt the last chunk (if it happens to be < chunkSize)
+			if(byteIndex!=(inputSize-chunkSize))
+			{
+				System.out.println("\nleftover:"+(inputSize-byteIndex));
+				result = cryptNextChunkRSA(Arrays.copyOfRange(bytes, inputSize-byteIndex, inputSize), result, mode, key);
+			}
+		 
+		 return result;
+	}
+
+	//crypt a chunk of data with RSA  and append it to the result
+	//NOTE: the chunk must be below 117 bytes
+	private byte[] cryptNextChunkRSA(byte [] chunk, byte [] cryptedBytes, int mode, Key key)
+	{
 		try 
 		{
-			//en/decrypt in 128 byte chunks
-			for(byteIndex = 128; byteIndex < inputSize; byteIndex+=128)
-			{
-				cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-				cipher.init(mode, key);	
+			//perform encryption
+			Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+			cipher.init(mode, key);	
+			byte[] nextChunk = cipher.doFinal(chunk);
 
-				//get the encrypted chunk and append it to the result
-				encryptedChunk = cipher.doFinal(Arrays.copyOfRange(bytes, byteIndex-128, byteIndex));
+			//append chunk
+			byte[] result = new byte [cryptedBytes.length+nextChunk.length];
+			System.arraycopy(cryptedBytes, 0, result, 0, cryptedBytes.length );
+			System.arraycopy(nextChunk, 0, result, cryptedBytes.length, nextChunk.length );
 
-				//backup the existing array
-				byte[] temp = new byte[result.length];
-				System.arraycopy(result, 0,  temp, 0, result.length);	
-
-				//resize and append to the result array
-				result = new byte[temp.length+encryptedChunk.length];
-				System.arraycopy(temp, 0,  result, 0, temp.length);	
-				System.arraycopy(encryptedChunk, 0,  result, 0, encryptedChunk.length);	
-			}
-			//en/decrypt the last junk
-			if(byteIndex>inputSize)
-			{
-				cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-				cipher.init(mode, key);	
-
-				//get the encrypted chunk and append it to the result
-				encryptedChunk = cipher.doFinal(Arrays.copyOfRange(bytes, byteIndex-128, byteIndex));
-
-				//backup the existing array
-				byte[] temp = new byte[result.length];
-				System.arraycopy(result, 0,  temp, 0, result.length);	
-
-				//resize and append to the result array
-				result = new byte[temp.length+encryptedChunk.length];
-				System.arraycopy(temp, 0,  result, 0, temp.length);	
-				System.arraycopy(encryptedChunk, 0,  result, 0, encryptedChunk.length);	
-			}
+			return result;
 		} 
 		catch (Exception e) 
 		{
 			System.out.println("WARNING:  CRYPTOENGINE;  RSA cipher failure;  encrypt(1)/decrypt(2)="+mode);
 			e.printStackTrace();
 		}
-		 
-		 return result;
+		return null;
+
 	}
 
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

@@ -109,7 +109,7 @@ public class Client extends ClientInterface
 			//Create or find a directory named "shared_files"
 			File file = new File("User_Resources");
 			file.mkdir();
-
+//NOTE: this will have to change to be server specofic
 			//Read in the key
 			FileInputStream fis = new FileInputStream(userFolder+userFile);
 			keyStream = new ObjectInputStream(fis);
