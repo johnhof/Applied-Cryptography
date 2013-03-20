@@ -178,6 +178,28 @@ class CryptoEngine
 	{
 		return DriverCoreFunction(cipherText, Cipher.DECRYPT_MODE, (Key)key);
 	}
+	//performs encryption and decryption for RSA
+	private byte[] DriverCoreFunction(byte[] bytes,  int mode, Key key) 
+	{
+		byte[]result = null;
+		try 
+		{
+			//perform encryption
+			Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+			cipher.init(mode, key);	
+			result = cipher.doFinal(bytes);
+		} 
+		catch (Exception e) 
+		{
+			System.out.println("WARNING:  CRYPTOENGINE;  RSA cipher failure;  encrypt(1)/decrypt(2)="+mode);
+			e.printStackTrace();
+		}
+		return result;
+	}
+/*
+	!!!THIS DOES NOT WORK!!
+	Im leaving it in in case we need it later
+
 
 	//performs encryption and decryption for RSA
 	private byte[] DriverCoreFunction(byte[] bytes,  int mode, Key key) 
@@ -186,20 +208,20 @@ class CryptoEngine
 		int byteIndex;
 		int chunkSize = 117;
 		int inputSize = bytes.length;
-		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
-			//en/decrypt in 128 byte chunks
-			for(byteIndex = 0; byteIndex <= (inputSize-chunkSize); byteIndex+=chunkSize)
-			{
-				System.out.println("\nloop");
-				result = cryptNextChunkRSA(Arrays.copyOfRange(bytes, byteIndex, byteIndex+chunkSize), result, mode, key);
-			}
-			//en/decrypt the last chunk (if it happens to be < chunkSize)
-			if(byteIndex!=(inputSize-chunkSize))
-			{
-				System.out.println("\nleftover:"+(inputSize-byteIndex));
-				result = cryptNextChunkRSA(Arrays.copyOfRange(bytes, inputSize-byteIndex, inputSize), result, mode, key);
-			}
+		System.out.println("full stream: "+bytes.toString());
+		//en/decrypt in 128 byte chunks
+		for(byteIndex = 0; byteIndex <= (inputSize-chunkSize); byteIndex+=chunkSize)
+		{
+			System.out.println("\nloop: "+Arrays.copyOfRange(bytes, byteIndex, byteIndex+chunkSize).toString());
+			result = cryptNextChunkRSA(Arrays.copyOfRange(bytes, byteIndex, byteIndex+chunkSize), result, mode, key);
+		}
+		//en/decrypt the last chunk (if it happens to be < chunkSize)
+		if(byteIndex!=(inputSize-chunkSize))
+		{
+			System.out.println("\nleftover:"+(inputSize-byteIndex));
+			result = cryptNextChunkRSA(Arrays.copyOfRange(bytes, inputSize-byteIndex, inputSize), result, mode, key);
+		}
 		 
 		 return result;
 	}
@@ -213,7 +235,9 @@ class CryptoEngine
 			//perform encryption
 			Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
 			cipher.init(mode, key);	
+			System.out.print("trying a chunk...");
 			byte[] nextChunk = cipher.doFinal(chunk);
+			System.out.println("success");
 
 			//append chunk
 			byte[] result = new byte [cryptedBytes.length+nextChunk.length];
@@ -230,7 +254,7 @@ class CryptoEngine
 		return null;
 
 	}
-
+*/
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 //-- EXTERNAL UTILITY FUNCTIONS
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

@@ -2,18 +2,11 @@
 
 import java.lang.Thread;
 import java.net.Socket;
-import java.util.List;
-import java.util.ArrayList;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.util.*;
+import java.io.*;
 import java.security.*;
 import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
-import java.io.*;
-import java.util.*;
 
 //These threads are spun off by FileServer.java
 public class FileThread extends ServerThread

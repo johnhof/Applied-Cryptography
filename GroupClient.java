@@ -37,28 +37,6 @@ public class GroupClient extends Client implements GroupClientInterface {
 		return true;
 	}
 	
-	public void disconnect()	 
-	{
-		if (isConnected()) 
-		{
-			try
-			{
-				Envelope message = new Envelope("DISCONNECT");
-				System.out.println("\n>> Sending Group Server Request: DISCONNECT");
-				cEngine.writeAESEncrypted(message, aesKey, output);
-				sock.close();//I don't see why we shouldn't attempt 
-				//to close the socket on both the server and client sides
-
-				System.out.println("\n*** Group Server disconnect successful: NAME: " + serverName + "; PORT:" + serverPort + " ***");
-			}
-			catch(Exception e)
-			{
-				System.err.println("Error: " + e.getMessage());
-				e.printStackTrace(System.err);
-			}
-		}
-	}
-	
 	
 	private boolean setKey() 
 	{

@@ -275,7 +275,7 @@ public class UI
 		//attempt to connect
 		try
 		{
-			gUser.connect(gServer, gPort, username);
+			if(gUser.connect(gServer, gPort, username)!=true) return false;
 		}
 		catch(Exception e)
 		{

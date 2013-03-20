@@ -1,37 +1,17 @@
 
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.Key;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.security.SecureRandom;
-import java.security.Security;
-import java.security.Signature;
-import java.security.SignatureException;
-import java.security.PublicKey;
-import java.security.PrivateKey;
+import java.security.*;
 
-import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
-import javax.crypto.KeyGenerator;
+import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
 
 //import org.bouncycastle.crypto.paddings.PaddedBufferedBlockCipher;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
-import java.util.List;
+import java.util.*;
 
 import java.io.*;
 
@@ -39,55 +19,86 @@ public class test
 {
     public static void main (String[] args)
     {
-        String resourceFile = "GroupResources.bin";
-        String keyDisrtoFile = "GroupPublicKey.bin";
-        ObjectOutputStream outStream;
-        InputStreamReader reader = new InputStreamReader(System.in);
-        BufferedReader in = new BufferedReader(reader);
-        ObjectInputStream resourceStream;
-        ObjectInputStream pKeyStream;
-
     	CryptoEngine cEngine = new CryptoEngine();
 
-        KeyPair keys = null;
         PublicKey pk = null;
+        Envelope message = new Envelope("");
+        KeyPair keys = cEngine.genRSAKeyPair();
 
-        try
+        //set AES key
+        AESKeySet aesKey = cEngine.genAESKeySet();
+        Integer challenge = new Integer((new SecureRandom()).nextInt());
+        Key privateKey = keys.getPrivate();
+        Key publicKey = keys.getPublic();
+        
+/*        byte [] encryptedKey = cEngine.RSAEncrypt(cEngine.serialize(aesKey.getKey()), publicKey);
+        byte [] encryptedChallenge = cEngine.RSAEncrypt(cEngine.serialize(challenge), publicKey);
+
+        message.addObject(encryptedKey);
+        message.addObject(aesKey.getIV().getIV());
+        message.addObject(encryptedChallenge);
+
+        System.out.println("message encrypted");
+
+        byte[] recoveredKey = (byte[])message.getObjContents().get(0);
+        byte[] recoveredChallenge = (byte[])message.getObjContents().get(2);
+
+        if(Arrays.equals(encryptedKey, recoveredKey))System.out.println("key recovery successful");
+        if(Arrays.equals(encryptedChallenge, recoveredChallenge))System.out.println("key recovery successful");
+
+        byte [] decryptedKey = cEngine.RSADecrypt(encryptedKey, privateKey);
+        Key recovered = (Key)cEngine.deserialize(decryptedKey);
+/*
+        aesKey = new AESKeySet((Key) cEngine.deserialize(cEngine.RSADecrypt(recoveredKey, privateKey)), (IvParameterSpec)message.getObjContents().get(1));
+        Integer challenge2 = (Integer)cEngine.deserialize(cEngine.RSADecrypt(recoveredChallenge, privateKey));
+        
+        System.out.println("message decrypted");
+*/
+
+        byte[] result = new byte [117];
+        int byteIndex;
+        int chunkSize = 117;
+        byte[] bytes = cEngine.serialize(aesKey.getKey());
+        int inputSize = bytes.length;
+
+        System.out.println("full stream: "+bytes.toString());
+        //en/decrypt in 128 byte chunks
+        for(byteIndex = 0; byteIndex <= (inputSize-chunkSize); byteIndex+=chunkSize)
         {
-            FileInputStream fis = new FileInputStream(resourceFile);
-            resourceStream = new ObjectInputStream(fis);
-
-            //retrieve the keys used for signing
-            keys = (KeyPair)resourceStream.readObject();
+            System.out.println("\nloop: "+Arrays.copyOfRange(bytes, byteIndex, byteIndex+chunkSize).toString());
+            //append chunk
+            byte[] temp = nextChunk(Arrays.copyOfRange(bytes, byteIndex, byteIndex+chunkSize), result);
+            result = temp;
+            System.out.println("result: "+result);
         }
-        catch(Exception e)
+        //en/decrypt the last chunk (if it happens to be < chunkSize)
+        if(byteIndex!=(inputSize-chunkSize))
         {
-            System.out.println("ERROR:  GROUPSERVER;  could not load resource file");
-            System.exit(-1);
+            System.out.println("\nleftover:"+(inputSize-byteIndex));
+           //append chunk
+            byte[] temp = nextChunk(Arrays.copyOfRange(bytes, inputSize-byteIndex, inputSize), result);
+            result = temp;
         }
+        System.out.println("end stream: "+result.toString());
+    }
 
-
-        try
+    private static byte[] nextChunk(byte [] chunk, byte [] cryptedBytes)
+    {
+        try 
         {
-            FileInputStream fis = new FileInputStream(keyDisrtoFile);
-            pKeyStream = new ObjectInputStream(fis);
+            //append chunk
+            byte[] result = new byte [cryptedBytes.length+chunk.length];
+            System.arraycopy(cryptedBytes, 0, result, 0, cryptedBytes.length );
+            System.arraycopy(chunk, 0, result, cryptedBytes.length, chunk.length);
 
-            //retrieve the keys used for signing
-            pk = (PublicKey)pKeyStream.readObject();
-        }
-        catch(Exception e)
+            return result;
+        } 
+        catch (Exception e) 
         {
-            System.out.println("ERROR:  GROUPSERVER;  could not load resource file");
-            System.exit(-1);
+            e.printStackTrace();
         }
+        return null;
 
-    	UserToken token = new UserToken("issuer", "Subject");
-
-        token.sign(keys.getPrivate(), cEngine);
-
-    	System.out.println("\nvalid signature from set: " + token.verifySignature(keys.getPublic(),cEngine));
-
-        System.out.println("\nvalid signature: " + token.verifySignature(pk,cEngine));
     }
 
 }

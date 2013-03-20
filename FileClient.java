@@ -6,18 +6,6 @@ import javax.crypto.*;
 import java.io.*;
 import java.util.*;
 
-/*
-SUPER METHODS USED
-
--boolean writePlainText()
--boolean writeAESEncrypted()
--byte[] readPlainText()
--byte[] readAESEncrypted()
-
--boolean setUpServer()
-*/
-
-
 public class FileClient extends Client implements FileClientInterface 
 {
 	private UserToken token;

@@ -3,6 +3,7 @@ import java.security.*;
 import javax.crypto.*;
 import java.io.*;
 import java.util.*;
+import javax.crypto.spec.IvParameterSpec;
 
 public class Client extends ClientInterface
 {
@@ -70,7 +71,7 @@ public class Client extends ClientInterface
 			{
 				Envelope message = new Envelope("DISCONNECT");
 				System.out.println("\n>> Sending Request: DISCONNECT");
-				output.writeObject(message);
+				cEngine.writeAESEncrypted(message, aesKey, output);
 				sock.close();//I don't see why we shouldn't attempt 
 				//to close the socket on both the server and client sides
 
@@ -195,7 +196,7 @@ public class Client extends ClientInterface
 			//send the key to the server
 			message = new Envelope("SET_AESKEY");
 			System.out.println("\n>> Sending Request: SET_AESKEY");
-			message.addObject(cEngine.RSAEncrypt(cEngine.serialize(aesKey.getKey()), serverPublicKey));
+			message.addObject(AESKeyToByte());
 			message.addObject(aesKey.getIV().getIV());
 			message.addObject(cEngine.RSAEncrypt(cEngine.serialize(challenge), serverPublicKey));
 			System.out.println(cEngine.formatAsSuccess("RSA encryption successful, IV sent in plaintext"));
@@ -217,11 +218,15 @@ public class Client extends ClientInterface
 					System.out.println(cEngine.formatAsSuccess("Challenge passed"));
 				}
 			}
+			else
+			{
+				System.out.println(cEngine.formatAsError("Unexpected response: "+response.getMessage()));
+				return false;
+			}
 		}
 		catch(Exception e)
 		{
-			System.out.println("ERROR:CLIENT: COULD NOT SEND AESKEY");
-			e.printStackTrace();
+			System.out.println(cEngine.formatAsError("Exception thrown suring session key setup"));
 			return false;
 		}
 		return true;
@@ -253,6 +258,44 @@ public class Client extends ClientInterface
 			return null;
 		}
 		return answer;
+	}
+
+//--CONVERT KEY TO BYTE ARRAY---------------------------------------------------------------------------------------------------
+	protected byte[] AESKeyToByte()
+	{
+		try
+		{
+			ByteArrayOutputStream toBytes = new ByteArrayOutputStream();
+			ObjectOutputStream localInput = new ObjectOutputStream(toBytes);
+
+			localInput.writeObject(aesKey.getKey());
+
+			byte[] aesKeyBytes = toBytes.toByteArray();
+
+			byte[] aesKeyBytesA = new byte[100];
+			byte[] aesKeyBytesB = new byte[41];
+
+			System.arraycopy(aesKeyBytes, 0, aesKeyBytesA, 0, aesKeyBytesA.length);
+			System.arraycopy(aesKeyBytes, 100, aesKeyBytesB, 0, aesKeyBytes.length-100);
+
+			byte[] encryptedKeyA = cEngine.RSAEncrypt(aesKeyBytesA, serverPublicKey);
+			byte[] encryptedKeyB = cEngine.RSAEncrypt(aesKeyBytesB, serverPublicKey);
+
+			System.out.println(cEngine.formatAsSuccess("AES key encrypted with public key"));
+
+			byte[] encryptedKey = new byte [encryptedKeyA.length + encryptedKeyB.length];
+
+			System.arraycopy(encryptedKeyA, 0, encryptedKey, 0, encryptedKeyA.length);
+			System.arraycopy(encryptedKeyB, 0, encryptedKey, encryptedKeyA.length, encryptedKeyB.length);
+
+			return encryptedKey;
+		}
+		catch(Exception exc)
+		{
+			System.out.println("ERROR: FILECLIENT; AES Key to enctrypted byte stream conversion failed");
+			return null;
+		}
+
 	}
  
 }

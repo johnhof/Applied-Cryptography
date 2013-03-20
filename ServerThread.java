@@ -94,11 +94,10 @@ public class ServerThread extends Thread
 				System.out.println("\n<< Request Received: " + message.getMessage());
 
 				//decrypt the key and challenge
-				aesKey = new AESKeySet((Key) cEngine.deserialize(cEngine.RSADecrypt((byte[])message.getObjContents().get(0), myPrivateKey)), 
-										(IvParameterSpec)message.getObjContents().get(1));
+				aesKey = byteToAESKey((byte[])message.getObjContents().get(0),new IvParameterSpec((byte[])message.getObjContents().get(1)));
 				Integer challenge = (Integer)cEngine.deserialize(cEngine.RSADecrypt((byte[])message.getObjContents().get(2), myPrivateKey));
+				System.out.println(cEngine.formatAsSuccess("Challenge decrypted with private key"));
 				
-				System.out.println(cEngine.formatAsSuccess("RSA decryption successful,"));
 				System.out.println(cEngine.formatAsSuccess("AES keyset recieved and stored"));
 				//THE AES KEY IS NOW SET
 
@@ -119,10 +118,45 @@ public class ServerThread extends Thread
 		catch(Exception exc)
 		{
 			System.out.println(cEngine.formatAsError("IO excepetion while setting AES key"));
+			response = new Envelope("SETUP_ERROR");
+			System.out.println(">> Sending Reponse: SETUP_ERROR");
+			cEngine.writePlainText(response, output);
 			return false;
 		}
 
 		return true;
+	}
+
+//--CONVERT BYTE ARRAY TO KEY---------------------------------------------------------------------------------------------------
+	protected AESKeySet byteToAESKey(byte [] aesKeyBytes, IvParameterSpec IV)
+	{
+		try
+		{
+			byte[] aesKeyBytesA = new byte[128];
+			byte[] aesKeyBytesB = new byte[128];
+
+			System.arraycopy(aesKeyBytes, 0, aesKeyBytesA, 0, 128);
+			System.arraycopy(aesKeyBytes, 128, aesKeyBytesB, 0, 128);
+
+			aesKeyBytesA = cEngine.RSADecrypt(aesKeyBytesA, myPrivateKey);
+			aesKeyBytesB = cEngine.RSADecrypt(aesKeyBytesB, myPrivateKey);
+
+			System.out.println(cEngine.formatAsSuccess("AES key decrypted with private key"));
+
+			System.arraycopy(aesKeyBytesA, 0, aesKeyBytes, 0, 100);
+			System.arraycopy(aesKeyBytesB, 0, aesKeyBytes, 100, 41);
+
+			ByteArrayInputStream fromBytes = new ByteArrayInputStream(aesKeyBytes);
+			ObjectInputStream localInput = new ObjectInputStream(fromBytes);
+
+			return new AESKeySet((Key)localInput.readObject(), IV);
+		}
+		catch(Exception exc)
+		{
+			System.out.println("ERROR: FILECLIENT; AES Key to enctrypted byte stream conversion failed");
+			return null;
+		}
+
 	}
 	
 }
