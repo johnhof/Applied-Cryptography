@@ -65,11 +65,11 @@ public class FileClient extends Client implements FileClientInterface
 		if (env.getMessage().compareTo("OK")==0) 
 		{
 			System.out.println("<< Recieving File Server Response: OK");
-			System.out.printf("File %s deleted successfully\n", filename);				
+			System.out.println(cEngine.formatAsSuccess("Successfully deleted file: "+filename));				
 		}
 		else 
 		{
-			System.out.printf("%sError deleting file %s (%s)\n", cEngine.formatAsError(""), filename, env.getMessage());
+			System.out.println(cEngine.formatAsError(env.getMessage()));
 			return false;
 		}
 	    	
@@ -108,7 +108,7 @@ public class FileClient extends Client implements FileClientInterface
 				while (env.getMessage().compareTo("CHUNK")==0) 
 				{ 
 					fos.write((byte[])env.getObjContents().get(0), 0, (Integer)env.getObjContents().get(1));
-					System.out.printf(".");
+					System.out.print(".");
 					env = new Envelope("DOWNLOADF"); //Success
 					cEngine.writeAESEncrypted(env, aesKey, output);
 					env = (Envelope)cEngine.readAESEncrypted(aesKey, input);									
@@ -120,26 +120,26 @@ public class FileClient extends Client implements FileClientInterface
 				{
 					System.out.println("<< Recieving File Server Response: EOF");
 				    fos.close();
-					System.out.printf("\nTransfer successful file %s\n", sourceFile);
+					System.out.println(cEngine.formatAsSuccess("Transfer successful for file: "+sourceFile));
 					env = new Envelope("OK"); //Success
 					cEngine.writeAESEncrypted(env, aesKey, output);
 				}
 				else 
 				{
-					System.out.printf("%sError reading file %s (%s)\n", cEngine.formatAsError(""), sourceFile, env.getMessage());
+					System.out.println(cEngine.formatAsError(env.getMessage()));
 					file.delete();
 					return false;								
 				}
 			}    		 
 			else 
 			{
-			    System.out.printf("%scouldn't create file %s\n", cEngine.formatAsError(""), destFile);
+			    System.out.println(cEngine.formatAsError("couldn't create file: "+destFile));
 				return false;
 			}	
 		} 
 		catch (IOException e1) 
 		{
-		   	System.out.printf("%scouldn't create file %s\n", cEngine.formatAsError(""), destFile);
+			System.out.println(cEngine.formatAsError("couldn't create file: "+destFile));
 		  	return false;
 		}
 		return true;
@@ -166,7 +166,7 @@ public class FileClient extends Client implements FileClientInterface
 				System.out.println(cEngine.formatAsSuccess("Files returned"));
 				return (List<ShareFile>)e.getObjContents().get(0); //This cast creates compiler warnings. Sorry.
 			}
-			System.out.println(cEngine.formatAsError("No files returned"));
+			System.out.println(cEngine.formatAsError(e.getMessage()));
 			return null;
 			 
 		 }
@@ -206,13 +206,12 @@ public class FileClient extends Client implements FileClientInterface
 			//If server indicates success, return the member list
 			if(env.getMessage().equals("READY"))
 			{ 
-				System.out.printf("Meta data upload successful\n");
+				System.out.println("Meta data upload successful");
 				
 			}
 			 else 
-			{
-				
-				System.out.printf("Upload failed: %s\n", env.getMessage());
+			{				
+				System.out.println(cEngine.formatAsError(env.getMessage()));
 				return false;
 			}
 			 
@@ -222,16 +221,13 @@ public class FileClient extends Client implements FileClientInterface
 				byte[] buf = new byte[4096];
 				if (env.getMessage().compareTo("READY")!=0) 
 				{
-					System.out.printf("%sServer error: %s\n", cEngine.formatAsError(""), env.getMessage());
+					System.out.println("READY EXPECTED");
+					System.out.println(env.getMessage());
 					return false;
 				}
 				message = new Envelope("CHUNK");
 				int n = fis.read(buf); //can throw an IOException
-				if (n > 0) 
-				{
-					System.out.printf(".");
-				} 
-				else if (n < 0) 
+				if (n <= 0) 
 				{
 					System.out.println(cEngine.formatAsError("Read error"));
 					return false;
@@ -243,8 +239,7 @@ public class FileClient extends Client implements FileClientInterface
 				cEngine.writeAESEncrypted(message, aesKey, output);
 						
 				env = (Envelope)cEngine.readAESEncrypted(aesKey, input);
-					
-										
+	        	System.out.println(cEngine.formatAsSuccess("chunk sent..."));
 			 }
 			 while (fis.available()>0);		 
 					 
@@ -261,18 +256,18 @@ public class FileClient extends Client implements FileClientInterface
 				if(env.getMessage().compareTo("OK")==0) 
 				{
 					System.out.println("<< Recieving File Server Response: OK");
-					System.out.printf("%sFile data upload successful: %s\n", cEngine.formatAsSuccess(""), sourceFile+" -> "+destFile);
+					System.out.println(cEngine.formatAsSuccess("File upload successful: "+sourceFile+" -> "+destFile.substring(1)));
 				}
 				else 
 				{
-					System.out.printf("%sUpload failed: %s\n", cEngine.formatAsError(""), env.getMessage());
+					System.out.println(cEngine.formatAsError("Upload failed: "+env.getMessage()));
 					return false;
 				}
 				
 			}
 			else {
 				
-				System.out.printf("%sUpload failed: %s\n", cEngine.formatAsError(""), env.getMessage());
+				System.out.println(cEngine.formatAsError("Upload failed: "+env.getMessage()));
 				return false;
 			}	 
 		}

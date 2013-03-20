@@ -172,7 +172,7 @@ public class GroupThread extends ServerThread
 								}
 								else errorMsg += "Username not found";	
 							}
-							else errorMsg += "Insufficient Priviledges";
+							else errorMsg += "No membership to specified group";
 						}
 						else errorMsg += "Check input before trying again";
 					}
@@ -273,7 +273,7 @@ public class GroupThread extends ServerThread
 										error = false;
 									}
 								}
-								else errorMsg += "Insufficient priviledges";
+								else errorMsg += "No membership to specified group";
 							}
 							else errorMsg += "No such group exists";
 						}
@@ -307,7 +307,7 @@ public class GroupThread extends ServerThread
 										error = false;
 									}
 								}
-								else errorMsg += "Insufficient priviledges";
+								else errorMsg += "No membership to specified group";
 							}
 							else errorMsg += "No such group";
 						}
@@ -329,7 +329,7 @@ public class GroupThread extends ServerThread
 						System.out.println(cEngine.formatAsSuccess("Full user list added to response"));
 						error = false;
 					}
-					else errorMsg = "Insufficient priviledges";
+					else errorMsg = "No membership to specified group";
 				}
 
 //--SEND FINAL MESSAGE---------------------------------------------------------------------------------------------------

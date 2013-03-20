@@ -21,6 +21,9 @@ public abstract class Server
 	{
 		port = _SERVER_PORT;
 		name = _serverName; 
+
+		System.out.println("NAME: "+name+";    PORT: "+port);
+
     	cEngine = new CryptoEngine();		
     	try
 		{

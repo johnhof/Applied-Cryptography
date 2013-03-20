@@ -320,7 +320,7 @@ public class UI
 		else
 		{
 			fServer = "localhost";
-			fPort = 4444;
+			fPort = 7777;
 		}
 
 		//attempt to connect

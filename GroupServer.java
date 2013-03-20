@@ -25,6 +25,7 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 public class GroupServer extends Server 
 {
 
+	//IMPORTANT: server listens on port 6666
 	public static final int SERVER_PORT = 6666;
 	public KeyPair signKeys;
 	public UserList userList;
@@ -274,7 +275,6 @@ public class GroupServer extends Server
 
 		userList.deleteUser(user);
 	}
-//----------------------------------------------------------------------------------------------------------------------
 }
 
 //This thread saves the user list
@@ -301,12 +301,8 @@ class ShutDownListener extends Thread
 			outStream = new ObjectOutputStream(new FileOutputStream(userFile));
 			outStream.writeObject(my_gs.userList);
 
-//----------------------------------------------------------------------------------------------------------------------
-//-- ADDED: groupList storage
-//----------------------------------------------------------------------------------------------------------------------
 			outStream = new ObjectOutputStream(new FileOutputStream(groupFile));
 			outStream.writeObject(my_gs.groupList);
-//----------------------------------------------------------------------------------------------------------------------
 
 		}
 		catch(Exception e)
@@ -345,12 +341,8 @@ class AutoSave extends Thread
 					outStream = new ObjectOutputStream(new FileOutputStream(userFile));
 					outStream.writeObject(my_gs.userList);
 
-//----------------------------------------------------------------------------------------------------------------------
-//-- ADDED: groupList storage
-//----------------------------------------------------------------------------------------------------------------------
 					outStream = new ObjectOutputStream(new FileOutputStream(groupFile));
 					outStream.writeObject(my_gs.groupList);
-//----------------------------------------------------------------------------------------------------------------------
 				}
 				catch(Exception e)
 				{

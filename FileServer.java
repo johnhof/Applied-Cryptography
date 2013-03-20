@@ -13,8 +13,8 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 public class FileServer extends Server 
 {
 	
-	//IMPORTANT: server listens on port 4321
-	public static final int SERVER_PORT = 4444;
+	//IMPORTANT: server listens on port 7777
+	public static final int SERVER_PORT = 7777;
 	public static FileList fileList;
 	public static PublicKey signVerifyKey;
 	

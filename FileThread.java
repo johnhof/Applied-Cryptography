@@ -89,17 +89,14 @@ public class FileThread extends ServerThread
 				{
 					errorMsg = "Could not list files; ";
 
-					if(message.getObjContents().size() > 1)
+					ArrayList<ShareFile> theFiles = FileServer.fileList.getFiles();
+					if(theFiles.size() > 0)
 					{
-						ArrayList<ShareFile> theFiles = FileServer.fileList.getFiles();
-						if(theFiles.size() > 0)
-						{
-							response.addObject(theFiles);//See FileClient for protocol
-							System.out.println(cEngine.formatAsSuccess("File list added to response"));
-						}
-						else errorMsg += "No files exist";
+						response.addObject(theFiles);//See FileClient for protocol
+						System.out.println(cEngine.formatAsSuccess("File list added to response"));
+						error = false;
 					}
-					else errorMsg += "Message too short";
+					else errorMsg += "No files exist";
 					
 				}
 
@@ -109,17 +106,17 @@ public class FileThread extends ServerThread
 				{
 					errorMsg = "Could not upload file; ";
 
-					if(message.getObjContents().size() > 2)
+					if(message.getObjContents().size() > 2)//size check
 					{
 						//retrieve the contents of the message
 						String remotePath = (String)message.getObjContents().get(1);
 						String groupName = (String)message.getObjContents().get(2);
 
-						if(remotePath != null && groupName != null) 
+						if(remotePath != null && groupName != null) //integrity check
 						{
-							if (!FileServer.fileList.checkFile(remotePath)) 
+							if (!FileServer.fileList.checkFile(remotePath)) //check for the file
 							{
-								if (reqToken.getGroups().contains(groupName)) 
+								if (reqToken.getGroups().contains(groupName)) //check for priveledges
 								{
 									//create file and handle upload
 									System.out.println(serverFolder+"shared_files/" + remotePath.replace('/', '_'));
@@ -146,7 +143,7 @@ public class FileThread extends ServerThread
 									//end of file identifier expected, inform the user of status
 									if(message.getMessage().compareTo("EOF") == 0) 
 									{
-										System.out.printf( cEngine.formatAsSuccess("Transfer successful for file: "+ remotePath));
+										System.out.println(cEngine.formatAsSuccess("Transfer successful for file: "+ remotePath.replace('/', '_')));
 										FileServer.fileList.addFile(reqToken.getSubject(), groupName, remotePath);
 										error = false;
 									}
@@ -154,7 +151,7 @@ public class FileThread extends ServerThread
 
 									fos.close();
 								}
-								else errorMsg += "Insufficient priviledges";
+								else errorMsg += "No membership to specified group";
 							}
 							else errorMsg += "File already exists";
 						}
@@ -167,15 +164,15 @@ public class FileThread extends ServerThread
 				{
 					errorMsg = "Could not download file; ";
 
-					if(message.getObjContents().size() > 1)
+					if(message.getObjContents().size() > 1) //size check
 					{
 						//retrieve the contents of the message, and attampt to access the requested file
 						String remotePath = (String)message.getObjContents().get(1);
 						ShareFile shareFile = FileServer.fileList.getFile("/" + remotePath);
 
-						if (shareFile != null) 
+						if (shareFile != null) //check for file
 						{
-							if (reqToken.getGroups().contains(shareFile.getGroup()))
+							if (reqToken.getGroups().contains(shareFile.getGroup()))//check for priviledges
 							{
 								try
 								{
@@ -196,11 +193,7 @@ public class FileThread extends ServerThread
 											{
 												message = new Envelope("CHUNK");
 												int n = fis.read(buf); //can throw an IOException
-												if (n > 0) 
-												{
-													System.out.printf(".");
-												} 
-												else errorMsg += "Read error";
+												if (n <=0) errorMsg += "Read error";
 
 												//tack the chunk onto the message and write it
 												message.addObject(buf);
@@ -225,12 +218,12 @@ public class FileThread extends ServerThread
 											message = (Envelope)cEngine.readAESEncrypted(aesKey, input);
 											if(message.getMessage().compareTo("OK") == 0) 
 											{
-												System.out.printf(cEngine.formatAsSuccess("File transfer successful for file: "+ remotePath));
+												System.out.println(cEngine.formatAsSuccess("File transfer successful for file: "+ remotePath));
 												error = false;
 											}
 										}
 									}
-									else errorMsg += "file missing from disk:"+remotePath;
+									else errorMsg += "file missing from disk:"+remotePath.replace('/', '_');
 								}
 								catch(Exception ex)
 								{
@@ -239,9 +232,9 @@ public class FileThread extends ServerThread
 									ex.printStackTrace(System.err);*/
 								}
 							}
-							else errorMsg += "Insufficient priviledges";
+							else errorMsg += "No membership to specified group";
 						}
-						else errorMsg += "No such file: "+remotePath;
+						else errorMsg += "No such file: "+remotePath.replace('/', '_');
 					}
 					else errorMsg += "Message too short";
 				}
@@ -250,15 +243,15 @@ public class FileThread extends ServerThread
 				{
 					errorMsg = "Could not delete file; ";
 
-					if(message.getObjContents().size() > 1)
+					if(message.getObjContents().size() > 1) //size check
 					{
 						//retrieve the contents of the message, and attampt to access the requested file
 						String remotePath = (String)message.getObjContents().get(1);
 						ShareFile shareFile = FileServer.fileList.getFile("/"+remotePath);
 
-						if (shareFile != null) 
+						if (shareFile != null) //check for file
 						{
-							if (reqToken.getGroups().contains(shareFile.getGroup()))
+							if (reqToken.getGroups().contains(shareFile.getGroup())) //check for priviledges
 							{
 								//attempt to delete the file
 								try
@@ -266,17 +259,17 @@ public class FileThread extends ServerThread
 									System.out.println(serverFolder+"shared_files/_" + remotePath.replace('/', '_'));
 									File f = new File(serverFolder+"shared_files/_" + remotePath.replace('/', '_'));
 
-									if (!f.exists()) 
+									if (f.exists()) 
 									{
 										if (f.delete()) 
 										{
-											System.out.println(cEngine.formatAsSuccess("File ("+remotePath.replace('/', '_')+") deleted from disk"));
+											System.out.println(cEngine.formatAsSuccess("Successfully deleted file: "+remotePath.replace('/', '_')));
 											FileServer.fileList.removeFile("/"+remotePath);
 											error = false;
 										}
-										else errorMsg += "Failed to delete file: "+remotePath;
+										else errorMsg += "Failed to delete file: "+remotePath.replace('/', '_');
 									}
-									else errorMsg += "File not on disk: "+remotePath;
+									else errorMsg += "File not on disk: "+remotePath.replace('/', '_');
 
 
 								}
@@ -288,9 +281,9 @@ public class FileThread extends ServerThread
 									message =  genAndPrintErrorEnvelope("Exception thrown. file ("+remotePath.replace('/', '_')+") may not exist");
 								}
 							}
-							else errorMsg += "Insufficient priviledges";
+							else errorMsg += "No membership to specified group";
 						}
-						else errorMsg += "No record of file: "+remotePath;
+						else errorMsg += "No record of file: "+remotePath.replace('/', '_');
 					}
 					else errorMsg += "Message too short";
 				}
@@ -300,11 +293,11 @@ public class FileThread extends ServerThread
 				if(error)
 				{
 					response = genAndPrintErrorEnvelope(errorMsg);
-					System.out.println(">> Sending error message");
+					System.out.println("\n>> Sending error message");
 				}
 				else 
 				{
-					System.out.println(">> Sending Response: OK");
+					System.out.println("\n>> Sending Response: OK");
 				}
 
 				cEngine.writeAESEncrypted(response, aesKey, output);
