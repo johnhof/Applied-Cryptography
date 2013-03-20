@@ -47,36 +47,61 @@ public class GroupThread extends ServerThread
 			{
 				Envelope message = (Envelope)cEngine.readAESEncrypted(aesKey, input);
 				System.out.println("\n<< Request Received: " + message.getMessage());
-				Envelope response = null;
+				UserToken reqToken = null;
+
+				Envelope response = new Envelope("OK"); // if no error occurs, send OK
+				boolean error = true; //assume an error will occur
+				String errorMsg = "UNKOWN";
 				
-//--GET TOKEN---------------------------------------------------------------------------------------------------------
-				if(message.getMessage().equals("TOKEN"))//Client wants a token
+//--DISCONNECT----------------------------------------------------------------------------------------------------------
+				
+				//no data is required for disconnect, handle it first
+				if(message.getMessage().equals("DISCONNECT"))
+				{
+					socket.close(); //Close the socket
+					proceed = false; //End this communication loop
+					System.out.println(cEngine.formatAsSuccess("Disconnected"));
+					System.out.println("\n*** Disconnected: " + socket.getInetAddress() + ":" + socket.getPort() + " ***");
+					return;
+				}
+
+//--CHECK MESSAGE SIZE---------------------------------------------------------------------------------------------------
+				
+				//make sure the message has contents
+				else if(message.getObjContents().size() < 1)
+				{
+					cEngine.writeAESEncrypted(genAndPrintErrorEnvelope("Server recieved empty message"));
+					continue;//go back and wait for a new message
+				}
+
+//--GET TOKEN------------------------------------------------------------------------------------------------------------
+				
+				else if(message.getMessage().equals("TOKEN"))//Client wants a token
 				{
 					String username = (String)message.getObjContents().get(0); //Get the username
 					String pwd = (String)message.getObjContents().get(1);//get password
+
+					//NOTE: Its bad practice to tell the user what login error occurred
+					//they could use it to fish for valid usernames
 					if(username == null)
 					{
 						System.out.println(cEngine.formatAsError("No username"));
-						response = new Envelope("FAIL: no username provided.");
-						cEngine.writeAESEncrypted(response, aesKey, output);
+						cEngine.writeAESEncrypted(new Envelope("Login failed"), aesKey, output);
 					}
 					else if(!my_gs.userList.checkUser(username))
 					{
 						System.out.println(cEngine.formatAsError("Username not found"));
-						response = new Envelope("FAIL: username not found.");
-						cEngine.writeAESEncrypted(response, aesKey, output);
+						cEngine.writeAESEncrypted(new Envelope("Login failed"), aesKey, output);
 					}
 					else if(pwd == null || pwd.length() == 0)
 					{
 						System.out.println(cEngine.formatAsError("No password"));
-						response = new Envelope("FAIL: no password.");
-						cEngine.writeAESEncrypted(response, aesKey, output);
+						cEngine.writeAESEncrypted(new Envelope("Login failed"), aesKey, output);
 					}
 					else if(!my_gs.userList.getUserPassword(username).equals(pwd))
 					{
 						System.out.println(cEngine.formatAsError("Wrong password"));
-						response = new Envelope("Wrong password.");
-						cEngine.writeAESEncrypted(response, aesKey, output);
+						cEngine.writeAESEncrypted(new Envelope("Login failed"), aesKey, output);
 					}
 					else
 					{
@@ -88,272 +113,201 @@ public class GroupThread extends ServerThread
 						cEngine.writeAESEncrypted(response, aesKey, output);
 						System.out.println(cEngine.formatAsSuccess("Token sent"));
 					}
+					continue;//go back and wait for a new message
 				}
-//--CREATE USER-------------------------------------------------------------------------------------------------------
-				else if(message.getMessage().equals("CUSER")) //Client wants to create a user
+
+//--VALIDATE TOKEN----------------------------------------------------------------------------------------------------
+								
+				//!!!! Everything this beyond point requires a valid token !!!!
+
+				reqToken = (UserToken)message.getObjContents().get(0)
+				if(reqToken != null && !reqToken.verifySignature(my_gs.signKeys.getPublic(), cEngine))
 				{
-					if(message.getObjContents().size() < 2)
-					{
-						response = new Envelope("FAIL: user unable to be created -- message object size less than 2. ");
-					}
-					else
-					{
-						response = new Envelope("FAIL: user unable to be created. ");
-						
-						if(message.getObjContents().get(0) != null)
-						{
-							if(message.getObjContents().get(1) != null && message.getObjContents().get(2) != null)
-							{
-								String username = (String)message.getObjContents().get(0); //Extract the username
-								UserToken yourToken = (UserToken)message.getObjContents().get(1); //Extract the token
-								String pwd = (String)message.getObjContents().get(2);
-								
-								//validate token, terminate connection if failed
-								proceed = yourToken.verifySignature(my_gs.signKeys.getPublic(), cEngine);
-        						  System.out.println(cEngine.formatAsSuccess("Token Authenticated:"+proceed));
-								if(!proceed) rejectToken(response, output);
+					rejectToken(response, output);
+					continue;//go back and wait for a new message
+				}
+        		System.out.println(cEngine.formatAsSuccess("Token Authenticated"));
 
-									//create the user if the username/token allow it
-								if(createUser(username, pwd, yourToken))
-								{
-									response = new Envelope("OK"); //Success
-									System.out.println(cEngine.formatAsSuccess("User created"));
-								}
-							}
+//--CREATE USER-------------------------------------------------------------------------------------------------------
+				
+				if(message.getMessage().equals("CUSER")) //Client wants to create a user
+				{
+					errorMsg = "Could not create user; ";
+
+					if(message.getObjContents().size() > 2)
+					{
+						String username = (String)message.getObjContents().get(1); //Extract the username
+						String pwd = (String)message.getObjContents().get(2); //extract the password
+
+						//attempt to create the use using the given credentials
+						if(username != null && pwd != null && createUser(username, pwd, reqToken))
+						{					
+							System.out.println(cEngine.formatAsSuccess("User created"));
+							error = false;
 						}
 					}
-					cEngine.writeAESEncrypted(response, aesKey, output);
+					else errorMsg += "Message too short";
 				}
+
 //--DELETE USER---------------------------------------------------------------------------------------------------------
+				
 				else if(message.getMessage().equals("DUSER")) //Client wants to delete a user
-				{					
-					if(message.getObjContents().size() < 2)
-					{
-						System.out.println(cEngine.formatAsError("Message too short"));
-						response = new Envelope("FAIL: user unable to be deleted -- message object size less than 2. ");
-					}
-					else
-					{
-						response = new Envelope("FAIL: user unable to be deleted. ");
-						
-						if(message.getObjContents().get(0) != null)
-						{
-							if(message.getObjContents().get(1) != null)
-							{
-								String username = (String)message.getObjContents().get(0); //Extract the username
-								UserToken yourToken = (UserToken)message.getObjContents().get(1); //Extract the token
+				{			
+					errorMsg = "Could not delete user; ";
 
-								//validate token, terminate connection if failed
-								proceed = yourToken.verifySignature(my_gs.signKeys.getPublic(), cEngine);
-        						  System.out.println(cEngine.formatAsSuccess("Token Authenticated:"+proceed));
-								if(!proceed) rejectToken(response, output);
-								
-								if(isAdmin(yourToken))
-								{
-									if (my_gs.userList.allUsers().contains(username))
-									{
-										my_gs.deleteUser(username);
-										response = new Envelope("OK");
-										System.out.println(cEngine.formatAsSuccess("User deleted"));
-									}
-									else 
-									{
-										System.out.println(cEngine.formatAsError("Username not found"));		
-										response = new Envelope("FAIL: user unable to be deleted -- username not found. ");
-									}
-								}
-								else
-								{
-									System.out.println(cEngine.formatAsError("Insufficient Priviledges"));
-									response = new Envelope("FAIL: user unable to be deleted -- you do not have sufficient privileges. ");
-								}
+					if(message.getObjContents().size() > 1)
+					{						
+						String username = message.getObjContents().get(1);
+
+						if(username != null && isAdmin(yourToken))
+						{
+							//attempt to delete the group
+							if (userExists(username))
+							{
+								my_gs.deleteUser(username);
+								System.out.println(cEngine.formatAsSuccess("User deleted"));
+								error = false;
 							}
+							else errorMsg += "Username not found";	
 						}
+						else errorMsg += "Insufficient Priviledges";
 					}
-					cEngine.writeAESEncrypted(response, aesKey, output);
+					else errorMsg += "Message too short";
 				}
+
 //--CREATE GROUP---------------------------------------------------------------------------------------------------------
+				
 				else if(message.getMessage().equals("CGROUP")) //Client wants to create a group
 				{
-					//if the message is too short, return failure
-					response = new Envelope("FAIL: group unable to be created. ");
+					errorMsg = "Could not create group; ";
+
 					if(message.getObjContents().size() > 1)
 					{
-						//get the elements of the message
-						if(message.getObjContents().get(0) != null && message.getObjContents().get(1) != null)
+						String groupName = (String)message.getObjContents().get(1); //Extract the group name
+
+						//attempt to create the group
+						if(groupname != null && createGroup(groupName, yourToken))
 						{
-							String groupName = (String)message.getObjContents().get(0); //Extract the group name
-							UserToken yourToken = (UserToken)message.getObjContents().get(1); //Extract the token
-
-							//validate token, terminate connection if failed
-							proceed = yourToken.verifySignature(my_gs.signKeys.getPublic(), cEngine);
-        					  System.out.println(cEngine.formatAsSuccess("Token Authenticated:"+proceed));
-							if(!proceed) rejectToken(response, output);
-
-							//create the group if the it doesn't already exist
-							if(createGroup(groupName, yourToken))
-							{
-								response = new Envelope("OK"); //Success
-								System.out.println(cEngine.formatAsSuccess("Group Created"));
-							}
+							System.out.println(cEngine.formatAsSuccess("Group created"));
+							error = false;
 						}
 					}
-					cEngine.writeAESEncrypted(response, aesKey, output);
+					else errorMsg += "Message too short";
 				}
+
 //--DELETE GROUP--------------------------------------------------------------------------------------------------------
+				
 				else if(message.getMessage().equals("DGROUP")) //Client wants to delete a group
 				{
-					//if the message is too short, return failure
-					response = new Envelope("FAIL: group unable to be deleted. ");
+					errorMsg = "Could not delete group; ";
+
 					if(message.getObjContents().size() > 1)
 					{
-						//get the elements of the message
-						if(message.getObjContents().get(0) != null && message.getObjContents().get(1) != null)
-						{
-							String groupName = (String)message.getObjContents().get(0); //Extract the group name
-							UserToken yourToken = (UserToken)message.getObjContents().get(1); //Extract the token
+						String groupName = (String)message.getObjContents().get(1); //Extract the group name
 
-							//validate token, terminate connection if failed
-							proceed = yourToken.verifySignature(my_gs.signKeys.getPublic(), cEngine);
-        					  System.out.println(cEngine.formatAsSuccess("Token Authenticated:"+proceed));
-							if(!proceed) rejectToken(response, output);
-								
-							//create the group if the it doesn't already exist
-							if(deleteGroup(groupName, yourToken))
-							{
-								response = new Envelope("OK"); //Success
-								System.out.println(cEngine.formatAsSuccess("Group deleted"));
-							}
-							else 
-							{
-								System.out.println(cEngine.formatAsError("Could not delete group"));
-								response = new Envelope("FAIL: group unable to be deleted. ");
-							}
+						//attempt to delete the group
+						if(groupName != null && deleteGroup(groupName, yourToken))
+						{	
+							System.out.println(cEngine.formatAsSuccess("Group deleted"));
+							error = false;
 						}
 					}
-					cEngine.writeAESEncrypted(response, aesKey, output);
+					else errorMsg += "Message too short";
 				}
+
 //--LIST MEMBERS--------------------------------------------------------------------------------------------------------
+				
 				else if(message.getMessage().equals("LMEMBERS")) //Client wants a list of members in a group
 				{
-					//if the message is too short, return failure
-					response = new Envelope("FAIL: user list unable to be generated. ");
+					errorMsg = "user list could not be generated; ";
+
 					if(message.getObjContents().size() > 1)
 					{
-						//get the elements of the message
-						if(message.getObjContents().get(0) != null && message.getObjContents().get(1) != null)
+						String groupName = (String)message.getObjContents().get(1); //Extract the group name
+
+						if(groupName != null)
 						{
-							String groupName = (String)message.getObjContents().get(0); //Extract the group name
-							UserToken yourToken = (UserToken)message.getObjContents().get(1); //Extract the token
-
-							//validate token, terminate connection if failed
-							proceed = yourToken.verifySignature(my_gs.signKeys.getPublic(), cEngine);
-        					  System.out.println(cEngine.formatAsSuccess("Token Authenticated:"+proceed));
-							if(!proceed) rejectToken(response, output);
-
 							ArrayList<String> users = listMembers(groupName, yourToken);
 							if(users != null && users.size() > 0)
 							{
-								response = new Envelope("OK");
 								response.addObject(users);
 								System.out.println(cEngine.formatAsSuccess("Member list sent"));
+								error = false;
 							}
-							else//no files exist
-							{
-								System.out.println(cEngine.formatAsError("No users to list"));
-								response = new Envelope("FAIL -- no users detected. ");
-							}
-					
+							else errorMsg += "No users to list";
 						}
 					}
-					cEngine.writeAESEncrypted(response, aesKey, output);
+					else errorMsg += "Message too short";
 				}
+
 //--ADD TO GROUP--------------------------------------------------------------------------------------------------------
+				
 				else if(message.getMessage().equals("AUSERTOGROUP")) //Client wants to add user to a group
 				{
-					//if the message is too short, return failure
-					response = new Envelope("FAIL -- user unable to be added to group");
+					errorMsg = "Could not add user to group; ";
+
 					if(message.getObjContents().size() > 2)
 					{
-						//get the elements of the message
-						if(message.getObjContents().get(0) != null && message.getObjContents().get(1) != null)
+						String userName = (String)message.getObjContents().get(1); //Extract the user name
+						String groupName = (String)message.getObjContents().get(2); //Extract the group name
+
+						if(userName != null && groupName != null)
 						{
-							String userName = (String)message.getObjContents().get(0); //Extract the user name
-							String groupName = (String)message.getObjContents().get(1); //Extract the group name
-							UserToken yourToken = (UserToken)message.getObjContents().get(2); //Extract the token
-
-							//validate token, terminate connection if failed
-							proceed = yourToken.verifySignature(my_gs.signKeys.getPublic(), cEngine);
-        					  System.out.println(cEngine.formatAsSuccess("Token Authenticated:"+proceed));
-							if(!proceed) rejectToken(response, output);
-
-							if(my_gs.groupList.checkGroup(groupName) != true)
-							{
-								System.out.println(cEngine.formatAsError("No such group"));
-								response = new Envelope("FAIL -- no such group");
-							}
-							else
+							//verify group existence
+							if(my_gs.groupList.checkGroup(groupName) == true)
 							{
 								//verify the owner
-								if(my_gs.groupList.getGroupOwners(groupName).contains(yourToken.getSubject()))
+								if(isGroupOwner(group, reqToken))
 								{
 									//create the group if the it doesn't already exist
 									if(addToGroup(userName, groupName, yourToken))
 									{
-										response = new Envelope("OK"); //Success
 										System.out.println(cEngine.formatAsSuccess("User added to group"));	
+										error = false;
 									}
 								}
+								else errorMsg += "Insufficient priviledges";
 							}
-					
+							else errorMsg += "No such group exists";
 						}
+						else errorMsg += "Message too short";
 					}		
-					cEngine.writeAESEncrypted(response, aesKey, output);
 				}
+
 //--REMOVE FROM GROUP----------------------------------------------------------------------------------------------------
+				
 				else if(message.getMessage().equals("RUSERFROMGROUP")) //Client wants to remove user from a group
 				{
-					//if the message is too short, return failure
-					response = new Envelope("FAIL -- unable to remove user from group. ");
-					if(message.getObjContents().size() > 1)
+					errorMsg = "Could not remove user from group; ";
+
+					if(message.getObjContents().size() > 2)
 					{
-						//get the elements of the message
-						if(message.getObjContents().get(0) != null && message.getObjContents().get(1) != null)
+						String userName = (String)message.getObjContents().get(1); //Extract the user name
+						String groupName = (String)message.getObjContents().get(2); //Extract the group name
+
+						if(userName != null && groupName != null)
 						{
-							String userName = (String)message.getObjContents().get(0); //Extract the user name
-							String groupName = (String)message.getObjContents().get(1); //Extract the group name
-							UserToken yourToken = (UserToken)message.getObjContents().get(2); //Extract the token
-
-							//validate token, terminate connection if failed
-							proceed = yourToken.verifySignature(my_gs.signKeys.getPublic(), cEngine);
-        					  System.out.println(cEngine.formatAsSuccess("Token Authenticated:"+proceed));
-							if(!proceed) rejectToken(response, output);
-
-
-							if(my_gs.groupList.checkGroup(groupName) != true)
-							{
-								System.out.println(cEngine.formatAsError("No such group"));
-								response = new Envelope("FAIL -- no such group");
-							}
-							else
+							if(my_gs.groupList.checkGroup(groupName) == true)
 							{
 								//verify the owner
-								if(my_gs.groupList.getGroupOwners(groupName).contains(yourToken.getSubject()))
+								if(isGroupOwner(group, reqToken))
 								{
 									//create the group if the it doesn't already exist
 									if(removeFromGroup(userName, groupName, yourToken))
 									{
-										response = new Envelope("OK"); //Success
 										System.out.println(cEngine.formatAsSuccess("User removed from group"));
+										error = false;
 									}
 								}
 							}
+							else errorMsg += "No such group";
 						}
 					}
-					cEngine.writeAESEncrypted(response, aesKey, output);
+					else errorMsg += "Message too short";
 				}
 				
 //--SEE ALL USERS----------------------------------------------------------------------------------------------------
+				
 				else if(message.getMessage().equals("ALLUSERS")) //Admin wants to see all of the users in existence
 				{
 					response = new Envelope("FAIL -- complete user list unable to be generated. ");
@@ -368,7 +322,6 @@ public class GroupThread extends ServerThread
 
 						if(isAdmin(theirToken))//test if they are an admin
 						{
-							response = new Envelope("OK");
 							ArrayList<String> usernameList = my_gs.userList.allUsers();
 							response.addObject(usernameList);
 							System.out.println(cEngine.formatAsSuccess("Full user list sent"));
@@ -376,21 +329,25 @@ public class GroupThread extends ServerThread
 					}
 					cEngine.writeAESEncrypted(response, aesKey, output);
 				}
-//--DISCONNECT----------------------------------------------------------------------------------------------------------
-				else if(message.getMessage().equals("DISCONNECT")) //Client wants to disconnect
-				{
-					socket.close(); //Close the socket
-					proceed = false; //End this communication loop
-					System.out.println(cEngine.formatAsSuccess("Disconnected"));
-					System.out.println("\n*** Disconnected: " + socket.getInetAddress() + ":" + socket.getPort() + " ***");
-				}
+
 //--INVALID REQUEST------------------------------------------------------------------------------------------------------
+				
 				else
 				{
 					System.out.println(cEngine.formatAsError("Invalid request"));
 					response = new Envelope("FAIL -- server does not understand client request. "); //Server does not understand client request
 					cEngine.writeAESEncrypted(response, aesKey, output);
 				}
+
+
+//--SEND FINAL MESSAGE---------------------------------------------------------------------------------------------------
+				
+				if(error)
+				{
+					response = genAndPrintErrorEnvelope(errorMsg);
+				}
+				cEngine.writeAESEncrypted(response, aesKey, output);
+
 			}
 			while(proceed);	
 		}
@@ -400,6 +357,10 @@ public class GroupThread extends ServerThread
 			e.printStackTrace(System.err);
 		}
 	}	
+
+//----------------------------------------------------------------------------------------------------------------------
+//-- UTILITY FUNCITONS
+//----------------------------------------------------------------------------------------------------------------------
 	
 	//Method to create tokens
 	private UserToken createToken(String username) 
@@ -436,7 +397,7 @@ public class GroupThread extends ServerThread
 			return false;
 		}
 	}
-	
+
 	//Method to create a user
 	private boolean createUser(String username, String pwd, UserToken yourToken)
 	{
@@ -472,10 +433,6 @@ public class GroupThread extends ServerThread
 		}
 	}
 	
-
-//----------------------------------------------------------------------------------------------------------------------
-//-- UTILITY FUNCITONS
-//----------------------------------------------------------------------------------------------------------------------
 	private boolean createGroup(String groupName, UserToken yourToken)
 	{
 		//Check if group exists
@@ -536,20 +493,22 @@ public class GroupThread extends ServerThread
 		return false;
 	}
 
-	private void rejectToken(Envelope response, ObjectOutputStream output)
+//----------------------------------------------------------------------------------------------------------------------
+//-- READABILITY WRAPPERS
+//----------------------------------------------------------------------------------------------------------------------
+	
+	//wrappers to cleanup code
+	private boolean userExists(String username)
 	{
-
-		response = new Envelope("ERROR: Token signature Rejected");
-		response.addObject(null);
-		cEngine.writeAESEncrypted(response, aesKey, output);
-		try
-		{
-			socket.close();
-		}
-		catch(Exception e)
-		{
-			System.out.println("WARNING: GroupThread; socket could not be closed");
-		}
+		return my_gs.userList.allUsers().contains(username);
 	}
-
+	private boolean groupExists(String group)
+	{
+		return my_gs.userList.allUsers().checkGroup(group);
+	}
+	private boolean groupOwner(String group, UserToken token)
+	{
+		return my_gs.groupList.getGroupOwners(group).contains(token.getSubject());
+	}
+	
 }

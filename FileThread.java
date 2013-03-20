@@ -350,20 +350,4 @@ public class FileThread extends ServerThread
 			ex.printStackTrace(System.err);
 		}
 	}
-	
-	private void rejectToken(Envelope response, ObjectOutputStream output)
-	{
-
-		response = new Envelope("ERROR: Token signature Rejected");
-		response.addObject(null);
-		cEngine.writeAESEncrypted(response, aesKey, output);
-		try
-		{
-			socket.close();
-		}
-		catch(Exception ex)
-		{
-			System.out.println("WARNING: GroupThread; socket could not be closed");
-		}
-	}
 }

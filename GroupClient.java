@@ -6,17 +6,6 @@ import javax.crypto.*;
 import java.io.*;
 import java.util.*;
 
-/*
-SUPER METHODS USED
-
--boolean writePlainText()
--boolean writeAESEncrypted()
--byte[] readPlainText()
--byte[] readAESEncrypted()
-
--boolean setUpServer()
-*/
-
 public class GroupClient extends Client implements GroupClientInterface {
  	
 	public boolean connect(final String server, final int port, String username)
@@ -37,84 +26,6 @@ public class GroupClient extends Client implements GroupClientInterface {
 		return true;
 	}
 	
-	
-	private boolean setKey() 
-	{
-		try
-		{
-			Envelope message, response;
-			message = new Envelope("PUBKEYREQ");//requests the servers public key
-			System.out.println("\n>> Sending Group Server Request: PUBKEYREQ");
-			cEngine.writePlainText(message, output);
-			response = (Envelope)cEngine.readPlainText(input);
-
-			aesKey = cEngine.genAESKeySet();
-			
-			
-			if(response.getMessage().equals("PUBKEYANSW"))
-			{
-				Key rsaPublic = (Key)response.getObjContents().get(0);
-				System.out.println(cEngine.formatAsSuccess("public key obtained"));
-				//encrypt the aesKey with the rsaPublic
-				
-				ByteArrayOutputStream toBytes = new ByteArrayOutputStream();//create ByteArrayOutputStream
-				ObjectOutputStream localOutput = new ObjectOutputStream(toBytes);//Make an object outputstream to that bytestream
-				
-				localOutput.writeObject(aesKey.getKey());//write to the bytearrayoutputstream
-				
-				byte[] aesKeyBytes = toBytes.toByteArray();
-				
-				byte[] aesKeyBytesA = new byte[100];
-				byte[] aesKeyBytesB = new byte[41];
-				
-				System.arraycopy(aesKeyBytes, 0, aesKeyBytesA, 0, 100);
-				System.arraycopy(aesKeyBytes, 100, aesKeyBytesB, 0, 41);
-				
-				byte[] encryptedKeyA = cEngine.RSAEncrypt(aesKeyBytesA, rsaPublic);
-				byte[] encryptedKeyB = cEngine.RSAEncrypt(aesKeyBytesB, rsaPublic);
-				
-				byte[] encryptedKey = new byte[encryptedKeyA.length + encryptedKeyB.length];
-				System.arraycopy(encryptedKeyA, 0, encryptedKey, 0, 128);
-				System.arraycopy(encryptedKeyB, 0, encryptedKey, 128, 128);
-				
-				message = new Envelope("AESKEY");
-				message.addObject(encryptedKey);
-				message.addObject(aesKey.getIV().getIV());
-				
-				System.out.println("\n>> Sending Group Server Request: AESKEY");
-				cEngine.writePlainText(message, output);
-				
-				message = new Envelope("CHALLENGE");
-				Integer challenge = new Integer((new SecureRandom()).nextInt());
-				message.addObject(challenge);
-				System.out.println("\n>> Sending Group Server Request: CHALLENGE");
-				cEngine.writeAESEncrypted(message, aesKey, output);
-				
-				response = (Envelope)cEngine.readAESEncrypted(aesKey, input);
-				if(response.getMessage().equals("OK"))
-				{
-					System.out.println("<< Recieving Group Server Response: OK");
-					if((challenge.intValue()+1) != ((Integer)response.getObjContents().get(0)).intValue())
-					{
-						System.out.println(cEngine.formatAsError("Challenge failed"));
-						System.exit(-1);
-					}
-					else
-					{
-						System.out.println(cEngine.formatAsSuccess("Challenge passed"));
-						return true;
-					}
-				}
-			}
-			else return false;
-		}
-		catch(Exception e)
-		{
-			e.printStackTrace();
-			System.exit(-1);
-		}
-		return false;
-	}
 	
 	public UserToken getToken(String username, String pwd)
 	{
@@ -172,13 +83,12 @@ public class GroupClient extends Client implements GroupClientInterface {
 
 			//Tell the server to create a user
 			message = new Envelope("CUSER");
-			message.addObject(username); //Add user name string
 			message.addObject(token); //Add the requester's token
+			message.addObject(username); //Add user name string
 			message.addObject(pwd);//add the desired password
 			System.out.println("\n>> Sending Group Server Request: CUSER");
 			cEngine.writeAESEncrypted(message, aesKey, output);
 			
-			//response = (Envelope)cEngine.readPlainText(input);
 			response = (Envelope)cEngine.readAESEncrypted(aesKey, input);	
 			//If server indicates success, return true
 			if(response.getMessage().equals("OK"))
@@ -205,12 +115,11 @@ public class GroupClient extends Client implements GroupClientInterface {
 			 
 			//Tell the server to delete a user
 			message = new Envelope("DUSER");
-			message.addObject(username); //Add user name
 			message.addObject(token);  //Add requester's token
+			message.addObject(username); //Add user name
 			System.out.println("\n>> Sending Group Server Request: DUSER");
 			cEngine.writeAESEncrypted(message, aesKey, output);
 			
-			//response = (Envelope)cEngine.readPlainText(input);
 			response = (Envelope)cEngine.readAESEncrypted(aesKey, input);		
 			//If server indicates success, return true
 			if(response.getMessage().equals("OK"))
@@ -236,12 +145,11 @@ public class GroupClient extends Client implements GroupClientInterface {
 			Envelope message = null, response = null;
 			//Tell the server to create a group
 			message = new Envelope("CGROUP");
-			message.addObject(groupname); //Add the group name string
 			message.addObject(token); //Add the requester's token
+			message.addObject(groupname); //Add the group name string
 			System.out.println("\n>> Sending Group Server Request: CGROUP");
 			cEngine.writeAESEncrypted(message, aesKey, output);
 			
-			//response = (Envelope)cEngine.readPlainText(input);
 			response = (Envelope)cEngine.readAESEncrypted(aesKey, input);		
 			//If server indicates success, return true
 			if(response.getMessage().equals("OK"))
@@ -267,12 +175,11 @@ public class GroupClient extends Client implements GroupClientInterface {
 			Envelope message = null, response = null;
 			//Tell the server to delete a group
 			message = new Envelope("DGROUP");
-			message.addObject(groupname); //Add group name string
 			message.addObject(token); //Add requester's token
+			message.addObject(groupname); //Add group name string
 			System.out.println("\n>> Sending Group Server Request: DGROUP");
 			cEngine.writeAESEncrypted(message, aesKey, output);
 			
-			//response = (Envelope)cEngine.readPlainText(input);
 			response = (Envelope)cEngine.readAESEncrypted(aesKey, input);	
 			//If server indicates success, return true
 			if(response.getMessage().equals("OK"))
@@ -299,12 +206,11 @@ public class GroupClient extends Client implements GroupClientInterface {
 			Envelope message = null, response = null;
 			//Tell the server to return the member list
 			message = new Envelope("LMEMBERS");
-			message.addObject(group); //Add group name string
 			message.addObject(token); //Add requester's token
+			message.addObject(group); //Add group name string
 			System.out.println("\n>> Sending Group Server Request: LMEMBERS");
 			cEngine.writeAESEncrypted(message, aesKey, output);
 			
-			//response = (Envelope)cEngine.readPlainText(input);
 			response = (Envelope)cEngine.readAESEncrypted(aesKey, input);	
 			//If server indicates success, return the member list
 			if(response.getMessage().equals("OK"))
@@ -330,13 +236,12 @@ public class GroupClient extends Client implements GroupClientInterface {
 			Envelope message = null, response = null;
 			//Tell the server to add a user to the group
 			message = new Envelope("AUSERTOGROUP");
+			message.addObject(token); //Add requester's token
 			message.addObject(username); //Add user name string
 			message.addObject(groupname); //Add group name string
-			message.addObject(token); //Add requester's token
 			System.out.println("\n>> Sending Group Server Request: AUSERTOGROUP");
 			cEngine.writeAESEncrypted(message, aesKey, output);
 			
-			//response = (Envelope)cEngine.readPlainText(input);
 			response = (Envelope)cEngine.readAESEncrypted(aesKey, input);	
 			//If server indicates success, return true
 			
@@ -363,13 +268,12 @@ public class GroupClient extends Client implements GroupClientInterface {
 			Envelope message = null, response = null;
 			//Tell the server to remove a user from the group
 			message = new Envelope("RUSERFROMGROUP");
+			message.addObject(token); //Add requester's token
 			message.addObject(username); //Add user name string
 			message.addObject(groupname); //Add group name string
-			message.addObject(token); //Add requester's token
 			System.out.println("\n>> Sending Group Server Request: RUSERFROM GROUP");
 			cEngine.writeAESEncrypted(message, aesKey, output);
 			
-			//response = (Envelope)cEngine.readPlainText(input);
 			response = (Envelope)cEngine.readAESEncrypted(aesKey, input);	
 			//If server indicates success, return true
 			if(response.getMessage().equals("OK"))
@@ -398,7 +302,6 @@ public class GroupClient extends Client implements GroupClientInterface {
 			System.out.println("\n>> Sending Group Server Request: ALLUSERS");
 			cEngine.writeAESEncrypted(message, aesKey, output);
 			
-			//response = (Envelope)cEngine.readPlainText(input);
 			response = (Envelope)cEngine.readAESEncrypted(aesKey, input);	
 			if(response.getMessage().equals("OK") && response.getObjContents() != null)
 			{

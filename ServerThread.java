@@ -38,14 +38,6 @@ public class ServerThread extends Thread
 			System.out.println(cEngine.formatAsError("failed to bind streams to the socket"));
 		}
 	}
-
-	protected Envelope genAndPrintErrorEnvelope(String error)
-	{
-		if(cEngine == null)	cEngine = new CryptoEngine();
-
-		System.out.println(cEngine.formatAsError(error));
-		return new Envelope(error);
-	}
 	
 //----------------------------------------------------------------------------------------------------------------------
 //-- CONNECTION SETUP FUNCIONS
@@ -117,10 +109,7 @@ public class ServerThread extends Thread
 		}
 		catch(Exception exc)
 		{
-			System.out.println(cEngine.formatAsError("IO excepetion while setting AES key"));
-			response = new Envelope("SETUP_ERROR");
-			System.out.println(">> Sending Reponse: SETUP_ERROR");
-			cEngine.writePlainText(response, output);
+			cEngine.writePlainText(genAndPrintErrorEnvelope("IO excepetion while setting AES key"), output);
 			return false;
 		}
 
@@ -157,6 +146,31 @@ public class ServerThread extends Thread
 			return null;
 		}
 
+	}
+
+//----------------------------------------------------------------------------------------------------------------------
+//-- UTILITY FUNCITONS
+//----------------------------------------------------------------------------------------------------------------------
+
+	protected Envelope genAndPrintErrorEnvelope(String error)
+	{
+		if(cEngine == null)	cEngine = new CryptoEngine();
+
+		System.out.println(cEngine.formatAsError(error));
+		return new Envelope(error);
+	}
+
+	private void rejectToken(Envelope response, ObjectOutputStream output)
+	{
+		cEngine.writeAESEncrypted(genAndPrintErrorEnvelope("Token signature rejected"), aesKey, output);
+		try
+		{
+			socket.close();
+		}
+		catch(Exception e)
+		{
+			System.out.println("WARNING: GroupThread; socket could not be closed");
+		}
 	}
 	
 }
