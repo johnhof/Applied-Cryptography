@@ -160,7 +160,7 @@ public class ServerThread extends Thread
 		return new Envelope(error);
 	}
 
-	private void rejectToken(Envelope response, ObjectOutputStream output)
+	protected void rejectToken(Envelope response, ObjectOutputStream output)
 	{
 		cEngine.writeAESEncrypted(genAndPrintErrorEnvelope("Token signature rejected"), aesKey, output);
 		try

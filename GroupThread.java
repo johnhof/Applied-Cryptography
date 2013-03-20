@@ -45,13 +45,14 @@ public class GroupThread extends ServerThread
 			//handle messages from the input stream(ie. socket)
 			do
 			{
+				System.out.println("\nWaiting for request...");
 				Envelope message = (Envelope)cEngine.readAESEncrypted(aesKey, input);
 				System.out.println("\n<< Request Received: " + message.getMessage());
 				UserToken reqToken = null;
 
 				Envelope response = new Envelope("OK"); // if no error occurs, send OK
 				boolean error = true; //assume an error will occur
-				String errorMsg = "UNKOWN";
+				String errorMsg = "Invalid request";
 				
 //--DISCONNECT----------------------------------------------------------------------------------------------------------
 				
@@ -70,7 +71,7 @@ public class GroupThread extends ServerThread
 				//make sure the message has contents
 				else if(message.getObjContents().size() < 1)
 				{
-					cEngine.writeAESEncrypted(genAndPrintErrorEnvelope("Server recieved empty message"));
+					cEngine.writeAESEncrypted(genAndPrintErrorEnvelope("Server recieved empty message"), aesKey, output);
 					continue;//go back and wait for a new message
 				}
 
@@ -106,10 +107,11 @@ public class GroupThread extends ServerThread
 					else
 					{
 						UserToken yourToken = createToken(username); //Create a token
+						System.out.println(cEngine.formatAsSuccess("Authentication cleared"));
 						
 						//Respond to the client. On error, the client will receive a null token
-						response = new Envelope("OK");
 						response.addObject(yourToken);
+						System.out.println(">> Sending Reponse: OK");
 						cEngine.writeAESEncrypted(response, aesKey, output);
 						System.out.println(cEngine.formatAsSuccess("Token sent"));
 					}
@@ -120,7 +122,7 @@ public class GroupThread extends ServerThread
 								
 				//!!!! Everything this beyond point requires a valid token !!!!
 
-				reqToken = (UserToken)message.getObjContents().get(0)
+				reqToken = (UserToken)message.getObjContents().get(0);
 				if(reqToken != null && !reqToken.verifySignature(my_gs.signKeys.getPublic(), cEngine))
 				{
 					rejectToken(response, output);
@@ -157,9 +159,9 @@ public class GroupThread extends ServerThread
 
 					if(message.getObjContents().size() > 1)
 					{						
-						String username = message.getObjContents().get(1);
+						String username = (String)message.getObjContents().get(1);
 
-						if(username != null && isAdmin(yourToken))
+						if(username != null && isAdmin(reqToken))
 						{
 							//attempt to delete the group
 							if (userExists(username))
@@ -186,7 +188,7 @@ public class GroupThread extends ServerThread
 						String groupName = (String)message.getObjContents().get(1); //Extract the group name
 
 						//attempt to create the group
-						if(groupname != null && createGroup(groupName, yourToken))
+						if(groupName != null && createGroup(groupName, reqToken))
 						{
 							System.out.println(cEngine.formatAsSuccess("Group created"));
 							error = false;
@@ -206,7 +208,7 @@ public class GroupThread extends ServerThread
 						String groupName = (String)message.getObjContents().get(1); //Extract the group name
 
 						//attempt to delete the group
-						if(groupName != null && deleteGroup(groupName, yourToken))
+						if(groupName != null && deleteGroup(groupName, reqToken))
 						{	
 							System.out.println(cEngine.formatAsSuccess("Group deleted"));
 							error = false;
@@ -227,11 +229,11 @@ public class GroupThread extends ServerThread
 
 						if(groupName != null)
 						{
-							ArrayList<String> users = listMembers(groupName, yourToken);
+							ArrayList<String> users = listMembers(groupName, reqToken);
 							if(users != null && users.size() > 0)
 							{
 								response.addObject(users);
-								System.out.println(cEngine.formatAsSuccess("Member list sent"));
+								System.out.println(cEngine.formatAsSuccess("Member list recovered"));
 								error = false;
 							}
 							else errorMsg += "No users to list";
@@ -257,10 +259,10 @@ public class GroupThread extends ServerThread
 							if(my_gs.groupList.checkGroup(groupName) == true)
 							{
 								//verify the owner
-								if(isGroupOwner(group, reqToken))
+								if(isGroupOwner(groupName, reqToken))
 								{
 									//create the group if the it doesn't already exist
-									if(addToGroup(userName, groupName, yourToken))
+									if(addToGroup(userName, groupName, reqToken))
 									{
 										System.out.println(cEngine.formatAsSuccess("User added to group"));	
 										error = false;
@@ -290,15 +292,16 @@ public class GroupThread extends ServerThread
 							if(my_gs.groupList.checkGroup(groupName) == true)
 							{
 								//verify the owner
-								if(isGroupOwner(group, reqToken))
+								if(isGroupOwner(groupName, reqToken))
 								{
-									//create the group if the it doesn't already exist
-									if(removeFromGroup(userName, groupName, yourToken))
+									//remove user
+									if(removeFromGroup(userName, groupName, reqToken))
 									{
 										System.out.println(cEngine.formatAsSuccess("User removed from group"));
 										error = false;
 									}
 								}
+								else errorMsg += "Insufficient priviledges";
 							}
 							else errorMsg += "No such group";
 						}
@@ -310,42 +313,30 @@ public class GroupThread extends ServerThread
 				
 				else if(message.getMessage().equals("ALLUSERS")) //Admin wants to see all of the users in existence
 				{
-					response = new Envelope("FAIL -- complete user list unable to be generated. ");
-					if(message.getObjContents() != null)
+					errorMsg = "Could not generate user list; ";
+
+					if(isAdmin(reqToken))//test if they are an admin
 					{
-						UserToken theirToken = (UserToken)message.getObjContents().get(0);
-
-						//validate token, terminate connection if failed
-						proceed = theirToken.verifySignature(my_gs.signKeys.getPublic(), cEngine);
-        				  System.out.println(cEngine.formatAsSuccess("Token Authenticated:"+proceed));
-						if(!proceed) rejectToken(response, output);
-
-						if(isAdmin(theirToken))//test if they are an admin
-						{
-							ArrayList<String> usernameList = my_gs.userList.allUsers();
-							response.addObject(usernameList);
-							System.out.println(cEngine.formatAsSuccess("Full user list sent"));
-						}
+						ArrayList<String> usernameList = my_gs.userList.allUsers();
+						response.addObject(usernameList);
+						System.out.println(cEngine.formatAsSuccess("Full user list recovered"));
+						error = false;
 					}
-					cEngine.writeAESEncrypted(response, aesKey, output);
+					else errorMsg = "Insufficient priviledges";
 				}
-
-//--INVALID REQUEST------------------------------------------------------------------------------------------------------
-				
-				else
-				{
-					System.out.println(cEngine.formatAsError("Invalid request"));
-					response = new Envelope("FAIL -- server does not understand client request. "); //Server does not understand client request
-					cEngine.writeAESEncrypted(response, aesKey, output);
-				}
-
 
 //--SEND FINAL MESSAGE---------------------------------------------------------------------------------------------------
 				
 				if(error)
 				{
 					response = genAndPrintErrorEnvelope(errorMsg);
+					System.out.println(">> Sending error statement");
 				}
+				else 
+				{
+					System.out.println(">> Sending Response: OK");
+				}
+
 				cEngine.writeAESEncrypted(response, aesKey, output);
 
 			}
@@ -436,7 +427,7 @@ public class GroupThread extends ServerThread
 	private boolean createGroup(String groupName, UserToken yourToken)
 	{
 		//Check if group exists
-		if(!my_gs.groupList.checkGroup(groupName))
+		if(!groupExists(groupName))
 		{
 			my_gs.createGroup(groupName, yourToken.getSubject());
 			return true;
@@ -447,7 +438,7 @@ public class GroupThread extends ServerThread
 	private boolean deleteGroup(String groupName, UserToken yourToken)
 	{
 		//verify that the group exists, and that the user is an owner
-		if(my_gs.groupList.checkGroup(groupName) && my_gs.groupList.getGroupOwners(groupName).contains(yourToken.getSubject()))
+		if(groupExists(groupName) && isGroupOwner(groupName, yourToken))
 		{
 			my_gs.deleteGroup(groupName);
 			return true;
@@ -459,7 +450,7 @@ public class GroupThread extends ServerThread
 	{
 		ArrayList<String> members = null;
 		//verify that the group exists, and that the user is an owner
-		if(my_gs.groupList.checkGroup(groupName) && my_gs.groupList.getGroupOwners(groupName).contains(yourToken.getSubject()))
+		if(groupExists(groupName) && isGroupOwner(groupName, yourToken))
 		{
 			members = my_gs.groupList.getGroupMembers(groupName);
 		}
@@ -469,7 +460,7 @@ public class GroupThread extends ServerThread
 	private boolean addToGroup(String userName, String groupName, UserToken yourToken)
 	{
 		//verify that the group exists, that the user is an owner, and that the user isnt already a member
-		if(my_gs.groupList.checkGroup(groupName) && my_gs.groupList.getGroupOwners(groupName).contains(yourToken.getSubject()) && !my_gs.groupList.getGroupMembers(groupName).contains(userName))
+		if(groupExists(groupName) && isGroupOwner(groupName, yourToken) && !my_gs.groupList.getGroupMembers(groupName).contains(userName))
 		{
 			my_gs.addUserToGroup(groupName, userName);
 			return true;
@@ -480,7 +471,7 @@ public class GroupThread extends ServerThread
 	private boolean removeFromGroup(String userName, String groupName, UserToken yourToken)
 	{
 		//verify that the group exists, and that the user is an owner
-		if(my_gs.groupList.checkGroup(groupName) && my_gs.groupList.getGroupOwners(groupName).contains(yourToken.getSubject()))
+		if(groupExists(groupName) && isGroupOwner(groupName, yourToken))
 		{
 			my_gs.removeUserFromGroup(groupName, userName);
 			return true;
@@ -504,9 +495,9 @@ public class GroupThread extends ServerThread
 	}
 	private boolean groupExists(String group)
 	{
-		return my_gs.userList.allUsers().checkGroup(group);
+		return my_gs.groupList.checkGroup(group);
 	}
-	private boolean groupOwner(String group, UserToken token)
+	private boolean isGroupOwner(String group, UserToken token)
 	{
 		return my_gs.groupList.getGroupOwners(group).contains(token.getSubject());
 	}

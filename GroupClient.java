@@ -62,7 +62,7 @@ public class GroupClient extends Client implements GroupClientInterface {
 			}
 			else
 			{
-				System.out.println(response.getMessage());
+				System.out.println(cEngine.formatAsError(response.getMessage()));
 			}
 			return null;
 		}

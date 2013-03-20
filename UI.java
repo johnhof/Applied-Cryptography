@@ -303,7 +303,7 @@ public class UI
 			if (token == null)
 			{
 				proceed = true;
-				System.out.println("Invalid Username");
+				System.out.println("Login failed");
 			}
 		}while(proceed);//asks for username again
 		
