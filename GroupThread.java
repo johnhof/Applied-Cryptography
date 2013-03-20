@@ -22,11 +22,9 @@ public class GroupThread extends ServerThread
 	
 	public void run()
 	{
-		boolean proceed = true;
     	String groupFolder = "Group_Server_Resources/";
 		String resourceFile = groupFolder+"GroupResources.bin";
 
-		
 		try
 		{
 
@@ -60,7 +58,6 @@ public class GroupThread extends ServerThread
 				if(message.getMessage().equals("DISCONNECT"))
 				{
 					socket.close(); //Close the socket
-					proceed = false; //End this communication loop
 					System.out.println(cEngine.formatAsSuccess("Disconnected"));
 					System.out.println("\n*** Disconnected: " + socket.getInetAddress() + ":" + socket.getPort() + " ***");
 					return;
@@ -118,7 +115,7 @@ public class GroupThread extends ServerThread
 					continue;//go back and wait for a new message
 				}
 
-//--VALIDATE TOKEN----------------------------------------------------------------------------------------------------
+//--AUTHENTICATE TOKEN-------------------------------------------------------------------------------------------------
 								
 				//!!!! Everything this beyond point requires a valid token !!!!
 
@@ -147,6 +144,7 @@ public class GroupThread extends ServerThread
 							System.out.println(cEngine.formatAsSuccess("User created"));
 							error = false;
 						}
+						else errorMsg += "Check input before trying again";
 					}
 					else errorMsg += "Message too short";
 				}
@@ -161,18 +159,22 @@ public class GroupThread extends ServerThread
 					{						
 						String username = (String)message.getObjContents().get(1);
 
-						if(username != null && isAdmin(reqToken))
+						if(username != null)
 						{
-							//attempt to delete the group
-							if (userExists(username))
+							if(isAdmin(reqToken))
 							{
-								my_gs.deleteUser(username);
-								System.out.println(cEngine.formatAsSuccess("User deleted"));
-								error = false;
+								//attempt to delete the group
+								if (userExists(username))
+								{
+									my_gs.deleteUser(username);
+									System.out.println(cEngine.formatAsSuccess("User deleted"));
+									error = false;
+								}
+								else errorMsg += "Username not found";	
 							}
-							else errorMsg += "Username not found";	
+							else errorMsg += "Insufficient Priviledges";
 						}
-						else errorMsg += "Insufficient Priviledges";
+						else errorMsg += "Check input before trying again";
 					}
 					else errorMsg += "Message too short";
 				}
@@ -193,6 +195,7 @@ public class GroupThread extends ServerThread
 							System.out.println(cEngine.formatAsSuccess("Group created"));
 							error = false;
 						}
+						else errorMsg += "Check input before trying again";
 					}
 					else errorMsg += "Message too short";
 				}
@@ -213,6 +216,7 @@ public class GroupThread extends ServerThread
 							System.out.println(cEngine.formatAsSuccess("Group deleted"));
 							error = false;
 						}
+						else errorMsg += "Check input before trying again";
 					}
 					else errorMsg += "Message too short";
 				}
@@ -233,11 +237,12 @@ public class GroupThread extends ServerThread
 							if(users != null && users.size() > 0)
 							{
 								response.addObject(users);
-								System.out.println(cEngine.formatAsSuccess("Member list recovered"));
+								System.out.println(cEngine.formatAsSuccess("Member list radded to response"));
 								error = false;
 							}
 							else errorMsg += "No users to list";
 						}
+						else errorMsg += "Check input before trying again";
 					}
 					else errorMsg += "Message too short";
 				}
@@ -272,8 +277,9 @@ public class GroupThread extends ServerThread
 							}
 							else errorMsg += "No such group exists";
 						}
-						else errorMsg += "Message too short";
+						else errorMsg += "Check input before trying again";
 					}		
+					else errorMsg += "Message too short";
 				}
 
 //--REMOVE FROM GROUP----------------------------------------------------------------------------------------------------
@@ -305,6 +311,7 @@ public class GroupThread extends ServerThread
 							}
 							else errorMsg += "No such group";
 						}
+						else errorMsg += "Check input before trying again";
 					}
 					else errorMsg += "Message too short";
 				}
@@ -319,7 +326,7 @@ public class GroupThread extends ServerThread
 					{
 						ArrayList<String> usernameList = my_gs.userList.allUsers();
 						response.addObject(usernameList);
-						System.out.println(cEngine.formatAsSuccess("Full user list recovered"));
+						System.out.println(cEngine.formatAsSuccess("Full user list added to response"));
 						error = false;
 					}
 					else errorMsg = "Insufficient priviledges";
@@ -330,7 +337,7 @@ public class GroupThread extends ServerThread
 				if(error)
 				{
 					response = genAndPrintErrorEnvelope(errorMsg);
-					System.out.println(">> Sending error statement");
+					System.out.println(">> Sending error message");
 				}
 				else 
 				{
@@ -340,7 +347,7 @@ public class GroupThread extends ServerThread
 				cEngine.writeAESEncrypted(response, aesKey, output);
 
 			}
-			while(proceed);	
+			while(true);	
 		}
 		catch(Exception e)
 		{

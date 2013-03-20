@@ -201,7 +201,7 @@ public class FileClient extends Client implements FileClientInterface
 			 
 			FileInputStream fis = new FileInputStream(sourceFile);
 			 
-			env = (Envelope)cEngine.readPlainText(input);
+			env = (Envelope)cEngine.readAESEncrypted(aesKey, input);
 			 
 			//If server indicates success, return the member list
 			if(env.getMessage().equals("READY"))
@@ -240,9 +240,9 @@ public class FileClient extends Client implements FileClientInterface
 				message.addObject(buf);
 				message.addObject(new Integer(n));
 					
-				cEngine.writePlainText(message, output);
+				cEngine.writeAESEncrypted(message, aesKey, output);
 						
-				env = (Envelope)cEngine.readPlainText(input);
+				env = (Envelope)cEngine.readAESEncrypted(aesKey, input);
 					
 										
 			 }
