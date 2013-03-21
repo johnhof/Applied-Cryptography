@@ -90,13 +90,6 @@ public class Client extends ClientInterface
 //-- CONNECTION SETUP FUNCIONS
 //----------------------------------------------------------------------------------------------------------------------
 
-/*
--> PUBKEYREQ {}
-<- OK {public key}
--> AESKEY {key, IV, challenge}
-<- OK {challenge}
-*/
-
 	protected boolean setUpServer(String server, String userFile)
 	{
 
@@ -107,10 +100,9 @@ public class Client extends ClientInterface
 		System.out.println("\nSetting up resources");
 		try
 		{
-			//Create or find a directory named "shared_files"
 			File file = new File("User_Resources");
 			file.mkdir();
-//NOTE: this will have to change to be server specofic
+//NOTE: this will have to change to be server specific
 			//Read in the key
 			FileInputStream fis = new FileInputStream(userFolder+userFile);
 			keyStream = new ObjectInputStream(fis);

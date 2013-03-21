@@ -417,6 +417,7 @@ public class GroupThread extends ServerThread
 				else
 				{
 					my_gs.userList.addUser(username, pwd);
+					my_gs.addUserToGroup("global", username); // add all users to global by default
 					return true;
 				}
 			}

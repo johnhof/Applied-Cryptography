@@ -18,27 +18,22 @@ public class ResourceGenerator
     public static void main (String[] args)
     {
     	String publicFolder = "Public_Resources";
-    	String groupFolder = "Group_Server_Resources";
-		String resourceFile = "GroupResources.bin";
-		String keyDisrtoFile = "GroupPublicKey.bin";
+    	String groupFolder = "_GroupServer_Resources";
+		String keyDisrtoFile = "GroupPublicKey.rsc";
 		ObjectOutputStream outStream;
 	    InputStreamReader reader = new InputStreamReader(System.in);
 	    BufferedReader in = new BufferedReader(reader);
-/*
+
 		try
 		{
-			System.out.println("\nAre you sure you want to overwrite old groupserver signing keys? [y/n] ");
-			if(!in.readLine().equals("y"))
-			{
-				System.out.println("action canceled; old files preserved");
-				return; 	
-			} 
+			System.out.println("\nEnter the group server name");
+			groupFolder = in.readLine()+groupFolder;
 		}
 		catch(Exception e)
 		{
 			System.out.println("IO Error");
 			return;
-		}*/
+		}
 
 	    //create the folders
 		File file = new File(publicFolder);
@@ -55,7 +50,7 @@ public class ResourceGenerator
 		//save keys
 		try
 		{
-			outStream = new ObjectOutputStream(new FileOutputStream(groupFolder+"/"+resourceFile));
+			outStream = new ObjectOutputStream(new FileOutputStream(groupFolder+"/"+"SigKeys.rsc"));
 			outStream.writeObject(keys);
 
 			outStream = new ObjectOutputStream(new FileOutputStream(publicFolder+"/"+keyDisrtoFile));

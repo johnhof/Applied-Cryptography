@@ -20,24 +20,20 @@ public class FileServer extends Server
 	
 	public FileServer() 
 	{
-		super(SERVER_PORT, "FilePile");
+		//pass in the server type to create the appropriate directory
+		super(SERVER_PORT, "FilePile", "File");
 	}
 
 	public FileServer(int _port) 
 	{
-		super(_port, "FilePile");
+		//pass in the server type to create the appropriate directory
+		super(_port, "FilePile", "File");
 	}
 	
 	public void start() 
-	{
-		
-		System.out.println("\n\n***********************************************************\n"+
-								"****                    New Session                    ****\n"+
-								"***********************************************************\n");
-		
+	{		
     	String publicFolder = "Public_Resources/";
-		String serverFolder = name+"_Server_Resources/";
-		File file = new File(serverFolder);
+		File file = new File(resourceFolder);
 		file.mkdir();
 
 		//open the resource folder, remove it if it had to be generated
@@ -49,7 +45,7 @@ public class FileServer extends Server
 			return;
 		}
 
-		String fileFile = serverFolder+"FileList.bin";
+		String fileFile = resourceFolder+"FileList.bin";
         String keyDistroFile = publicFolder+"GroupPublicKey.bin";
 		ObjectInputStream fileStream;
 		ObjectInputStream sigKeyStream;
@@ -58,10 +54,9 @@ public class FileServer extends Server
 		Runtime runtime = Runtime.getRuntime();
 		Thread catchExit = new Thread(new ShutDownListenerFS(this));
 		runtime.addShutdownHook(catchExit);
+
+//--RETRIEVE THE TOKEN VERIFIER-----------------------------------------------------------------------------------------
 		
-//----------------------------------------------------------------------------------------------------------------------
-//--ADDED: retrieve the group server public key to verify signatures
-//----------------------------------------------------------------------------------------------------------------------
 		try
 		{
 			FileInputStream fis = new FileInputStream(keyDistroFile);
@@ -75,9 +70,10 @@ public class FileServer extends Server
 			System.out.println("ERROR:  FILESERVER;  could not load resource file");
 			System.exit(-1);
 		}
-//----------------------------------------------------------------------------------------------------------------------
+
+//--GET THE FILE LIST---------------------------------------------------------------------------------------------------
 		
-		//Open user file to get user list
+		//Open file file to get user list
 		try
 		{
 			FileInputStream fis = new FileInputStream(fileFile);
@@ -101,7 +97,7 @@ public class FileServer extends Server
 		}
 		
 		//Create or find a directory named "shared_files"
-		file = new File(serverFolder+"shared_files");
+		file = new File(resourceFolder+"shared_files");
 		if (file.mkdir()) 
 		{
 			System.out.println("Created new shared_files directory");
@@ -114,19 +110,23 @@ public class FileServer extends Server
 		{
 			System.out.println("Error creating shared_files directory");				 
 		}
-		
+	
+//--SET UP SAVE DEMON---------------------------------------------------------------------------------------------------
+	
 		//Autosave Daemon. Saves lists every 5 minutes
 		AutoSaveFS aSave = new AutoSaveFS(this);
 		aSave.setDaemon(true);
 		aSave.start();
 		
-		boolean running = true;
-		
+		boolean running = true;	
+		System.out.println("\nUPDATE: "+name+" File Server; setup succesful");
+
+//--SET UP SOCKET LOOP--------------------------------------------------------------------------------------------------
+
 		//setup the socket
 		try
 		{			
 			final ServerSocket serverSock = new ServerSocket(port);
-			System.out.printf("%s up and running\n", this.getClass().getName());
 			
 			Socket sock = null;
 			Thread thread = null;
@@ -148,10 +148,12 @@ public class FileServer extends Server
 			System.err.println("Error: " + e.getMessage());
 			e.printStackTrace(System.err);
 		}
-
-		System.out.println("\nUPDATE: GroupServer; setup succesful");
 	}
 }
+
+//----------------------------------------------------------------------------------------------------------------------
+//-- SAVING DEMONS
+//----------------------------------------------------------------------------------------------------------------------
 
 //This thread saves user and group lists
 class ShutDownListenerFS implements Runnable
@@ -165,17 +167,14 @@ class ShutDownListenerFS implements Runnable
 
 	public void run()
 	{
-		String serverFolder = my_fs.name+"_Server_Resources/";
-		String fileFile = serverFolder+"FileList.bin";
-
-		System.out.println("Shutting down server");
+		System.out.println("Shutting down server...");
 
 		ObjectOutputStream outStream;
 
 		//write the filelist to FileList.bin
 		try
 		{
-			outStream = new ObjectOutputStream(new FileOutputStream(fileFile));
+			outStream = new ObjectOutputStream(new FileOutputStream(my_fs.getResourceFolder()+"FileList.rsc"));
 			outStream.writeObject(FileServer.fileList);
 		}
 		catch(Exception e)
@@ -197,9 +196,6 @@ class AutoSaveFS extends Thread
 
 	public void run()
 	{
-		String serverFolder = my_fs.name+"_Server_Resources/";
-		String fileFile = serverFolder+"FileList.bin";
-
 		do
 		{
 			try
@@ -211,7 +207,7 @@ class AutoSaveFS extends Thread
 				//write the filelist to FileList.bin
 				try
 				{
-					outStream = new ObjectOutputStream(new FileOutputStream(fileFile));
+					outStream = new ObjectOutputStream(new FileOutputStream(my_fs.getResourceFolder()+"FileList.rsc"));
 					outStream.writeObject(FileServer.fileList);
 				}
 				catch(Exception e)

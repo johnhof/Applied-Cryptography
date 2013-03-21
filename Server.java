@@ -12,30 +12,89 @@ public abstract class Server
 {
 	
 	protected int port;
-	public String name;
+	protected String name;
 	abstract void start();
-	public KeyPair authKeys;
+	protected KeyPair authKeys;
 	public CryptoEngine cEngine;
+	public String resourceFolder;
+	protected String fileExt;
+	protected String authKeyFile;
 	
-	public Server(int _SERVER_PORT, String _serverName) 
+	public Server(int _SERVER_PORT, String _serverName, String serverType) 
 	{
 		port = _SERVER_PORT;
 		name = _serverName; 
 
-		System.out.println("NAME: "+name+";    PORT: "+port);
+		System.out.println("\n\n***********************************************************\n"+
+								"****                    New Session                    ****\n"+
+								"***********************************************************\n");
 
-    	cEngine = new CryptoEngine();		
-    	try
+		System.out.println("\nNAME: "+name+";    PORT: "+port);
+
+    	cEngine = new CryptoEngine();	
+
+    	resourceFolder = name+"_"+serverType+"Server_Resources/";
+
+		authKeyFile = "AuthKeys.rsc";
+
+		if(!setAuthKey()) System.exit(-1);
+	}
+	
+	private boolean setAuthKey()
+	{
+		try
 		{
-			authKeys = cEngine.genRSAKeyPair();
+			FileInputStream fis = new FileInputStream(authKeyFile);
+			ObjectInputStream resourceStream = new ObjectInputStream(fis);
+
+			//retrieve the keys used for authentication
+			authKeys = (KeyPair)resourceStream.readObject();
+			return true;
+		}
+		//if the authkey file doesnt exist, create it
+		catch(FileNotFoundException ex)
+		{
+			System.out.println("Authentication File Does Not Exist. Creating resources...");
+
+	    	try
+			{
+				authKeys = cEngine.genRSAKeyPair();
+				return saveAuthKey();
+			}
+			catch(Exception exc)
+			{
+				System.out.println("ERROR: SERVER; could not generate RSA Key Pair");
+				return false;
+			}
 		}
 		catch(Exception e)
 		{
-			System.out.println("ERROR:FILESERVER; could not generate RSA Key Pair");
-			System.exit(-1);
+			System.err.println("Error: " + e.getMessage());
+			e.printStackTrace(System.err);
+			return false;
 		}
 	}
-	
+
+	public String getResourceFolder()
+	{
+		return resourceFolder;
+	}
+
+	public boolean saveAuthKey()
+	{
+		try
+		{
+			ObjectOutputStream outStream = new ObjectOutputStream(new FileOutputStream(authKeyFile));//save UserList
+			outStream.writeObject(authKeys);
+			return true;
+		}
+		catch(Exception exc)
+		{
+			System.out.println("ERROR: SERVER; could not save authentication keys");
+			return false;
+		}
+
+	}
 		
 	public int getPort() 
 	{

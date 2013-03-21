@@ -29,39 +29,38 @@ public class GroupServer extends Server
 	public static final int SERVER_PORT = 6666;
 	public KeyPair signKeys;
 	public UserList userList;
+	public String userFile;
 	public GroupList groupList;
+	public String groupFile;
 	//^^^^This should really be a database...
     
 	public GroupServer() 
 	{
-		super(SERVER_PORT, "ALPHA");
+		//pass in the server type to create the appropriate directory
+		super(SERVER_PORT, "ALPHA", "Group");
+		userFile = resourceFolder+"UserList.rsc";
+		groupFile = resourceFolder+"GroupList.rsc";
 	}
 	
 	public GroupServer(int _port) 
 	{
-		super(_port, "ALPHA");
+		//pass in the server type to create the appropriate directory
+		super(_port, "ALPHA", "Group");
+		userFile = resourceFolder+"UserList.rsc";
+		groupFile = resourceFolder+"GroupList.rsc";
 	}
 	
 	public void start() 
 	{
-
-		System.out.println("\n\n***********************************************************\n"+
-								"****                    New Session                    ****\n"+
-								"***********************************************************\n");
-
 		// Overwrote server.start() because if no user file exists, initial admin account needs to be created
-		
-    	String groupFolder = "Group_Server_Resources/";
-		String resourceFile = groupFolder+"GroupResources.bin";
-		String userFile = groupFolder+"UserList.bin";
-		String groupFile = groupFolder+"GroupList.bin";
 		Scanner console = new Scanner(System.in);
 		ObjectInputStream userStream;
 		ObjectInputStream groupStream;
 		ObjectInputStream resourceStream;
+		String sigKeyFile = resourceFolder+"SigKeys.rsc";
 
 		//open the resource folder, remove it if it had to be generated
-		File file = new File(groupFolder);
+		File file = new File(resourceFolder);
 		if(file.mkdir())
 		{
             file.delete();
@@ -73,28 +72,22 @@ public class GroupServer extends Server
 		Runtime runtime = Runtime.getRuntime();
 		runtime.addShutdownHook(new ShutDownListener(this));
 
-//----------------------------------------------------------------------------------------------------------------------
-//--ADDED: resource setup
-//----------------------------------------------------------------------------------------------------------------------
+//--RETRIEVE THE SIGNING KEY--------------------------------------------------------------------------------------------
 		try
 		{
-			FileInputStream fis = new FileInputStream(resourceFile);
+			FileInputStream fis = new FileInputStream(sigKeyFile);
 			resourceStream = new ObjectInputStream(fis);
 
 			//retrieve the keys used for signing
 			signKeys = (KeyPair)resourceStream.readObject();
-			authKeys = cEngine.genRSAKeyPair();
 		}
 		catch(Exception e)
 		{
-			System.out.println("GROUPSERVER ERROR: could not load resource file");
+			System.out.println("GROUPSERVER ERROR: could not load key file");
 			System.exit(-1);
 		}
-//----------------------------------------------------------------------------------------------------------------------
 
-//----------------------------------------------------------------------------------------------------------------------
-//--ADDED: groupList setup
-//----------------------------------------------------------------------------------------------------------------------
+//--SET UP THE GROUP LIST-----------------------------------------------------------------------------------------------
 		try
 		{
 			FileInputStream fis = new FileInputStream(groupFile);
@@ -103,8 +96,8 @@ public class GroupServer extends Server
 		}
 		catch(FileNotFoundException e)
 		{
-			System.out.println("groupList File Does Not Exist. Creating resources...");
-			System.out.println("No groupList currently exists");
+			System.out.println("GroupList File Does Not Exist. Creating GroupList...");
+			System.out.println("No groups currently exists");
 
 			groupList = new GroupList();
 		}
@@ -119,8 +112,7 @@ public class GroupServer extends Server
 			System.exit(-1);
 		}
 
-//----------------------------------------------------------------------------------------------------------------------
-
+//--SET UP THE USER LIST------------------------------------------------------------------------------------------------
 
 		//Open user file to get user list
 		try
@@ -131,15 +123,34 @@ public class GroupServer extends Server
 		}
 		catch(FileNotFoundException e)
 		{
-			System.out.println("UserList File Does Not Exist. Creating UserList...");
+			System.out.println("\nUserList File Does Not Exist. Creating UserList...");
 			System.out.println("No users currently exist. Your account will be the administrator.");
-			System.out.print("Enter your username: ");
-			String username = console.next();
+			
+			String username = null;
+			String password = null;
+			String passwordTemp = null;
+
+			//prompt the admin for a name and a verified password
+			do
+			{
+				System.out.print("\nEnter your username: ");
+				username = console.next();
+				System.out.print("Enter your password: ");
+				password = console.next();
+				System.out.print("Verify password: ");
+				passwordTemp = console.next();
+
+				if(password.equals(passwordTemp)) break;
+				System.out.println("Passwords don't match");
+			}
+			while(true);
 			
 			//Create a new list, add current user to the ADMIN group. They now own the ADMIN group.
 			userList = new UserList();
-			userList.addUser(username, "admin");
+			userList.addUser(username, password);
 			createGroup("ADMIN", username);
+			createGroup("global", username); //all users are added to the global group
+			System.out.println("\nDefault groups created: ADMIN, global");
 		}
 		catch(IOException e)
 		{
@@ -152,12 +163,16 @@ public class GroupServer extends Server
 			System.exit(-1);
 		}
 
+//--INTEGRITY CHECK-----------------------------------------------------------------------------------------------------
+
 		//check for null values just in case
 		if(userList == null || groupList == null)
 		{
 			System.out.println("File reading error, data could not be recovered");
 			System.exit(-1);
 		}
+
+//--SET UP SAVE DEMON---------------------------------------------------------------------------------------------------
 
 		//Autosave Daemon. Saves lists every 5 minutes
 		AutoSave aSave = new AutoSave(this);
@@ -166,6 +181,8 @@ public class GroupServer extends Server
 		
 		System.out.println("\nUPDATE: GroupServer; setup succesful");
 		
+//--SET UP SOCKET LOOP--------------------------------------------------------------------------------------------------
+
 		//This block listens for connections and creates threads on new connections
 		try
 		{
@@ -277,14 +294,13 @@ public class GroupServer extends Server
 	}
 }
 
+//----------------------------------------------------------------------------------------------------------------------
+//-- SAVING DEMONS
+//----------------------------------------------------------------------------------------------------------------------
+
 //This thread saves the user list
 class ShutDownListener extends Thread
 {
-    String groupFolder = "Group_Server_Resources/";
-	String resourceFile = groupFolder+"GroupResources.bin";
-	String userFile = groupFolder+"UserList.bin";
-	String groupFile = groupFolder+"GroupList.bin";
-
 	public GroupServer my_gs;
 	
 	public ShutDownListener (GroupServer _gs) {
@@ -294,14 +310,14 @@ class ShutDownListener extends Thread
 	public void run()
 	{
 		//write userlist to directory
-		System.out.println("Shutting down server");
+		System.out.println("\nShutting down server...");
 		ObjectOutputStream outStream;
 		try
 		{
-			outStream = new ObjectOutputStream(new FileOutputStream(userFile));
+			outStream = new ObjectOutputStream(new FileOutputStream(my_gs.getResourceFolder()+"UserList.rsc"));//save UserList
 			outStream.writeObject(my_gs.userList);
 
-			outStream = new ObjectOutputStream(new FileOutputStream(groupFile));
+			outStream = new ObjectOutputStream(new FileOutputStream(my_gs.getResourceFolder()+"GroupList.rsc"));//save GroupList
 			outStream.writeObject(my_gs.groupList);
 
 		}
@@ -315,11 +331,6 @@ class ShutDownListener extends Thread
 
 class AutoSave extends Thread
 {
-    String groupFolder = "Group_Server_Resources/";
-	String resourceFile = groupFolder+"GroupResources.bin";
-	String userFile = groupFolder+"UserList.bin";
-	String groupFile = groupFolder+"GroupList.bin";
-
 	public GroupServer my_gs;
 	
 	public AutoSave (GroupServer _gs) {
@@ -338,10 +349,10 @@ class AutoSave extends Thread
 				ObjectOutputStream outStream;
 				try
 				{
-					outStream = new ObjectOutputStream(new FileOutputStream(userFile));
+					outStream = new ObjectOutputStream(new FileOutputStream(my_gs.getResourceFolder()+"UserList.rsc"));//save UserList
 					outStream.writeObject(my_gs.userList);
 
-					outStream = new ObjectOutputStream(new FileOutputStream(groupFile));
+					outStream = new ObjectOutputStream(new FileOutputStream(my_gs.getResourceFolder()+"GroupList.rsc"));//save GroupList
 					outStream.writeObject(my_gs.groupList);
 				}
 				catch(Exception e)
