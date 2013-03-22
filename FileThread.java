@@ -22,7 +22,7 @@ public class FileThread extends ServerThread
 	public void run()
 	{
 		String serverFolder = my_fs.name+"_Server_Resources/";
-		String resourceFile = serverFolder+"FileResources.bin";
+		String resourceFile = serverFolder+"FileResources.rsc";
 
 		try
 		{

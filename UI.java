@@ -256,6 +256,8 @@ public class UI
 
 //--GROUP SERVER CONNECT-----------------------------------------------------------------------------------------------
 
+		System.out.println("\nPlease enter your username for setup/login");
+		username = in.nextLine();
 
 		//get input
 		if(debug == false)
@@ -268,7 +270,7 @@ public class UI
 		}
 		else
 		{
-			gServer = "localhost";
+			gServer = "ALPHA";
 			gPort = 6666;
 		}
 
@@ -287,25 +289,26 @@ public class UI
 
 //--lOGIN & TOKEN RETRIEVAL--------------------------------------------------------------------------------------------
 
-		boolean proceed;
+		boolean proceed = false;
 
+		System.out.println("\nAttempting login and token retrieval");
 		do
 		{
-			System.out.println("\nPlease enter a username.");
-			proceed = false;
-
-			username = in.nextLine();
-
 			System.out.println("Please enter your password.");
 			String pwd = in.nextLine();
 
 			token = gUser.getToken(username, pwd);
-			if (token == null)
+			if (token != null)
 			{
 				proceed = true;
-				System.out.println("Login failed");
 			}
-		}while(proceed);//asks for username again
+			else
+			{
+				System.out.println("Login failed");
+				System.out.println("\nRe-enter your username.");
+				username = in.nextLine();
+			}
+		}while(!proceed);//asks for username again
 		
 //--FILE SERVER CONNECT------------------------------------------------------------------------------------------------
 		
@@ -319,7 +322,7 @@ public class UI
 		}
 		else
 		{
-			fServer = "localhost";
+			fServer = "FilePile";
 			fPort = 7777;
 		}
 

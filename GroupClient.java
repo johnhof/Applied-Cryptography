@@ -13,10 +13,8 @@ public class GroupClient extends Client implements GroupClientInterface {
 		System.out.println("\n*** Attempting to connect to Group Server: NAME: " + server + "; PORT:" + port + " ***");
 
 		super.connect(server, port, username);
-
-		String userFile = userFolder+"GSKeys_" + userName + ".bin";
 		
-		if(setUpServer(server, userFile)==false)
+		if(setUpServer(server)==false)
 		{
 			System.out.println("\n!!! Group server connection failed: NAME: " + serverName + "; PORT: " + serverPort + " !!!");
 			return false;

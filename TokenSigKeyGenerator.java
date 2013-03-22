@@ -1,27 +1,8 @@
 
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.Key;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.security.SecureRandom;
-import java.security.Security;
-import java.security.Signature;
-import java.security.SignatureException;
-import java.security.PublicKey;
-import java.security.PrivateKey;
-
-import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
-import javax.crypto.KeyGenerator;
-import javax.crypto.spec.IvParameterSpec;
-
+import java.security.*;
+import javax.crypto.*;
 import java.io.*;
 
 //import org.bouncycastle.crypto.paddings.PaddedBufferedBlockCipher;
@@ -33,8 +14,8 @@ public class TokenSigKeyGenerator
 {
     public static void main (String[] args)
     {
-		String resourceFile = "GroupResources"+System.getProperty("path.separator")+"GroupResources.bin";
-		String keyDisrtoFile = "GroupPublicResources"+System.getProperty("path.separator")+"GroupPublicKey.bin";
+		String resourceFile = "GroupResources"+System.getProperty("path.separator")+"GroupResources.rsc";
+		String keyDisrtoFile = "GroupPublicResources"+System.getProperty("path.separator")+"GroupPublicKey.rsc";
 		ObjectOutputStream outStream;
 	    InputStreamReader reader = new InputStreamReader(System.in);
 	    BufferedReader in = new BufferedReader(reader);

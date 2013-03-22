@@ -15,24 +15,42 @@ public class Client extends ClientInterface
 	private KeyList keyList;
 	protected String userName;
 	protected String userFolder;
+	protected String keyFile;
 	private Key serverPublicKey;
 
-	//NOTE: I removed the feedback from this since it's called by its subclasses, object specific feedback is printed there - john, 3/16
-		//I just noticed that this probably the most famous bible verse. your move athiests 
 	public boolean connect(final String server, final int port, String username) 
 	{
 		serverName = server;
 		serverPort = port;
 		userName = username;
-		userFolder = "User_Resources/";
+		userFolder = "User_Resources_"+userName+"/";
+		keyFile = "ServerKeys.rsc";
 
 		cEngine = new CryptoEngine();	
+
+
+		//Create or locate the users directory"
+		File file = new File(userFolder);
+		if (file.exists())
+		{
+			System.out.println("\nFound user directory");
+		}
+		else if (file.mkdir()) 
+		{
+			System.out.println("\nCreated new user directory");
+		} 
+		else 
+		{
+			System.out.println("\nError creating user directory");				 
+		}
+
 
 		//my attempt starts here
 		try
 		{
 			//create socket
-			sock = new Socket(server, port);
+			if(server.equals("ALPHA") || server.equals("FilePile")) sock = new Socket("localhost", port); //if the defaults were entered, use localhost
+			else sock = new Socket(server, port);
 
 			//i/o streams
 			output = new ObjectOutputStream(sock.getOutputStream());
@@ -90,7 +108,7 @@ public class Client extends ClientInterface
 //-- CONNECTION SETUP FUNCIONS
 //----------------------------------------------------------------------------------------------------------------------
 
-	protected boolean setUpServer(String server, String userFile)
+	protected boolean setUpServer(String server)
 	{
 
 //--ATHENTICATE SERVER--------------------------------------------------------------------------------------------------
@@ -100,76 +118,51 @@ public class Client extends ClientInterface
 		System.out.println("\nSetting up resources");
 		try
 		{
-			File file = new File("User_Resources");
-			file.mkdir();
-//NOTE: this will have to change to be server specific
 			//Read in the key
-			FileInputStream fis = new FileInputStream(userFolder+userFile);
+			FileInputStream fis = new FileInputStream(userFolder+keyFile);
 			keyStream = new ObjectInputStream(fis);
 			keyList = (KeyList)keyStream.readObject();
 
-			//If we have connected
+			//If we have connected before
 			if(keyList.checkServer(server))
 			{
-				//retrieve the key from the server
+				//grab the public key
 				serverPublicKey = keyList.getKey(server);
-				Key allegedKey = getPublicKey();
-				if(serverPublicKey == null) return false;
-
-				//sompare the keys
-				if(serverPublicKey.toString().equals(allegedKey.toString()))
-				{
-					System.out.println(cEngine.formatAsSuccess("Server verification step 1 complete"));
-				}
-				else
-				{
-					System.out.println(cEngine.formatAsError("Public Keys Do Not Match. This is an unauthorized server"));
-					return false;
-				}
+				System.out.println(cEngine.formatAsSuccess("This is a known server, no public key request necessary"));
 			}
 			//If its a new server
 			else
 			{
-				//Retrieve the key
-				System.out.println(cEngine.formatAsSuccess("This is a new server. Requesting Public Key"));
-				serverPublicKey = getPublicKey();
-				if(serverPublicKey == null) return false;
-
-				//Add and store the key
-				keyList.addKey(server, serverPublicKey);
-				ObjectOutputStream outStream = new ObjectOutputStream(new FileOutputStream(userFolder+"UserKeys" + userName + ".bin"));
-				outStream.writeObject(keyList);
-				outStream.close();
+				System.out.println(cEngine.formatAsSuccess("This is not a known server, public key request necessary"));
+				if(establishNewServer(server))
+				{
+					System.out.println(cEngine.formatAsSuccess("new server established"));
+				}
+				else
+				{ 
+					System.out.println(cEngine.formatAsError("Could not establish new server"));
+					return false;
+				}
 			}
 		}
 		catch(FileNotFoundException exc)
 		{
-			System.out.println(cEngine.formatAsSuccess("UserKeys file does not exist. Creating new one"));
-			
-			//Retrieve the key
-			System.out.println(cEngine.formatAsSuccess("This is a new server. Requesting Public Key"));
-			serverPublicKey = getPublicKey();
-			if(serverPublicKey == null) return false;
-			
-			//Add and store the key
+			System.out.println(cEngine.formatAsSuccess("KeyList does not exist. Creating it"));
 			keyList = new KeyList();
-			keyList.addKey(server, serverPublicKey);
-			try
+
+			if(establishNewServer(server))
 			{
-				ObjectOutputStream outStream = new ObjectOutputStream(new FileOutputStream(userFolder+"UserKeys" + userName + ".bin"));
-				outStream.writeObject(keyList);
-				outStream.close();
+				System.out.println(cEngine.formatAsSuccess("new server established, key file generated"));
 			}
-			catch(Exception ex)
+			else 
 			{
-				System.out.println("ERROR: FILECLIENT: COULD NOT WRITE USERKEYS");
-				ex.printStackTrace();
+				System.out.println(cEngine.formatAsError("Could not establish new server"));
 				return false;
 			}
 		}
 		catch(Exception exc)
 		{
-			System.out.println("ERROR: FILECLIENT: COULD NOT FINISH CONNECTION");
+			System.out.println(cEngine.formatAsError("Expection thrown"));
 			exc.printStackTrace();
 			return false;
 		}
@@ -202,12 +195,12 @@ public class Client extends ClientInterface
 			{
 				if((challenge.intValue()+1) != ((Integer)response.getObjContents().get(0)).intValue())
 				{
-					System.out.println(cEngine.formatAsError("Challenge failed"));
+					System.out.println(cEngine.formatAsError("Challenge failed, server rejected"));
 					return false;
 				}
 				else
 				{
-					System.out.println(cEngine.formatAsSuccess("Challenge passed"));
+					System.out.println(cEngine.formatAsSuccess("Challenge passed, server authenticated"));
 				}
 			}
 			else
@@ -218,11 +211,15 @@ public class Client extends ClientInterface
 		}
 		catch(Exception e)
 		{
-			System.out.println(cEngine.formatAsError("Exception thrown suring session key setup"));
+			System.out.println(cEngine.formatAsError("Server failed to authenticate"));
 			return false;
 		}
 		return true;
 	}
+
+//----------------------------------------------------------------------------------------------------------------------
+//-- UTILITY FUNCITONS
+//----------------------------------------------------------------------------------------------------------------------
 
 //--GET PUBLIC KEY---------------------------------------------------------------------------------------------------
 	protected Key getPublicKey()
@@ -240,12 +237,11 @@ public class Client extends ClientInterface
 				System.out.println("<< Recieving Response: OK");
 				answer = (Key)response.getObjContents().get(0);
 				System.out.println(cEngine.formatAsSuccess("public key obtained"));
-				return answer;
 			}
 		}
 		catch(Exception e)
 		{
-			System.out.println("ERROR: FILECLIENT: FAILED TO RECEIVE PUBLIC KEY");
+			System.out.println("\nERROR: FILECLIENT: FAILED TO RECEIVE PUBLIC KEY");
 			e.printStackTrace();
 			return null;
 		}
@@ -284,10 +280,36 @@ public class Client extends ClientInterface
 		}
 		catch(Exception exc)
 		{
-			System.out.println("ERROR: FILECLIENT; AES Key to enctrypted byte stream conversion failed");
+			System.out.println("\nERROR: FILECLIENT; AES Key to enctrypted byte stream conversion failed");
 			return null;
 		}
-
 	}
- 
+
+	protected boolean establishNewServer(String server)
+	{
+		//Retrieve the key
+		serverPublicKey = getPublicKey();
+		if(serverPublicKey == null)
+		{
+			System.out.println(cEngine.formatAsError("failed to retrieve public key"));
+			return false;
+		}
+			
+		//Add and store the key
+		keyList.addKey(server, serverPublicKey);
+
+		try
+		{
+			ObjectOutputStream outStream = new ObjectOutputStream(new FileOutputStream(userFolder+keyFile));
+			outStream.writeObject(keyList);
+			outStream.close();
+			return true;
+		}
+		catch(IOException ex)
+		{
+			System.out.println(cEngine.formatAsSuccess("UserKeys file does not exist. Creating one now"));
+			ex.printStackTrace(System.err);
+			return false;
+		}
+	}
 }

@@ -18,9 +18,7 @@ public class FileClient extends Client implements FileClientInterface
 
 		token = newtoken;
 		
-		String userFile = userFolder+"FSKeys_" + userName + ".bin";
-		
-		if(setUpServer(server, userFile)==false)
+		if(setUpServer(server)==false)
 		{
 			System.out.println("\n!!! File server connection failed: NAME: " + serverName + "; PORT: " + serverPort + " !!!");
 			return false;

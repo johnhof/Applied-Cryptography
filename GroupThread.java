@@ -23,7 +23,7 @@ public class GroupThread extends ServerThread
 	public void run()
 	{
     	String groupFolder = "Group_Server_Resources/";
-		String resourceFile = groupFolder+"GroupResources.bin";
+		String resourceFile = groupFolder+"GroupResources.rsc";
 
 		try
 		{

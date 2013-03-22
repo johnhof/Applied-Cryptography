@@ -1,4 +1,4 @@
-/* Group server. Server loads the users from UserList.bin.
+/* Group server. Server loads the users from UserList.rsc.
  * If user list does not exists, it creates a new list and makes the user the server administrator.
  * On exit, the server saves the user list to file. 
  */
@@ -68,9 +68,14 @@ public class GroupServer extends Server
 			return;
 		}
 
+		System.out.println("\nSetting up resources");
+
 		//This runs a thread that saves the lists on program exit
 		Runtime runtime = Runtime.getRuntime();
 		runtime.addShutdownHook(new ShutDownListener(this));
+		
+		//set up the authentication key
+		if(!setAuthKey()) System.exit(-1);
 
 //--RETRIEVE THE SIGNING KEY--------------------------------------------------------------------------------------------
 		try
@@ -83,21 +88,23 @@ public class GroupServer extends Server
 		}
 		catch(Exception e)
 		{
-			System.out.println("GROUPSERVER ERROR: could not load key file");
+			System.out.println("GROUPSERVER \nERROR: could not load key file");
 			System.exit(-1);
 		}
 
 //--SET UP THE GROUP LIST-----------------------------------------------------------------------------------------------
 		try
 		{
+			System.out.println("\nTrying to access GroupList File");
 			FileInputStream fis = new FileInputStream(groupFile);
 			groupStream = new ObjectInputStream(fis);
 			groupList = (GroupList)groupStream.readObject();
+			System.out.println(cEngine.formatAsSuccess("GroupList recovered"));		
 		}
 		catch(FileNotFoundException e)
 		{
-			System.out.println("GroupList File Does Not Exist. Creating GroupList...");
-			System.out.println("No groups currently exists");
+			System.out.println(cEngine.formatAsSuccess("GroupList does not exist. Creating GroupList"));
+			System.out.println(cEngine.formatAsSuccess("No groups currently exists"));
 
 			groupList = new GroupList();
 		}
@@ -117,14 +124,16 @@ public class GroupServer extends Server
 		//Open user file to get user list
 		try
 		{
+			System.out.println("\nTrying to access UserList File");
 			FileInputStream fis = new FileInputStream(userFile);
 			userStream = new ObjectInputStream(fis);
 			userList = (UserList)userStream.readObject();
+			System.out.println(cEngine.formatAsSuccess("UserList recovered"));		
 		}
 		catch(FileNotFoundException e)
 		{
-			System.out.println("\nUserList File Does Not Exist. Creating UserList...");
-			System.out.println("No users currently exist. Your account will be the administrator.");
+			System.out.println(cEngine.formatAsSuccess("No users currently exist. Your account will be the administrator"));
+			System.out.println(cEngine.formatAsSuccess("UserList File Does Not Exist. Creating UserList"));
 			
 			String username = null;
 			String password = null;
@@ -133,7 +142,7 @@ public class GroupServer extends Server
 			//prompt the admin for a name and a verified password
 			do
 			{
-				System.out.print("\nEnter your username: ");
+				System.out.print("Enter your username: ");
 				username = console.next();
 				System.out.print("Enter your password: ");
 				password = console.next();
@@ -150,25 +159,30 @@ public class GroupServer extends Server
 			userList.addUser(username, password);
 			createGroup("ADMIN", username);
 			createGroup("global", username); //all users are added to the global group
-			System.out.println("\nDefault groups created: ADMIN, global");
+			System.out.println(cEngine.formatAsSuccess("Default groups created: ADMIN, global"));
 		}
 		catch(IOException e)
 		{
-			System.out.println("Error reading from UserList file");
+			System.out.println(cEngine.formatAsError("Error reading from UserList file"));
 			System.exit(-1);
 		}
 		catch(ClassNotFoundException e)
 		{
-			System.out.println("Error reading from UserList file");
+			System.out.println(cEngine.formatAsError("Error reading from UserList file"));
 			System.exit(-1);
 		}
 
 //--INTEGRITY CHECK-----------------------------------------------------------------------------------------------------
 
 		//check for null values just in case
-		if(userList == null || groupList == null)
+		if(userList == null)
 		{
-			System.out.println("File reading error, data could not be recovered");
+			System.out.println(cEngine.formatAsError("File reading error, userlist could not be recovered"));
+			System.exit(-1);
+		}
+		if(groupList == null)
+		{
+			System.out.println(cEngine.formatAsError("File reading error, grouplist could not be recovered"));
 			System.exit(-1);
 		}
 

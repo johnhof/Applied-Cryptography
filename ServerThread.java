@@ -47,44 +47,34 @@ public class ServerThread extends Thread
 		Envelope message = null;
 		Envelope response = null;
 
-//--HANLE PUBLIC KEY DISTIBURTION-------------------------------------------------------------------------------------
-
 		try
 		{
-			//These keys exist just to encrypt/decrypt this specific session key for this user
-
 			message = (Envelope)cEngine.readPlainText(input);
+
+//-- PUBLIC KEY DISTIBURTION------------------------------------------------------------------------------------------
+
+			//if they sent a public key request
 			if(message.getMessage().equals("GET_PUBKEY"))
 			{
 				System.out.println("\n<< Request Recieved: " + message.getMessage());
+
+				//send your key
 				response = new Envelope("OK");
 				System.out.println(">> Sending Reponse: OK");
 				response.addObject(myPublicKey);
 				cEngine.writePlainText(response, output);
 				System.out.println(cEngine.formatAsSuccess("public key sent"));
+
+				//expect a new message
+				message = (Envelope)cEngine.readPlainText(input);
+				System.out.println("\n<< Request Recieved: " + message.getMessage());
 			}
-			else
-			{
-				System.out.println(cEngine.formatAsError("Unexpected message type"));
-				socket.close();
-				return false;
-			}	
-		}
-		catch(Exception e)
-		{
-			e.printStackTrace();
-			return false;
-		}
-			
 		
 //--RECIEVE AES KEY---------------------------------------------------------------------------------------------------
-		try
-		{
-			message = (Envelope)cEngine.readPlainText(input);
+
 			if(message.getMessage().equals("SET_AESKEY"))
 			{
-				System.out.println("\n<< Request Received: " + message.getMessage());
-
+				System.out.println(cEngine.formatAsSuccess("Attempting to decrypt with private key"));
 				//decrypt the key and challenge
 				aesKey = byteToAESKey((byte[])message.getObjContents().get(0),new IvParameterSpec((byte[])message.getObjContents().get(1)));
 				Integer challenge = (Integer)cEngine.deserialize(cEngine.RSADecrypt((byte[])message.getObjContents().get(2), myPrivateKey));
@@ -104,12 +94,13 @@ public class ServerThread extends Thread
 			}
 			else 
 			{
+				cEngine.writePlainText(genAndPrintErrorEnvelope("Unexpected request"), output);
 				return false;
 			}
 		}
 		catch(Exception exc)
 		{
-			cEngine.writePlainText(genAndPrintErrorEnvelope("IO excepetion while setting AES key"), output);
+			cEngine.writePlainText(genAndPrintErrorEnvelope("Exception thrown during setup"), output);
 			return false;
 		}
 
@@ -142,7 +133,7 @@ public class ServerThread extends Thread
 		}
 		catch(Exception exc)
 		{
-			System.out.println("ERROR: FILECLIENT; AES Key to enctrypted byte stream conversion failed");
+			System.out.println("\nERROR: FILECLIENT; AES Key to enctrypted byte stream conversion failed");
 			return null;
 		}
 

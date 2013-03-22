@@ -1,4 +1,4 @@
-/* FileServer loads files from FileList.bin.  Stores files in shared_files directory. */
+/* FileServer loads files from FileList.rsc.  Stores files in shared_files directory. */
 
 import java.nio.charset.Charset;
 import java.security.*;
@@ -33,11 +33,9 @@ public class FileServer extends Server
 	public void start() 
 	{		
     	String publicFolder = "Public_Resources/";
-		File file = new File(resourceFolder);
-		file.mkdir();
 
 		//open the resource folder, remove it if it had to be generated
-		file = new File(publicFolder);
+		File file = new File(publicFolder);
 		if(file.mkdir())
 		{
             file.delete();
@@ -45,8 +43,10 @@ public class FileServer extends Server
 			return;
 		}
 
-		String fileFile = resourceFolder+"FileList.bin";
-        String keyDistroFile = publicFolder+"GroupPublicKey.bin";
+		System.out.println("\nSetting up resources");
+
+		String fileFile = resourceFolder+"FileList.rsc";
+        String keyDistroFile = "GroupPublicKey.rsc";
 		ObjectInputStream fileStream;
 		ObjectInputStream sigKeyStream;
 		
@@ -55,19 +55,22 @@ public class FileServer extends Server
 		Thread catchExit = new Thread(new ShutDownListenerFS(this));
 		runtime.addShutdownHook(catchExit);
 
+		//set up the authentication key
+		if(!setAuthKey()) System.exit(-1);
+
 //--RETRIEVE THE TOKEN VERIFIER-----------------------------------------------------------------------------------------
 		
 		try
 		{
-			FileInputStream fis = new FileInputStream(keyDistroFile);
+			System.out.println("\nTrying to access GroupPublicKey File");
+			FileInputStream fis = new FileInputStream(publicFolder+keyDistroFile);
 			sigKeyStream = new ObjectInputStream(fis);
-
-			//retrieve the keys used for signing
 			signVerifyKey = (PublicKey)sigKeyStream.readObject();
+			System.out.println(cEngine.formatAsSuccess("Token verifier recovered"));	
 		}
 		catch(Exception e)
 		{
-			System.out.println("ERROR:  FILESERVER;  could not load resource file");
+			System.out.println("\nERROR:  FILESERVER;  could not load resource file");
 			System.exit(-1);
 		}
 
@@ -76,39 +79,41 @@ public class FileServer extends Server
 		//Open file file to get user list
 		try
 		{
+			System.out.println("\nTrying to access FileList File");
 			FileInputStream fis = new FileInputStream(fileFile);
 			fileStream = new ObjectInputStream(fis);
 			fileList = (FileList)fileStream.readObject();
+			System.out.println(cEngine.formatAsSuccess("FileList recovered"));
 		}
 		catch(FileNotFoundException e)
 		{
-			System.out.println("FileList Does Not Exist. Creating FileList...");
+			System.out.println(cEngine.formatAsSuccess("FileList does not exist. Creating FileList"));
 			fileList = new FileList();
 		}
 		catch(IOException e)
 		{
-			System.out.println("Error reading from FileList file");
+			System.out.println(cEngine.formatAsError("Error reading from FileList file"));
 			System.exit(-1);
 		}
 		catch(ClassNotFoundException e)
 		{
-			System.out.println("Error reading from FileList file");
+			System.out.println(cEngine.formatAsError("Error reading from FileList file"));
 			System.exit(-1);
 		}
 		
 		//Create or find a directory named "shared_files"
 		file = new File(resourceFolder+"shared_files");
-		if (file.mkdir()) 
+		if (file.exists())
 		{
-			System.out.println("Created new shared_files directory");
+			System.out.println(cEngine.formatAsSuccess("Found shared_files directory"));
 		}
-		else if (file.exists())
+		else if (file.mkdir()) 
 		{
-			System.out.println("Found shared_files directory");
-		}
+			System.out.println(cEngine.formatAsSuccess("Created new shared_files directory"));
+		} 
 		else 
 		{
-			System.out.println("Error creating shared_files directory");				 
+			System.out.println(cEngine.formatAsError("Error creating shared_files directory"));				 
 		}
 	
 //--SET UP SAVE DEMON---------------------------------------------------------------------------------------------------
@@ -171,7 +176,7 @@ class ShutDownListenerFS implements Runnable
 
 		ObjectOutputStream outStream;
 
-		//write the filelist to FileList.bin
+		//write the filelist to FileList.rsc
 		try
 		{
 			outStream = new ObjectOutputStream(new FileOutputStream(my_fs.getResourceFolder()+"FileList.rsc"));
@@ -204,7 +209,7 @@ class AutoSaveFS extends Thread
 				System.out.println("\nAutosave file list...");
 				ObjectOutputStream outStream;
 
-				//write the filelist to FileList.bin
+				//write the filelist to FileList.rsc
 				try
 				{
 					outStream = new ObjectOutputStream(new FileOutputStream(my_fs.getResourceFolder()+"FileList.rsc"));

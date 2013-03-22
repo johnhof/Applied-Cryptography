@@ -36,34 +36,36 @@ public abstract class Server
     	resourceFolder = name+"_"+serverType+"Server_Resources/";
 
 		authKeyFile = "AuthKeys.rsc";
-
-		if(!setAuthKey()) System.exit(-1);
 	}
 	
-	private boolean setAuthKey()
+	protected boolean setAuthKey()
 	{
 		try
 		{
-			FileInputStream fis = new FileInputStream(authKeyFile);
+			System.out.println("\nTrying to access Authentication File");
+			FileInputStream fis = new FileInputStream(resourceFolder+authKeyFile);
 			ObjectInputStream resourceStream = new ObjectInputStream(fis);
-
-			//retrieve the keys used for authentication
-			authKeys = (KeyPair)resourceStream.readObject();
+			authKeys = (KeyPair)resourceStream.readObject();	
+			System.out.println(cEngine.formatAsSuccess("Keys recovered"));		
 			return true;
 		}
 		//if the authkey file doesnt exist, create it
 		catch(FileNotFoundException ex)
 		{
-			System.out.println("Authentication File Does Not Exist. Creating resources...");
+			System.out.println(cEngine.formatAsSuccess("Authentication File Does Not Exist. Creating keys"));
 
 	    	try
 			{
 				authKeys = cEngine.genRSAKeyPair();
-				return saveAuthKey();
+				boolean success = saveAuthKey();
+				if(success)
+				{
+					return true;
+				}
 			}
 			catch(Exception exc)
 			{
-				System.out.println("ERROR: SERVER; could not generate RSA Key Pair");
+				System.out.println("\nERROR: SERVER; could not generate RSA Key Pair");
 				return false;
 			}
 		}
@@ -73,6 +75,7 @@ public abstract class Server
 			e.printStackTrace(System.err);
 			return false;
 		}
+		return false;
 	}
 
 	public String getResourceFolder()
@@ -84,13 +87,25 @@ public abstract class Server
 	{
 		try
 		{
-			ObjectOutputStream outStream = new ObjectOutputStream(new FileOutputStream(authKeyFile));//save UserList
+			File file = new File(resourceFolder);
+
+			if (file.exists())
+			{
+				System.out.println(cEngine.formatAsSuccess("Found the server directory"));
+			}
+			else
+			{
+				System.out.println(cEngine.formatAsSuccess("Created the server directory"));
+				file.mkdir();
+			}
+
+			ObjectOutputStream outStream = new ObjectOutputStream(new FileOutputStream(resourceFolder+authKeyFile));//save UserList
 			outStream.writeObject(authKeys);
 			return true;
 		}
 		catch(Exception exc)
 		{
-			System.out.println("ERROR: SERVER; could not save authentication keys");
+			System.out.println("\nERROR: SERVER; could not save authentication keys");
 			return false;
 		}
 
