@@ -62,7 +62,8 @@ public class ResourceGenerator
 			e.printStackTrace(System.err);
 		}
 		
-		System.out.println("Finished generating keys:\nPrivate: "+keys.getPrivate().toString()+"\nPublic"+keys.getPublic().toString());
+		//System.out.println("Finished generating keys:\nPrivate: "+keys.getPrivate().toString()+"\nPublic"+keys.getPublic().toString());
+		System.out.println("Finished generating keys");
     }
 
 }

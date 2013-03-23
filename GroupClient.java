@@ -57,12 +57,13 @@ public class GroupClient extends Client implements GroupClientInterface {
 					System.out.println("\n*** Token obtained ***");
 					return token;
 				}
+				return null;
 			}
 			else
-			{
+			{	
 				System.out.println(cEngine.formatAsError(response.getMessage()));
+				return null;
 			}
-			return null;
 		}
 		catch(Exception e)
 		{
@@ -94,8 +95,11 @@ public class GroupClient extends Client implements GroupClientInterface {
 				System.out.println("<< Recieving Group Server Response: OK");
 				return true;
 			}
-				
-			return false;
+			else
+			{	
+				System.out.println(cEngine.formatAsError(response.getMessage()));
+				return false;
+			}
 		}
 		catch(Exception e)
 		{
@@ -125,8 +129,11 @@ public class GroupClient extends Client implements GroupClientInterface {
 				System.out.println("<< Recieving Group Server Response: OK");
 				return true;
 			}
-				
-			return false;
+			else
+			{	
+				System.out.println(cEngine.formatAsError(response.getMessage()));
+				return false;
+			}
 		}
 		catch(Exception e)
 		{
@@ -155,8 +162,11 @@ public class GroupClient extends Client implements GroupClientInterface {
 				System.out.println("<< Recieving Group Server Response: OK");
 				return true;
 			}
-				
-			return false;
+			else
+			{	
+				System.out.println(cEngine.formatAsError(response.getMessage()));
+				return false;
+			}
 		}
 		catch(Exception e)
 		{
@@ -185,8 +195,11 @@ public class GroupClient extends Client implements GroupClientInterface {
 				System.out.println("<< Recieving Group Server Response: OK");
 				return true;
 			}
-			else System.out.println(response.getMessage());
-			return false;
+			else
+			{	
+				System.out.println(cEngine.formatAsError(response.getMessage()));
+				return false;
+			}
 		}
 		catch(Exception e)
 		{
@@ -216,8 +229,11 @@ public class GroupClient extends Client implements GroupClientInterface {
 				System.out.println("<< Recieving Group Server Response: OK");
 				return (List<String>)response.getObjContents().get(0); //This cast creates compiler warnings. Sorry.
 			}
-				
-			return null; 
+			else
+			{	
+				System.out.println(cEngine.formatAsError(response.getMessage()));
+				return null;
+			}
 		}
 		catch(Exception e)
 		{
@@ -248,8 +264,11 @@ public class GroupClient extends Client implements GroupClientInterface {
 				System.out.println("<< Recieving Group Server Response: OK");
 				return true;
 			}
-				
-			return false;
+			else
+			{	
+				System.out.println(cEngine.formatAsError(response.getMessage()));
+				return false;
+			}
 		}
 		catch(Exception e)
 		{
@@ -279,8 +298,11 @@ public class GroupClient extends Client implements GroupClientInterface {
 				System.out.println("<< Recieving Group Server Response: OK");
 				return true;
 			}
-			
-			return false;
+			else
+			{	
+				System.out.println(cEngine.formatAsError(response.getMessage()));
+				return false;
+			}
 		}
 		catch(Exception e)
 		{
@@ -306,7 +328,11 @@ public class GroupClient extends Client implements GroupClientInterface {
 				System.out.println("<< Recieving Group Server Response: OK");
 				return (ArrayList<String>)response.getObjContents().get(0);
 			}
-			return null;
+			else
+			{	
+				System.out.println(cEngine.formatAsError(response.getMessage()));
+				return null;
+			}
 		}
 		catch(Exception e)
 		{

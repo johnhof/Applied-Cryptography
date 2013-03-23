@@ -50,14 +50,13 @@ public class ServerThread extends Thread
 		try
 		{
 			message = (Envelope)cEngine.readPlainText(input);
+			System.out.println("\n<< Request Recieved: " + message.getMessage());
 
 //-- PUBLIC KEY DISTIBURTION------------------------------------------------------------------------------------------
 
 			//if they sent a public key request
 			if(message.getMessage().equals("GET_PUBKEY"))
 			{
-				System.out.println("\n<< Request Recieved: " + message.getMessage());
-
 				//send your key
 				response = new Envelope("OK");
 				System.out.println(">> Sending Reponse: OK");
@@ -74,11 +73,15 @@ public class ServerThread extends Thread
 
 			if(message.getMessage().equals("SET_AESKEY"))
 			{
-				System.out.println(cEngine.formatAsSuccess("Attempting to decrypt with private key"));
 				//decrypt the key and challenge
 				aesKey = byteToAESKey((byte[])message.getObjContents().get(0),new IvParameterSpec((byte[])message.getObjContents().get(1)));
 				Integer challenge = (Integer)cEngine.deserialize(cEngine.RSADecrypt((byte[])message.getObjContents().get(2), myPrivateKey));
-				System.out.println(cEngine.formatAsSuccess("Challenge decrypted with private key"));
+				if(aesKey == null || challenge == null)
+				{
+					cEngine.writePlainText(genAndPrintErrorEnvelope("Could not decrypt message contents"), output);
+					return false;
+				}
+				else System.out.println(cEngine.formatAsSuccess("Challenge decrypted with private key"));
 				
 				System.out.println(cEngine.formatAsSuccess("AES keyset recieved and stored"));
 				//THE AES KEY IS NOW SET
@@ -121,7 +124,15 @@ public class ServerThread extends Thread
 			aesKeyBytesA = cEngine.RSADecrypt(aesKeyBytesA, myPrivateKey);
 			aesKeyBytesB = cEngine.RSADecrypt(aesKeyBytesB, myPrivateKey);
 
-			System.out.println(cEngine.formatAsSuccess("AES key decrypted with private key"));
+			if(aesKeyBytesA != null && aesKeyBytesB != null)
+			{
+				System.out.println(cEngine.formatAsSuccess("AES key decrypted with private key"));
+			}
+			else
+			{
+				cEngine.writePlainText(genAndPrintErrorEnvelope("Could not decrypt AES key"), output);
+				return null;
+			}
 
 			System.arraycopy(aesKeyBytesA, 0, aesKeyBytes, 0, 100);
 			System.arraycopy(aesKeyBytesB, 0, aesKeyBytes, 100, 41);

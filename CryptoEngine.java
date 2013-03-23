@@ -163,10 +163,10 @@ class CryptoEngine
 			result = cipher.doFinal(bytes);	
 		} 
 		catch (Exception e) {
-			System.out.println("WARNING:  CRYPTOENGINE;  AES cipher failure; encrypt(1)/decrypt(2)="+mode);
+			//System.out.println("WARNING:  CRYPTOENGINE;  AES cipher failure; encrypt(1)/decrypt(2)="+mode);
 		}
 		 
-		 return result;
+		return result;
 	}
 
 	public byte[] RSAEncrypt(byte[] plainText, Key key) 
@@ -190,7 +190,7 @@ class CryptoEngine
 		} 
 		catch (Exception e) 
 		{
-			System.out.println("WARNING:  CRYPTOENGINE;  RSA cipher failure;  encrypt(1)/decrypt(2)="+mode);
+			//System.out.println("WARNING:  CRYPTOENGINE;  RSA cipher failure;  encrypt(1)/decrypt(2)="+mode);
 		}
 		return result;
 	}
@@ -317,7 +317,6 @@ class CryptoEngine
 		}
         catch(Exception e)
         {
-			System.out.println("WARNING:  CRYPTOENGINE;  deserializing error, NULL returned");
         	return null;
         }
         return obj;
