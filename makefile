@@ -14,4 +14,4 @@ UI:
 	java -cp .:bcprov-jdk15on-147.jar UI
 	
 clean:
-	rm -r *.class *_Resources*
+	rm -r *.class *_Resources* shared_files
