@@ -1,6 +1,9 @@
 import java.net.Socket;
+import java.security.*;
+import javax.crypto.*;
 import java.io.*;
 import java.util.*;
+import javax.crypto.spec.IvParameterSpec;
 
 public class UI
 {
@@ -20,7 +23,7 @@ public class UI
 
 	//utility tools
 	private static Scanner in;
-
+	
 
 	public static void main(String[] args)
 	{
@@ -252,7 +255,6 @@ public class UI
 		{
 			debug = true;
 		} 
-
 
 //--GROUP SERVER CONNECT-----------------------------------------------------------------------------------------------
 

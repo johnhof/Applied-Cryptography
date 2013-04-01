@@ -77,7 +77,8 @@ public class GroupThread extends ServerThread
 				else if(message.getMessage().equals("TOKEN"))//Client wants a token
 				{
 					String username = (String)message.getObjContents().get(0); //Get the username
-					String pwd = (String)message.getObjContents().get(1);//get password
+					String pwd = (String)message.getObjContents().get(1);//get 
+					Key key = (Key)message.getObjContents().get(2);
 
 					//NOTE: Its bad practice to tell the user what login error occurred
 					//they could use it to fish for valid usernames
@@ -103,7 +104,7 @@ public class GroupThread extends ServerThread
 					}
 					else
 					{
-						UserToken yourToken = createToken(username); //Create a token
+						UserToken yourToken = createToken(username, key); //Create a token
 						System.out.println(cEngine.formatAsSuccess("Authentication cleared"));
 						
 						//Respond to the client. On error, the client will receive a null token
@@ -361,13 +362,13 @@ public class GroupThread extends ServerThread
 //----------------------------------------------------------------------------------------------------------------------
 	
 	//Method to create tokens
-	private UserToken createToken(String username) 
+	private UserToken createToken(String username, Key key) 
 	{
 		//Check that user exists
 		if(my_gs.userList.checkUser(username))
 		{
 			//Issue a new token with server's name, user's name, and user's groups
-			UserToken yourToken = new UserToken(my_gs.name, username, my_gs.userList.getUserGroups(username));
+			UserToken yourToken = new UserToken(my_gs.name, username, my_gs.userList.getUserGroups(username), key);
 
 			//sign the token
 			yourToken.sign(my_gs.signKeys.getPrivate(), cEngine);

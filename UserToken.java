@@ -29,21 +29,24 @@ public class UserToken implements UserTokenInterface, java.io.Serializable
 	private String subject; 
     private List<String> groups;
     private byte[] signature;
+	private Key publicKey;
 
-	public UserToken(String Issuer, String Subject)
+	public UserToken(String Issuer, String Subject, Key key)
 	{
 		issuer = Issuer; 
 		subject = Subject; 
         groups = null;
         signature = null;
+		publicKey = key;
 	}
 
-    public UserToken(String Issuer, String Subject, List<String> Groups)
+    public UserToken(String Issuer, String Subject, List<String> Groups, Key key)
     {
         issuer = Issuer; 
         subject = Subject; 
         groups = Groups;
         signature = null;
+		publicKey = key;
     }
 
     public String getIssuer()
@@ -85,6 +88,11 @@ public class UserToken implements UserTokenInterface, java.io.Serializable
     {
         groups.clear();
     }
+	
+	public Key getKey()
+	{
+		return publicKey;
+	}
 
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 //-- SIGNING AND VERIFICATION 

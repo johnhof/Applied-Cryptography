@@ -18,6 +18,9 @@ public class Client extends ClientInterface
 	protected String keyFile;
 	private Key serverPublicKey;
 	protected GroupKeyMapController groupFileKeyMap;
+	protected Key myPrivate;
+	protected Key myPublic;
+
 
 	public boolean connect(final String server, final int port, String username) 
 	{
@@ -28,7 +31,6 @@ public class Client extends ClientInterface
 		keyFile = "ServerKeys.rsc";
 
 		cEngine = new CryptoEngine();	
-
 
 		//Create or locate the users directory"
 		File file = new File(userFolder);

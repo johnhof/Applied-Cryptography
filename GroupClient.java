@@ -20,7 +20,15 @@ public class GroupClient extends Client implements GroupClientInterface {
 			return false;
 		}
 		System.out.println("\n*** Group Server connection successful: NAME: " + serverName + "; PORT:" + serverPort + " ***");
-
+		
+		System.out.println("\n*** Generating Keys for Message Number signatures");
+		KeyPair rsaKeys = cEngine.genRSAKeyPair();
+		myPrivate = rsaKeys.getPrivate();
+		myPublic = rsaKeys.getPublic();
+		System.out.println("*** Keys Generated");
+		//The GroupClient needs these keys to sign message numbers\
+		//The keys are located in the client superclass
+		
 		return true;
 	}
 	
@@ -36,6 +44,7 @@ public class GroupClient extends Client implements GroupClientInterface {
 			message = new Envelope("TOKEN");
 			message.addObject(username); //Add user name string
 			message.addObject(pwd);
+			message.addObject(myPublic);
 			System.out.println("\n>> Sending Group Server Request: TOKEN");
 			
 			cEngine.writeAESEncrypted(message, aesKey, output);
