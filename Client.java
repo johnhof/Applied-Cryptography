@@ -185,7 +185,8 @@ public class Client extends ClientInterface
 			//send the key to the server
 			message = new Envelope("SET_AESKEY");
 			System.out.println("\n>> Sending Request: SET_AESKEY");
-			message.addObject(AESKeyToByte());
+			//message.addObject(AESKeyToByte());
+			message.addObject(cEngine.RSAEncrypt(cEngine.serialize(aesKey.getKey()), serverPublicKey));
 			message.addObject(aesKey.getIV().getIV());
 			message.addObject(cEngine.RSAEncrypt(cEngine.serialize(challenge), serverPublicKey));
 			System.out.println(cEngine.formatAsSuccess("RSA encryption successful, IV sent in plaintext"));
@@ -193,7 +194,7 @@ public class Client extends ClientInterface
 			cEngine.writePlainText(message, output);
 			//THE AES KEY IS NOW SET
 
-			System.out.println("<< Recieving Response: OK");
+			System.out.println("<< Receiving Response: OK");
 			response = (Envelope)cEngine.readAESEncrypted(aesKey, input);
 			if(response.getMessage().equals("OK"))
 			{
@@ -238,7 +239,7 @@ public class Client extends ClientInterface
 			response = (Envelope)cEngine.readPlainText(input);
 			if(response.getMessage().equals("OK"))
 			{
-				System.out.println("<< Recieving Response: OK");
+				System.out.println("<< Receiving Response: OK");
 				answer = (Key)response.getObjContents().get(0);
 				System.out.println(cEngine.formatAsSuccess("public key obtained"));
 			}
@@ -250,43 +251,6 @@ public class Client extends ClientInterface
 			return null;
 		}
 		return answer;
-	}
-
-//--CONVERT KEY TO BYTE ARRAY---------------------------------------------------------------------------------------------------
-	protected byte[] AESKeyToByte()
-	{
-		try
-		{
-			ByteArrayOutputStream toBytes = new ByteArrayOutputStream();
-			ObjectOutputStream localInput = new ObjectOutputStream(toBytes);
-
-			localInput.writeObject(aesKey.getKey());
-
-			byte[] aesKeyBytes = toBytes.toByteArray();
-
-			byte[] aesKeyBytesA = new byte[100];
-			byte[] aesKeyBytesB = new byte[41];
-
-			System.arraycopy(aesKeyBytes, 0, aesKeyBytesA, 0, aesKeyBytesA.length);
-			System.arraycopy(aesKeyBytes, 100, aesKeyBytesB, 0, aesKeyBytes.length-100);
-
-			byte[] encryptedKeyA = cEngine.RSAEncrypt(aesKeyBytesA, serverPublicKey);
-			byte[] encryptedKeyB = cEngine.RSAEncrypt(aesKeyBytesB, serverPublicKey);
-
-			System.out.println(cEngine.formatAsSuccess("AES key encrypted with public key"));
-
-			byte[] encryptedKey = new byte [encryptedKeyA.length + encryptedKeyB.length];
-
-			System.arraycopy(encryptedKeyA, 0, encryptedKey, 0, encryptedKeyA.length);
-			System.arraycopy(encryptedKeyB, 0, encryptedKey, encryptedKeyA.length, encryptedKeyB.length);
-
-			return encryptedKey;
-		}
-		catch(Exception exc)
-		{
-			System.out.println("\nERROR: FILECLIENT; AES Key to enctrypted byte stream conversion failed");
-			return null;
-		}
 	}
 
 	protected boolean establishNewServer(String server)

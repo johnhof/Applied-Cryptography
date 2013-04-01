@@ -46,7 +46,7 @@ public class GroupClient extends Client implements GroupClientInterface {
 			//Successful response
 			if(response.getMessage().equals("OK"))
 			{
-				System.out.println("<< Recieving Group Server Response: OK");
+				System.out.println("<< receiving Group Server Response: OK");
 				//If there is a token in the Envelope, return it 
 				ArrayList<Object> temp = null;
 				temp = response.getObjContents();
@@ -92,7 +92,7 @@ public class GroupClient extends Client implements GroupClientInterface {
 			//If server indicates success, return true
 			if(response.getMessage().equals("OK"))
 			{
-				System.out.println("<< Recieving Group Server Response: OK");
+				System.out.println("<< receiving Group Server Response: OK");
 				return true;
 			}
 			else
@@ -126,7 +126,7 @@ public class GroupClient extends Client implements GroupClientInterface {
 			//If server indicates success, return true
 			if(response.getMessage().equals("OK"))
 			{
-				System.out.println("<< Recieving Group Server Response: OK");
+				System.out.println("<< receiving Group Server Response: OK");
 				return true;
 			}
 			else
@@ -159,7 +159,7 @@ public class GroupClient extends Client implements GroupClientInterface {
 			//If server indicates success, return true
 			if(response.getMessage().equals("OK"))
 			{
-				System.out.println("<< Recieving Group Server Response: OK");
+				System.out.println("<< receiving Group Server Response: OK");
 				return true;
 			}
 			else
@@ -192,7 +192,7 @@ public class GroupClient extends Client implements GroupClientInterface {
 			//If server indicates success, return true
 			if(response.getMessage().equals("OK"))
 			{
-				System.out.println("<< Recieving Group Server Response: OK");
+				System.out.println("<< receiving Group Server Response: OK");
 				return true;
 			}
 			else
@@ -226,7 +226,7 @@ public class GroupClient extends Client implements GroupClientInterface {
 			//If server indicates success, return the member list
 			if(response.getMessage().equals("OK"))
 			{ 
-				System.out.println("<< Recieving Group Server Response: OK");
+				System.out.println("<< receiving Group Server Response: OK");
 				return (List<String>)response.getObjContents().get(0); //This cast creates compiler warnings. Sorry.
 			}
 			else
@@ -261,7 +261,7 @@ public class GroupClient extends Client implements GroupClientInterface {
 			
 			if(response.getMessage().equals("OK"))
 			{
-				System.out.println("<< Recieving Group Server Response: OK");
+				System.out.println("<< receiving Group Server Response: OK");
 				return true;
 			}
 			else
@@ -295,7 +295,7 @@ public class GroupClient extends Client implements GroupClientInterface {
 			//If server indicates success, return true
 			if(response.getMessage().equals("OK"))
 			{
-				System.out.println("<< Recieving Group Server Response: OK");
+				System.out.println("<< receiving Group Server Response: OK");
 				return true;
 			}
 			else
@@ -325,7 +325,7 @@ public class GroupClient extends Client implements GroupClientInterface {
 			response = (Envelope)cEngine.readAESEncrypted(aesKey, input);	
 			if(response.getMessage().equals("OK") && response.getObjContents() != null)
 			{
-				System.out.println("<< Recieving Group Server Response: OK");
+				System.out.println("<< receiving Group Server Response: OK");
 				return (ArrayList<String>)response.getObjContents().get(0);
 			}
 			else

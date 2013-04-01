@@ -32,7 +32,7 @@ class CryptoEngine
 		//set up RSA objects
 		try {
 			RSAKeyGen = KeyPairGenerator.getInstance("RSA");
-			RSAKeyGen.initialize(1024);
+			RSAKeyGen.initialize(2048);
 		} 
 		catch (NoSuchAlgorithmException e) {
 			System.out.println("WARNING:  CRYPTOENGINE;  RSA key genrator initialization failure");
@@ -44,7 +44,7 @@ class CryptoEngine
 			AESKeyGen.init(128);
 		} 
 		catch (Exception e) {
-			System.out.println("WARNING:  CRYPTOENGINE;  AES key genrator initialization failure");
+			System.out.println("WARNING:  CRYPTOENGINE;  AES key generator initialization failure");
 		}
 	}
 
@@ -148,7 +148,7 @@ class CryptoEngine
 	{
 		return DriverCoreFunction(cipherText, Cipher.DECRYPT_MODE, keySet);
 	}
-	//performs encryption and decryption for aAES
+	//performs encryption and decryption for AES
 	private byte[] DriverCoreFunction(byte[] bytes, int mode, AESKeySet keySet) 
 	{
 		Cipher cipher = null;

@@ -30,7 +30,7 @@ public class GroupThread extends ServerThread
 
 //--SET UP CONNECTION------------------------------------------------------------------------------------------------
 			System.out.println("\n*** New connection from " + socket.getInetAddress() + ":" + socket.getPort() + " ***");
-			if(setUpConection() == false)
+			if(setUpConnection() == false)
 			{
 				System.out.println("\n!!! Setup Failed: " + socket.getInetAddress() + ":" + socket.getPort() + " !!!");
 				return;
@@ -68,7 +68,7 @@ public class GroupThread extends ServerThread
 				//make sure the message has contents
 				else if(message.getObjContents().size() < 1)
 				{
-					cEngine.writeAESEncrypted(genAndPrintErrorEnvelope("Server recieved empty message"), aesKey, output);
+					cEngine.writeAESEncrypted(genAndPrintErrorEnvelope("Server received empty message"), aesKey, output);
 					continue;//go back and wait for a new message
 				}
 
