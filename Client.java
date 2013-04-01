@@ -18,6 +18,9 @@ public class Client extends ClientInterface
 	protected String keyFile;
 	private Key serverPublicKey;
 
+	//group file key maps: HashMap<groupName, HashMap<keyID, AESKeySet>>
+	protected HashMap<String, HashMap<String, AESKeySet>> groupFileKeyMap;
+
 	public boolean connect(final String server, final int port, String username) 
 	{
 		serverName = server;
