@@ -1,104 +1,71 @@
 
-import java.io.UnsupportedEncodingException;
-import java.nio.charset.Charset;
+import java.net.*;
 import java.security.*;
-
 import javax.crypto.*;
-import javax.crypto.spec.IvParameterSpec;
-
 import java.io.*;
+import java.util.*;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import javax.crypto.spec.IvParameterSpec;
 
 //import org.bouncycastle.crypto.paddings.PaddedBufferedBlockCipher;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-
-import java.util.*;
-
-import java.io.*;
 
 public class test
 {
     public static void main (String[] args)
     {
     	CryptoEngine cEngine = new CryptoEngine();
-
-        PublicKey pk = null;
-        Envelope message = new Envelope("");
-        KeyPair keys = cEngine.genRSAKeyPair();
-
-        //set AES key
-        AESKeySet aesKey = cEngine.genAESKeySet();
-        Integer challenge = new Integer((new SecureRandom()).nextInt());
-        Key privateKey = keys.getPrivate();
-        Key publicKey = keys.getPublic();
         
-/*        byte [] encryptedKey = cEngine.RSAEncrypt(cEngine.serialize(aesKey.getKey()), publicKey);
-        byte [] encryptedChallenge = cEngine.RSAEncrypt(cEngine.serialize(challenge), publicKey);
+        GroupKeyMapController mapController = GroupKeyMapController.getinstance("t","t");
 
-        message.addObject(encryptedKey);
-        message.addObject(aesKey.getIV().getIV());
-        message.addObject(encryptedChallenge);
+        Date tempDate = new Date();
 
-        System.out.println("message encrypted");
 
-        byte[] recoveredKey = (byte[])message.getObjContents().get(0);
-        byte[] recoveredChallenge = (byte[])message.getObjContents().get(2);
+        tempDate.setDate(80);
+        mapController.addNewGroup("j", tempDate, cEngine.genAESKeySet());
 
-        if(Arrays.equals(encryptedKey, recoveredKey))System.out.println("key recovery successful");
-        if(Arrays.equals(encryptedChallenge, recoveredChallenge))System.out.println("key recovery successful");
+        tempDate.setDate(200);
+        mapController.addNewGroup("d", tempDate, cEngine.genAESKeySet());tempDate = new Date();
+        tempDate.setDate(260);
+        mapController.addToGroup("d", tempDate, cEngine.genAESKeySet());tempDate = new Date();
+        tempDate.setDate(300);
+        mapController.addToGroup("d", tempDate, cEngine.genAESKeySet());tempDate = new Date();
 
-        byte [] decryptedKey = cEngine.RSADecrypt(encryptedKey, privateKey);
-        Key recovered = (Key)cEngine.deserialize(decryptedKey);
+        tempDate.setDate(500);
+        mapController.addNewGroup("e", tempDate, cEngine.genAESKeySet());tempDate = new Date();
+        tempDate.setDate(600);
+        mapController.addToGroup("e", tempDate, cEngine.genAESKeySet());tempDate = new Date();
+
+        System.out.println("\n------ MAP CONTROLLER 1 ------");
+        //mapController.syncWithNewKeyMap(map1);
+        System.out.println(mapController.toString());
 /*
-        aesKey = new AESKeySet((Key) cEngine.deserialize(cEngine.RSADecrypt(recoveredKey, privateKey)), (IvParameterSpec)message.getObjContents().get(1));
-        Integer challenge2 = (Integer)cEngine.deserialize(cEngine.RSADecrypt(recoveredChallenge, privateKey));
-        
-        System.out.println("message decrypted");
+        Envelope message = new Envelope("OK");
+        message.addObject(map2); 
+        AESKeySet key = cEngine.genAESKeySet();
+        byte [] encrypted = cEngine.AESEncrypt(cEngine.serialize(message), key);
+        System.out.println("ENCRYPTED");
+        byte [] decrypted = cEngine.AESDecrypt(encrypted, key);
+        System.out.println("DECRYPTED");
+        Envelope response = (Envelope)cEngine.deserialize(decrypted);
+
+        map2 = (HashMap<String, HashMap<Date, AESKeySet>>)response.getObjContents().get(0);
 */
 
-        byte[] result = new byte [117];
-        int byteIndex;
-        int chunkSize = 117;
-        byte[] bytes = cEngine.serialize(aesKey.getKey());
-        int inputSize = bytes.length;
 
-        System.out.println("full stream: "+bytes.toString());
-        //en/decrypt in 128 byte chunks
-        for(byteIndex = 0; byteIndex <= (inputSize-chunkSize); byteIndex+=chunkSize)
-        {
-            System.out.println("\nloop: "+Arrays.copyOfRange(bytes, byteIndex, byteIndex+chunkSize).toString());
-            //append chunk
-            byte[] temp = nextChunk(Arrays.copyOfRange(bytes, byteIndex, byteIndex+chunkSize), result);
-            result = temp;
-            System.out.println("result: "+result);
-        }
-        //en/decrypt the last chunk (if it happens to be < chunkSize)
-        if(byteIndex!=(inputSize-chunkSize))
-        {
-            System.out.println("\nleftover:"+(inputSize-byteIndex));
-           //append chunk
-            byte[] temp = nextChunk(Arrays.copyOfRange(bytes, inputSize-byteIndex, inputSize), result);
-            result = temp;
-        }
-        System.out.println("end stream: "+result.toString());
-    }
 
-    private static byte[] nextChunk(byte [] chunk, byte [] cryptedBytes)
-    {
-        try 
-        {
-            //append chunk
-            byte[] result = new byte [cryptedBytes.length+chunk.length];
-            System.arraycopy(cryptedBytes, 0, result, 0, cryptedBytes.length );
-            System.arraycopy(chunk, 0, result, cryptedBytes.length, chunk.length);
+        tempDate.setDate(500);
+        mapControllerNew.addNewGroup("q", tempDate, cEngine.genAESKeySet());tempDate = new Date();
+        tempDate.setDate(600);
+        mapControllerNew.addToGroup("q", tempDate, cEngine.genAESKeySet());tempDate = new Date();
 
-            return result;
-        } 
-        catch (Exception e) 
-        {
-            e.printStackTrace();
-        }
-        return null;
+        System.out.println("\n------ MAP CONTROLLER 2 ------");
+        System.out.println(mapControllerNew.toString());
 
+        System.out.println("\n------ MAP CONTROLLER UPDATED ------");
+        mapControllerNew.syncWithNewKeyMap(mapController.getFullMap());
+        System.out.println(mapControllerNew.toString()); 
     }
 
 }
