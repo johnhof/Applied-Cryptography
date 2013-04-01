@@ -14,7 +14,7 @@ import javax.crypto.spec.IvParameterSpec;
 	easily updateable, synchronous state between concurrent clients of a single user.
 */
 
-public class GroupKeyMapController
+public class GroupKeyMapController implements java.io.Serializable
 {
 	//group file key maps: HashMap<groupName, HashMap<keyID, AESKeySet>>
 	private HashMap<String, HashMap<Date, AESKeySet>> groupFileKeyMap;
@@ -146,6 +146,11 @@ public class GroupKeyMapController
 		map.put(timeIssued, keySet);
 
 		lock.unlock();
+		return true;
+	}
+
+	public synchronized boolean syncWithNewKeyMap()
+	{
 		return true;
 	}
 }

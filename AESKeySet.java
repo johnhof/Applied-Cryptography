@@ -11,12 +11,12 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 public class AESKeySet implements java.io.Serializable
 {
 	private Key key; 
-	private IvParameterSpec IV; 
+	private byte[] byteIV;
 
 	public AESKeySet(Key newKey, IvParameterSpec newIV)
 	{
 		key = newKey;
-		IV = newIV;
+		byteIV = newIV.getIV();
 	}
 
 	public void setKey(Key newKey)
@@ -25,7 +25,7 @@ public class AESKeySet implements java.io.Serializable
 	}
 	public void setIV(IvParameterSpec newIV)
 	{
-		IV = newIV;
+		byteIV = newIV.getIV();
 	}
 	public Key getKey()
 	{
@@ -33,6 +33,6 @@ public class AESKeySet implements java.io.Serializable
 	}
 	public IvParameterSpec getIV()
 	{
-		return IV;
+		return new IvParameterSpec(byteIV);
 	}
 }
