@@ -12,6 +12,10 @@ import javax.crypto.spec.IvParameterSpec;
 	this class should be used to load/save/update the key map. Its primary purpose 
 	is to share the keys resources between instances of the client, while maintaining an
 	easily updateable, synchronous state between concurrent clients of a single user.
+
+	WARNING: all internal method calls should set the last parameter (engageLock) to false,
+		but all external methods should set it to true. if you dont do this, weird shit will 
+		happen because THREADS.
 */
 
 public class GroupKeyMapController implements java.io.Serializable
@@ -56,13 +60,15 @@ public class GroupKeyMapController implements java.io.Serializable
 		resourceFile = userFolder+"/"+userName+"_group_file_keys.rsc";
 		newestKeyIDs = new HashMap<String, Date>();
 
-		loadKeyMap();
+		loadKeyMap(false);
+
 		return true;
 	}
 
 //--IO METHODS----------------------------------------------------------------------------------------------------------
-	public synchronized boolean loadKeyMap()
+	public boolean loadKeyMap(boolean engageLock)
 	{
+		if(engageLock)lock.lock();
 
 		try
 		{
@@ -77,18 +83,21 @@ public class GroupKeyMapController implements java.io.Serializable
 			System.out.println(cEngine.formatAsSuccess("group/file key map does not exist. Creating it"));
 			groupFileKeyMap = new HashMap<String, HashMap<Date, AESKeySet>>();
 			
-			saveKeyMap();
+			saveKeyMap(false);
 		}
 		catch(Exception exc)
 		{
 			System.out.println(cEngine.formatAsError("This shit' fucked up"));
 		}
 
+		if(engageLock)lock.unlock();
 		return true;
 	}
 
-	public synchronized boolean saveKeyMap()
+	public boolean saveKeyMap(boolean engageLock)
 	{
+		if(engageLock)lock.lock();
+
 		try
 		{
 			ObjectOutputStream outStream = new ObjectOutputStream(new FileOutputStream(resourceFile));
@@ -100,27 +109,34 @@ public class GroupKeyMapController implements java.io.Serializable
 			System.out.println(cEngine.formatAsError("This shit' fucked up yo"));
 		}
 
+		if(engageLock)lock.unlock();
 		return true;
 	}
 
 //--RETRIEVAL METHODS---------------------------------------------------------------------------------------------------
 
 	//WANRING: this is not thread safe, it should only be called in methods with an engaged lock
-	public HashMap<Date, AESKeySet> getKeyMapForGroup(String groupName)
+	public HashMap<Date, AESKeySet> getKeyMapForGroup(String groupName, boolean engageLock)
 	{
+		if(engageLock)lock.lock();
+
 		HashMap<Date, AESKeySet> keyMap = null;
 		if (groupFileKeyMap.containsKey(groupName)) keyMap = groupFileKeyMap.get(groupName);
 
+
+		if(engageLock)lock.unlock();
 		return keyMap;
 	}
 
-	public AESKeySet getKeyFromNameAndDate(String groupName, Date timeIssued)
+	public AESKeySet getKeyFromNameAndDate(String groupName, Date timeIssued, boolean engageLock)
 	{
+		if(engageLock)lock.lock();
 
-		HashMap<Date, AESKeySet> map = getKeyMapForGroup(groupName);		
+		HashMap<Date, AESKeySet> map = getKeyMapForGroup(groupName, false);		
 		AESKeySet keySet = null;
 		if(map != null && map.containsKey(timeIssued)) keySet = map.get(timeIssued);
 
+		if(engageLock)lock.unlock();
 		return keySet;
 	}
 
@@ -131,48 +147,60 @@ public class GroupKeyMapController implements java.io.Serializable
 
 //--MANIPULATION METHODS------------------------------------------------------------------------------------------------
 
-	public synchronized boolean addNewGroup(String groupName, Date timeIssued, AESKeySet keySet)
+	public boolean addNewGroup(String groupName, Date timeIssued, AESKeySet keySet, boolean engageLock)
 	{
+		if(engageLock)lock.lock();
 
 		HashMap<Date, AESKeySet> newMap = new HashMap<Date, AESKeySet>();
 		newMap.put(timeIssued, keySet);
 		if(groupFileKeyMap.containsKey(groupName)!=true) 
 		{
 			groupFileKeyMap.put(groupName, newMap);
+
+			if(engageLock)lock.unlock();
 			return true;
 		}
 
+		if(engageLock)lock.unlock();
 		return false;
 	}
-	public synchronized boolean addToGroup(String groupName, Date timeIssued, AESKeySet keySet)
+	public boolean addToGroup(String groupName, Date timeIssued, AESKeySet keySet, boolean engageLock)
 	{
+		if(engageLock)lock.lock();
+
 		if(groupFileKeyMap.containsKey(groupName)==true) 
 		{
 			groupFileKeyMap.get(groupName).put(timeIssued, keySet);
 		}
 		else
 		{
-			addNewGroup(groupName, timeIssued, keySet);
+			addNewGroup(groupName, timeIssued, keySet, false);
 		}
 
+		if(engageLock)lock.unlock();
 		return true;
 	}
-	public synchronized boolean addNewKeytoGroup(String groupName, Date timeIssued, AESKeySet keySet)
+	public boolean addNewKeytoGroup(String groupName, Date timeIssued, AESKeySet keySet, boolean engageLock)
 	{
+		if(engageLock)lock.lock();
 
-		HashMap<Date, AESKeySet> map = getKeyMapForGroup(groupName);
+		HashMap<Date, AESKeySet> map = getKeyMapForGroup(groupName, false);
 		if(map == null || map.containsKey(timeIssued)) 
 		{
+			if(engageLock)lock.unlock();
 			return false;
 		}
 		map.put(timeIssued, keySet);
 
+		if(engageLock)lock.unlock();
 		return true;
 	}
 
 	//concatenates the values of a new map onto the existing map
-	public synchronized boolean syncWithNewKeyMap(HashMap<String, HashMap<Date, AESKeySet>> newMap)
+	public  boolean syncWithNewKeyMap(HashMap<String, HashMap<Date, AESKeySet>> newMap, boolean engageLock)
 	{
+		if(engageLock)lock.lock();
+
 		//iterate through the elements of the new map
 		for (Map.Entry<String, HashMap<Date, AESKeySet>> groupEntry : newMap.entrySet()) 
 		{
@@ -182,20 +210,25 @@ public class GroupKeyMapController implements java.io.Serializable
 		    //concatenate the new values. just add the groupkeymap if it doesnt already esist
 		    HashMap<Date, AESKeySet> oldGroupKeys = groupFileKeyMap.get(group);
 		    if(oldGroupKeys==null) groupFileKeyMap.put(group, newGroupKeys);
-		    else concatNewGroupKeyMap(group, newGroupKeys);
+		    else concatNewGroupKeyMap(group, newGroupKeys, false);
 		}
 
+		if(engageLock)lock.unlock();
 		return true;
 	}
 
 	//concatenates the values of a new group entry onto the existing entry (ignoring duplicates)
 	//WARNING: this is not thread safe, it should only be called in methods with an engaged lock
-	private synchronized boolean concatNewGroupKeyMap(String groupName, HashMap<Date, AESKeySet> newDateKeyMap)
+	private  boolean concatNewGroupKeyMap(String groupName, HashMap<Date, AESKeySet> newDateKeyMap, boolean engageLock)
 	{
+		if(engageLock)lock.lock();
+
 		//create a temp, set it to our old map, and remove any shared elements. then add the new map
-		HashMap<Date, AESKeySet> tmp = new HashMap(getKeyMapForGroup(groupName));
+		HashMap<Date, AESKeySet> tmp = new HashMap(getKeyMapForGroup(groupName, false));
 		tmp.keySet().removeAll(newDateKeyMap.keySet());
 		groupFileKeyMap.get(groupName).putAll(tmp);
+
+		if(engageLock)lock.unlock();
 		return true;
 	}
 
@@ -204,6 +237,8 @@ public class GroupKeyMapController implements java.io.Serializable
 	@Override 
 	public String toString()
 	{
+		lock.lock();
+		
 		String toString = "File: "+resourceFile+"\nMap: {\n";
         for (Map.Entry<String, HashMap<Date, AESKeySet>> groupEntry : groupFileKeyMap.entrySet()) 
         {
@@ -218,6 +253,8 @@ public class GroupKeyMapController implements java.io.Serializable
             }
         }
         toString += "}";
+
+        lock.unlock();
 		return toString;
 	}
 }
