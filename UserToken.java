@@ -30,6 +30,7 @@ public class UserToken implements UserTokenInterface, java.io.Serializable
     private List<String> groups;
     private byte[] signature;
 	private Key publicKey;
+	private int msgNumber;
 
 	public UserToken(String Issuer, String Subject, Key key)
 	{
@@ -38,6 +39,7 @@ public class UserToken implements UserTokenInterface, java.io.Serializable
         groups = null;
         signature = null;
 		publicKey = key;
+		msgNumber = (new SecureRandom()).nextInt();
 	}
 
     public UserToken(String Issuer, String Subject, List<String> Groups, Key key)
@@ -47,6 +49,7 @@ public class UserToken implements UserTokenInterface, java.io.Serializable
         groups = Groups;
         signature = null;
 		publicKey = key;
+		msgNumber = (new SecureRandom()).nextInt();
     }
 
     public String getIssuer()
@@ -92,6 +95,11 @@ public class UserToken implements UserTokenInterface, java.io.Serializable
 	public Key getKey()
 	{
 		return publicKey;
+	}
+	
+	public int getMsgNumber()
+	{
+		return msgNumber;
 	}
 
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
