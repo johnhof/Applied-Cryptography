@@ -17,9 +17,7 @@ public class Client extends ClientInterface
 	protected String userFolder;
 	protected String keyFile;
 	private Key serverPublicKey;
-
-	//group file key maps: HashMap<groupName, HashMap<keyID, AESKeySet>>
-	protected HashMap<String, HashMap<String, AESKeySet>> groupFileKeyMap;
+	protected GroupKeyMapController groupFileKeyMap;
 
 	public boolean connect(final String server, final int port, String username) 
 	{
@@ -121,6 +119,9 @@ public class Client extends ClientInterface
 		System.out.println("\nSetting up resources");
 		try
 		{
+			//grab/create the shared instance of our keymap
+			groupFileKeyMap = GroupKeyMapController.getInstance(userName, userFolder);
+
 			//Read in the key
 			FileInputStream fis = new FileInputStream(userFolder+keyFile);
 			keyStream = new ObjectInputStream(fis);
