@@ -42,7 +42,7 @@ public class ServerThread extends Thread
 //----------------------------------------------------------------------------------------------------------------------
 //-- CONNECTION SETUP FUNCIONS
 //----------------------------------------------------------------------------------------------------------------------
-	protected boolean setUpConection()
+	protected boolean setUpConnection()
 	{
 		Envelope message = null;
 		Envelope response = null;
@@ -50,7 +50,7 @@ public class ServerThread extends Thread
 		try
 		{
 			message = (Envelope)cEngine.readPlainText(input);
-			System.out.println("\n<< Request Recieved: " + message.getMessage());
+			System.out.println("\n<< Request Received: " + message.getMessage());
 
 //-- PUBLIC KEY DISTIBURTION------------------------------------------------------------------------------------------
 
@@ -66,7 +66,7 @@ public class ServerThread extends Thread
 
 				//expect a new message
 				message = (Envelope)cEngine.readPlainText(input);
-				System.out.println("\n<< Request Recieved: " + message.getMessage());
+				System.out.println("\n<< Request Received: " + message.getMessage());
 			}
 		
 //--RECIEVE AES KEY---------------------------------------------------------------------------------------------------
@@ -83,7 +83,7 @@ public class ServerThread extends Thread
 				}
 				else System.out.println(cEngine.formatAsSuccess("Challenge decrypted with private key"));
 				
-				System.out.println(cEngine.formatAsSuccess("AES keyset recieved and stored"));
+				System.out.println(cEngine.formatAsSuccess("AES keyset received and stored"));
 				//THE AES KEY IS NOW SET
 
 	//--CHALLENGE---------------------------------------------------------------------------------------------------------
@@ -115,36 +115,11 @@ public class ServerThread extends Thread
 	{
 		try
 		{
-			byte[] aesKeyBytesA = new byte[128];
-			byte[] aesKeyBytesB = new byte[128];
-
-			System.arraycopy(aesKeyBytes, 0, aesKeyBytesA, 0, 128);
-			System.arraycopy(aesKeyBytes, 128, aesKeyBytesB, 0, 128);
-
-			aesKeyBytesA = cEngine.RSADecrypt(aesKeyBytesA, myPrivateKey);
-			aesKeyBytesB = cEngine.RSADecrypt(aesKeyBytesB, myPrivateKey);
-
-			if(aesKeyBytesA != null && aesKeyBytesB != null)
-			{
-				System.out.println(cEngine.formatAsSuccess("AES key decrypted with private key"));
-			}
-			else
-			{
-				cEngine.writePlainText(genAndPrintErrorEnvelope("Could not decrypt AES key"), output);
-				return null;
-			}
-
-			System.arraycopy(aesKeyBytesA, 0, aesKeyBytes, 0, 100);
-			System.arraycopy(aesKeyBytesB, 0, aesKeyBytes, 100, 41);
-
-			ByteArrayInputStream fromBytes = new ByteArrayInputStream(aesKeyBytes);
-			ObjectInputStream localInput = new ObjectInputStream(fromBytes);
-
-			return new AESKeySet((Key)localInput.readObject(), IV);
+			return new AESKeySet((Key)cEngine.deserialize(cEngine.RSADecrypt(aesKeyBytes, myPrivateKey)), IV);
 		}
 		catch(Exception exc)
 		{
-			System.out.println("\nERROR: FILECLIENT; AES Key to enctrypted byte stream conversion failed");
+			System.out.println("\nERROR: FILECLIENT; AES Key from encrypted byte stream conversion failed");
 			return null;
 		}
 

@@ -62,7 +62,7 @@ public class FileClient extends Client implements FileClientInterface
 		    
 		if (env.getMessage().compareTo("OK")==0) 
 		{
-			System.out.println("<< Recieving File Server Response: OK");
+			System.out.println("<< receiving File Server Response: OK");
 			System.out.println(cEngine.formatAsSuccess("Successfully deleted file: "+filename));				
 		}
 		else 
@@ -116,7 +116,7 @@ public class FileClient extends Client implements FileClientInterface
 				//when the end of file is detected, close and display the appropriate message
 				if(env.getMessage().compareTo("EOF")==0) 
 				{
-					System.out.println("<< Recieving File Server Response: EOF");
+					System.out.println("<< receiving File Server Response: EOF");
 				    fos.close();
 					System.out.println(cEngine.formatAsSuccess("Transfer successful for file: "+sourceFile));
 					env = new Envelope("OK"); //Success
@@ -160,7 +160,7 @@ public class FileClient extends Client implements FileClientInterface
 			//If server indicates success, return the member list
 			if(e.getMessage().equals("OK"))
 			{ 
-				System.out.println("<< Recieving File Server Response: OK");
+				System.out.println("<< receiving File Server Response: OK");
 				System.out.println(cEngine.formatAsSuccess("Files returned"));
 				return (List<ShareFile>)e.getObjContents().get(0); //This cast creates compiler warnings. Sorry.
 			}
@@ -253,7 +253,7 @@ public class FileClient extends Client implements FileClientInterface
 				env = (Envelope)cEngine.readAESEncrypted(aesKey, input);
 				if(env.getMessage().compareTo("OK")==0) 
 				{
-					System.out.println("<< Recieving File Server Response: OK");
+					System.out.println("<< receiving File Server Response: OK");
 					System.out.println(cEngine.formatAsSuccess("File upload successful: "+sourceFile+" -> "+destFile.substring(1)));
 				}
 				else 
