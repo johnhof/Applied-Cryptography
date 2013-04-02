@@ -21,7 +21,7 @@ public class FileThread extends ServerThread
 
 	public void run()
 	{
-		String serverFolder = my_fs.name+"_Server_Resources/";
+		String serverFolder = my_fs.name+"_FileServer_Resources/";
 		String resourceFile = serverFolder+"FileResources.rsc";
 
 		try
@@ -81,9 +81,12 @@ public class FileThread extends ServerThread
 					continue;//go back and wait for a new message
 				}
         		System.out.println(cEngine.formatAsSuccess("Token Authenticated"));
-				if(msgNumber == -1)
+				System.out.println("msgnumber is " + msgNumber);
+				System.out.println("should be " + reqToken.getMsgNumber());
+				if(!msgNumberSet)
 				{
 					msgNumber = reqToken.getMsgNumber();
+					msgNumberSet = true;
 				}
 				else if((++msgNumber != reqToken.getMsgNumber()) || !reqToken.verifyMsgNumberSignature(cEngine))
 				{
