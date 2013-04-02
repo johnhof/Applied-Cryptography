@@ -81,8 +81,6 @@ public class FileThread extends ServerThread
 					continue;//go back and wait for a new message
 				}
         		System.out.println(cEngine.formatAsSuccess("Token Authenticated"));
-				System.out.println("msgnumber is " + msgNumber);
-				System.out.println("should be " + reqToken.getMsgNumber());
 				if(!msgNumberSet)
 				{
 					msgNumber = reqToken.getMsgNumber();

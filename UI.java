@@ -86,9 +86,10 @@ public class UI
 				{
 					case 1:
 						System.out.println("\nAccessable files:");
-						if(fUser.listFiles(token) != null)
+						List<ShareFile> theFiles = fUser.listFiles(token);
+						if(theFiles != null)
 						{
-							for(ShareFile file : fUser.listFiles(token))
+							for(ShareFile file : theFiles)
 							{
 								System.out.println(file.getPath());
 							}
