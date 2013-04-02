@@ -52,20 +52,46 @@ class CryptoEngine
 //-- HASH FUNCTIONS
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	
-	public byte[] hashString(String str)
+
+	public String hashWithSHA(String input) throws NoSuchAlgorithmException 
 	{
-		MessageDigest md = null;
-		try
-		{
-			md = MessageDigest.getInstance("SHA");
-		}
-		catch(Exception e)
-		{
-			System.out.println("WARNING: Could not hash password");
-			e.printStackTrace();
-		}
-		return md.digest(str.getBytes());
+		MessageDigest md = MessageDigest.getInstance("SHA-1");
+		return new String(input.getBytes(), "UTF-8"); 
 	}
+	public byte[] hashWithSHA(String input) throws NoSuchAlgorithmException 
+	{
+		MessageDigest md = MessageDigest.getInstance("SHA-1");
+		return md.digest(input);
+	}
+	public String hashWithSHA(byte[] input) throws NoSuchAlgorithmException 
+	{
+		MessageDigest md = MessageDigest.getInstance("SHA-1");
+		return new String(input.getBytes(), "UTF-8"); 
+	}
+	public byte[] hashWithSHA(byte[] input) throws NoSuchAlgorithmException 
+	{
+		MessageDigest md = MessageDigest.getInstance("SHA-1");
+		return md.digest(input);
+	}
+	
+	
+	
+	
+	
+	// public byte[] hashString(String str)
+	// {
+	// 	MessageDigest md = null;
+	// 	try
+	// 	{
+	// 		md = MessageDigest.getInstance("SHA");
+	// 	}
+	// 	catch(Exception e)
+	// 	{
+	// 		System.out.println("WARNING: Could not hash password");
+	// 		e.printStackTrace();
+	// 	}
+	// 	return md.digest(str.getBytes());
+	// }
 	
 	
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

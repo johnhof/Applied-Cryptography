@@ -1,17 +1,22 @@
 all:
-	javac -cp .:bcprov-jdk15on-147.jar *.java
+	mkdir bin
+	javac -cp .:bcprov-jdk15on-147.jar -d bin *.java
 
 setup:
-	java -cp .:bcprov-jdk15on-147.jar ResourceGenerator
+	java -cp bcprov-jdk15on-147.jar:./bin ResourceGenerator
 
 runGroup:
-	java -cp .:bcprov-jdk15on-147.jar RunGroupServer
+	java -cp .:bcprov-jdk15on-147.jar:./bin RunGroupServer
 
 runFile:
-	java -cp .:bcprov-jdk15on-147.jar RunFileServer
+	java -cp .:bcprov-jdk15on-147.jar:./bin RunFileServer
 
 UI:
-	java -cp .:bcprov-jdk15on-147.jar UI
+	java -cp .:bcprov-jdk15on-147.jar:./bin UI
 	
 clean:
+<<<<<<< HEAD
 	rm -r *.class *_Resources* shared_files
+=======
+	rm -r bin/
+>>>>>>> origin/master
