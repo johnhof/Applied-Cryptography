@@ -15,8 +15,4 @@ UI:
 	java -cp .:bcprov-jdk15on-147.jar:./bin UI
 	
 clean:
-<<<<<<< HEAD
-	rm -r *.class *_Resources* shared_files
-=======
-	rm -r bin/
->>>>>>> origin/master
+	rm -r *.class *_Resources* shared_files bin/
