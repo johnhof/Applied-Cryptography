@@ -25,7 +25,7 @@ public class GroupClient extends Client implements GroupClientInterface {
 	}
 	
 	
-	public UserToken getToken(String username, String pwd, Key myPublic)
+	public UserToken getToken(String username, String pwd, PublicKey myPublic)
 	{
 		try
 		{

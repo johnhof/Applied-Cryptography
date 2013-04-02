@@ -85,7 +85,7 @@ public class FileThread extends ServerThread
 				{
 					msgNumber = reqToken.getMsgNumber();
 				}
-				else if((++msgNumber != reqToken.getMsgNumber) || !verifyMsgNumberSignature(cEngine))
+				else if((++msgNumber != reqToken.getMsgNumber()) || !reqToken.verifyMsgNumberSignature(cEngine))
 				{
 					//Either the msgNumbers did not match, or the signature was invalid
 					//This could be the result of an attack

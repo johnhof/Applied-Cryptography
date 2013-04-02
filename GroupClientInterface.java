@@ -1,4 +1,5 @@
 import java.util.List;
+import java.security.*;
 
 /**
  * Interface describing the operations that must be supported by the
@@ -38,7 +39,7 @@ public interface GroupClientInterface
      *         If this user does not exist, a null value will be returned.
      *
      */
-    public UserToken getToken(final String username, final String pwd);
+    public UserToken getToken(final String username, final String pwd, final PublicKey myPublic);
 
 
     /**

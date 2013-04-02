@@ -29,29 +29,29 @@ public class UserToken implements UserTokenInterface, java.io.Serializable
 	private String subject; 
     private List<String> groups;
     private byte[] signature;
-	private Key publicKey;
-	private int msgNumber;
+	private PublicKey publicKey;
+	private Integer msgNumber;
 	private byte[] msgNumberSignature;
 
-	public UserToken(String Issuer, String Subject, Key key)
+	public UserToken(String Issuer, String Subject, PublicKey key)
 	{
 		issuer = Issuer; 
 		subject = Subject; 
         groups = null;
         signature = null;
 		publicKey = key;
-		msgNumber = (new SecureRandom()).nextInt();
+		msgNumber = new Integer((new SecureRandom()).nextInt());
 		msgNumberSignature = null;
 	}
 
-    public UserToken(String Issuer, String Subject, List<String> Groups, Key key)
+    public UserToken(String Issuer, String Subject, List<String> Groups, PublicKey key)
     {
         issuer = Issuer; 
         subject = Subject; 
         groups = Groups;
         signature = null;
 		publicKey = key;
-		msgNumber = (new SecureRandom()).nextInt();
+		msgNumber = new Integer((new SecureRandom()).nextInt());
 		msgNumberSignature = null;
     }
 
@@ -102,12 +102,12 @@ public class UserToken implements UserTokenInterface, java.io.Serializable
 	
 	public int getMsgNumber()
 	{
-		return msgNumber;
+		return msgNumber.intValue();
 	}
 	
-	public setMsgNumber(int replacementMsgNumber)
+	public void setMsgNumber(int replacementMsgNumber)
 	{
-		msgNumber = replacementMsgNumber;
+		msgNumber = new Integer(replacementMsgNumber);
 	}
 
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -121,12 +121,12 @@ public class UserToken implements UserTokenInterface, java.io.Serializable
 
 	public void signMsgNumber(PrivateKey key, CryptoEngine cEngine)
 	{
-		msgNumberSignature = cEngine.RSASign(msgNumber, key);
+		msgNumberSignature = cEngine.RSASign(cEngine.serialize(msgNumber), key);
 	}
 	
 	public boolean verifyMsgNumberSignature(CryptoEngine cEngine)
 	{
-		return cEngine.RSAVerify(msgNumber, msgNumberSignature, publicKey);
+		return cEngine.RSAVerify(cEngine.serialize(msgNumber), msgNumberSignature, publicKey);
 	}
 
     public boolean verifySignature(PublicKey key, CryptoEngine cEngine)

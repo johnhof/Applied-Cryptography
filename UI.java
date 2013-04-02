@@ -28,9 +28,9 @@ public class UI
 	private static Scanner in;
 	
 	//security tools
-	protected Key myPrivate;
-	protected Key myPublic;
-	protected CryptoEngine cEngine;
+	protected static PrivateKey myPrivate;
+	protected static PublicKey myPublic;
+	protected static CryptoEngine cEngine;
 
 	public static void main(String[] args)
 	{

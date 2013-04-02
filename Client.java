@@ -281,9 +281,4 @@ public class Client extends ClientInterface
 			return false;
 		}
 	}
-	
-	protected void setMsgNumber(int number)
-	{
-		msgNumber = number;
-	}
 }

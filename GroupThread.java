@@ -78,7 +78,7 @@ public class GroupThread extends ServerThread
 				{
 					String username = (String)message.getObjContents().get(0); //Get the username
 					String pwd = (String)message.getObjContents().get(1);//get 
-					Key key = (Key)message.getObjContents().get(2);
+					PublicKey key = (PublicKey)message.getObjContents().get(2);
 
 					//NOTE: Its bad practice to tell the user what login error occurred
 					//they could use it to fish for valid usernames
@@ -362,7 +362,7 @@ public class GroupThread extends ServerThread
 //----------------------------------------------------------------------------------------------------------------------
 	
 	//Method to create tokens
-	private UserToken createToken(String username, Key key) 
+	private UserToken createToken(String username, PublicKey key) 
 	{
 		//Check that user exists
 		if(my_gs.userList.checkUser(username))
