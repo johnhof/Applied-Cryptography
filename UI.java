@@ -303,6 +303,7 @@ public class UI
 		}
 		
 		System.out.println("\n*** Generating Keys for Message Number signatures");
+		cEngine = new CryptoEngine();
 		KeyPair rsaKeys = cEngine.genRSAKeyPair();
 		myPrivate = rsaKeys.getPrivate();
 		myPublic = rsaKeys.getPublic();
