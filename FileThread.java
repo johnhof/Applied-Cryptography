@@ -70,7 +70,7 @@ public class FileThread extends ServerThread
 					continue;//go back and wait for a new message
 				}
 
-//--AUTHENTICATE TOKEN-------------------------------------------------------------------------------------------------
+//--AUTHENTICATE TOKEN AND MSGNUMBER-------------------------------------------------------------------------------------------------
 								
 				//!!!! Everything this beyond point requires a valid token !!!!
 
@@ -81,7 +81,17 @@ public class FileThread extends ServerThread
 					continue;//go back and wait for a new message
 				}
         		System.out.println(cEngine.formatAsSuccess("Token Authenticated"));
-
+				if(msgNumber == -1)
+				{
+					msgNumber = reqToken.getMsgNumber();
+				}
+				else if((++msgNumber != reqToken.getMsgNumber) || !verifyMsgNumberSignature(cEngine))
+				{
+					//Either the msgNumbers did not match, or the signature was invalid
+					//This could be the result of an attack
+					//We want to terminate the connection now
+					rejectToken(response, output);
+				}
 
 //--LIST FILES---------------------------------------------------------------------------------------------------------
 				

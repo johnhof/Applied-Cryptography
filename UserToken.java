@@ -31,6 +31,7 @@ public class UserToken implements UserTokenInterface, java.io.Serializable
     private byte[] signature;
 	private Key publicKey;
 	private int msgNumber;
+	private byte[] msgNumberSignature;
 
 	public UserToken(String Issuer, String Subject, Key key)
 	{
@@ -40,6 +41,7 @@ public class UserToken implements UserTokenInterface, java.io.Serializable
         signature = null;
 		publicKey = key;
 		msgNumber = (new SecureRandom()).nextInt();
+		msgNumberSignature = null;
 	}
 
     public UserToken(String Issuer, String Subject, List<String> Groups, Key key)
@@ -50,6 +52,7 @@ public class UserToken implements UserTokenInterface, java.io.Serializable
         signature = null;
 		publicKey = key;
 		msgNumber = (new SecureRandom()).nextInt();
+		msgNumberSignature = null;
     }
 
     public String getIssuer()
@@ -101,6 +104,11 @@ public class UserToken implements UserTokenInterface, java.io.Serializable
 	{
 		return msgNumber;
 	}
+	
+	public incMsgNumber()
+	{
+		msgNumber++;
+	}
 
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 //-- SIGNING AND VERIFICATION 
@@ -111,6 +119,15 @@ public class UserToken implements UserTokenInterface, java.io.Serializable
         signature = cEngine.RSASign(getContentsInBytes(cEngine), key);
     }
 
+	public void signMsgNumber(PrivateKey key, CryptoEngine cEngine)
+	{
+		msgNumberSignature = cEngine.RSASign(msgNumber, key);
+	}
+	
+	public boolean verifyMsgNumberSignature(CryptoEngine cEngine)
+	{
+		return cEngine.RSAVerify(msgNumber, msgNumberSignature, publicKey);
+	}
 
     public boolean verifySignature(PublicKey key, CryptoEngine cEngine)
     {
@@ -127,6 +144,7 @@ public class UserToken implements UserTokenInterface, java.io.Serializable
         ArrayList<Object> contents = new ArrayList<Object>();
         contents.add(issuer);
         contents.add(subject);
+		contents.add(publicKey);
         if(groups != null)contents.add(groups);
         return cEngine.serialize(contents);
     }

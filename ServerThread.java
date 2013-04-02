@@ -19,6 +19,7 @@ public class ServerThread extends Thread
 	protected Server myServer;
 	protected Key myPrivateKey;
 	protected Key myPublicKey;
+	protected int msgNumber = -1;
 
 	public ServerThread(Server server, Socket _socket)
 	{
