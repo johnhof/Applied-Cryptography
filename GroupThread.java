@@ -97,15 +97,11 @@ public class GroupThread extends ServerThread
 						System.out.println(cEngine.formatAsError("No password"));
 						cEngine.writeAESEncrypted(new Envelope("Login failed"), aesKey, output);
 					}
-	
-					// Matt ~ 2013 01 April 
-					// else if(!my_gs.userList.getUserPassword(username).equals(pwd))
-					else if(!my_gs.userList.getUserPassword(hashWithSHA(username)).equals(hashWithSHA(pwd)))
+					else if(!my_gs.userList.getUserPassword(username).equals(pwd))
 					{
 						System.out.println(cEngine.formatAsError("Wrong password"));
 						cEngine.writeAESEncrypted(new Envelope("Login failed"), aesKey, output);
 					}
-					
 					else
 					{
 						UserToken yourToken = createToken(username, key); //Create a token
@@ -131,7 +127,6 @@ public class GroupThread extends ServerThread
 					continue;//go back and wait for a new message
 				}
         		System.out.println(cEngine.formatAsSuccess("Token Authenticated"));
-
 
 //--CREATE USER-------------------------------------------------------------------------------------------------------
 				
@@ -401,10 +396,6 @@ public class GroupThread extends ServerThread
 			return false;
 		}
 	}
-	
-	
-	
-	
 
 	//Method to create a user
 	private boolean createUser(String username, String pwd, UserToken yourToken)
@@ -426,9 +417,7 @@ public class GroupThread extends ServerThread
 				}
 				else
 				{
-					// Matt ~ 2013 1 April
-					// my_gs.userList.addUser(username, pwd);
-					my_gs.userList.addUser(username, hashWithSHA(pwd));
+					my_gs.userList.addUser(username, pwd);
 					my_gs.addUserToGroup("global", username); // add all users to global by default
 					return true;
 				}
