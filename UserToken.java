@@ -105,9 +105,9 @@ public class UserToken implements UserTokenInterface, java.io.Serializable
 		return msgNumber;
 	}
 	
-	public incMsgNumber()
+	public setMsgNumber(int replacementMsgNumber)
 	{
-		msgNumber++;
+		msgNumber = replacementMsgNumber;
 	}
 
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

@@ -21,10 +21,16 @@ public class UI
 	private static String username;
 	private static UserToken token;
 	private static int msgNumber;
+	private static int msgNumberF;
+	private static int msgNumberG;
 
 	//utility tools
 	private static Scanner in;
 	
+	//security tools
+	protected Key myPrivate;
+	protected Key myPublic;
+	protected CryptoEngine cEngine;
 
 	public static void main(String[] args)
 	{
@@ -44,8 +50,8 @@ public class UI
 			System.out.println("\nSomething went wrong during connect. exiting...");
 			return;
 		}
-		fUser.setMsgNumber(msgNumber);
-		gUser.setMsgNumber(msgNumber);
+		msgNumberF = msgNumber;
+		msgNumberG = msgNumber;
 
 		while(true)//loop until the user exits
 		{
@@ -56,6 +62,9 @@ public class UI
 			
 			if(input.equals("F") || input.equals("f"))
 			{
+				token.setMsgNumber(++msgNumberF);
+				token.signMsgNumber(myPrivate, cEngine);
+				
 				System.out.print("Would you like to:\n1-List Files\n2-Upload File\n");
 				System.out.print("3-Download File\n4-Delete File\n");
 				System.out.print("Please enter your selection's");
@@ -147,6 +156,9 @@ public class UI
 			}
 			else if(input.equals("G") || input.equals("g"))
 			{
+				token.setMsgNumber(++msgNumberG);
+				token.signMsgNumber(myPrivate, cEngine);
+				
 				System.out.print("Would you like to:\n1-Create a User\n2-Delete a User\n");
 				System.out.print("3-Create a Group\n4-Delete a Group\n5-List a Group's Members");
 				System.out.print("\n6-Add to a Group\n7-Delete from a Group\n8-See all Users\nPlease enter your selection's");
@@ -289,7 +301,12 @@ public class UI
 			System.out.println("\nfailed to connect to server");
 			return false;
 		}
-
+		
+		System.out.println("\n*** Generating Keys for Message Number signatures");
+		KeyPair rsaKeys = cEngine.genRSAKeyPair();
+		myPrivate = rsaKeys.getPrivate();
+		myPublic = rsaKeys.getPublic();
+		System.out.println("*** Keys Generated");
 
 
 //--lOGIN & TOKEN RETRIEVAL--------------------------------------------------------------------------------------------
@@ -302,7 +319,7 @@ public class UI
 			System.out.println("Please enter your password.");
 			String pwd = in.nextLine();
 
-			token = gUser.getToken(username, pwd);
+			token = gUser.getToken(username, pwd, myPublic);
 			msgNumber = token.getMsgNumber();
 			if (token != null)
 			{

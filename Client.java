@@ -18,9 +18,7 @@ public class Client extends ClientInterface
 	protected String keyFile;
 	private Key serverPublicKey;
 	protected GroupKeyMapController groupFileKeyMap;
-	protected Key myPrivate;
-	protected Key myPublic;
-	protected int msgNumber;
+	
 
 
 	public boolean connect(final String server, final int port, String username) 
