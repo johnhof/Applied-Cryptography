@@ -33,6 +33,7 @@ public class GroupServer extends Server
 	public GroupList groupList;
 	public String groupFile;
 	//^^^^This should really be a database...
+	protected GroupKeyMapController groupFileKeyMap;
     
 	public GroupServer() 
 	{
@@ -185,6 +186,11 @@ public class GroupServer extends Server
 			System.out.println(cEngine.formatAsError("File reading error, grouplist could not be recovered"));
 			System.exit(-1);
 		}
+
+//--SET UP KEYMAP-------------------------------------------------------------------------------------------------------
+
+		//grab/create the shared instance of our keymap
+		groupFileKeyMap = GroupKeyMapController.getInstance(name, resourceFolder);
 
 //--SET UP SAVE DEMON---------------------------------------------------------------------------------------------------
 

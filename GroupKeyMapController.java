@@ -191,6 +191,7 @@ public class GroupKeyMapController implements java.io.Serializable
 		if(groupFileKeyMap.containsKey(groupName)!=true) 
 		{
 			groupFileKeyMap.put(groupName, newMap);
+			saveKeyMap(false);
 
 			if(engageLock)lock.unlock();
 			return true;
@@ -199,6 +200,23 @@ public class GroupKeyMapController implements java.io.Serializable
 		if(engageLock)lock.unlock();
 		return false;
 	}
+	public boolean deleteGroup(String groupName, Date timeIssued, AESKeySet keySet, boolean engageLock)
+	{
+		if(engageLock)lock.lock();
+
+		if(groupFileKeyMap.containsKey(groupName)==true) 
+		{
+			groupFileKeyMap.remove(groupName);
+			saveKeyMap(false);
+
+			if(engageLock)lock.unlock();
+			return true;
+		}
+
+		if(engageLock)lock.unlock();
+		return false;
+	}
+
 	public boolean addToGroup(String groupName, Date timeIssued, AESKeySet keySet, boolean engageLock)
 	{
 		if(engageLock)lock.lock();
@@ -206,15 +224,18 @@ public class GroupKeyMapController implements java.io.Serializable
 		if(groupFileKeyMap.containsKey(groupName)==true) 
 		{
 			groupFileKeyMap.get(groupName).put(timeIssued, keySet);
+			saveKeyMap(false);
 		}
 		else
 		{
 			addNewGroup(groupName, timeIssued, keySet, false);
+			saveKeyMap(false);
 		}
 
 		if(engageLock)lock.unlock();
 		return true;
 	}
+
 	public boolean addNewKeytoGroup(String groupName, Date timeIssued, AESKeySet keySet, boolean engageLock)
 	{
 		if(engageLock)lock.lock();
@@ -226,6 +247,7 @@ public class GroupKeyMapController implements java.io.Serializable
 			return false;
 		}
 		map.put(timeIssued, keySet);
+		saveKeyMap(false);
 
 		if(engageLock)lock.unlock();
 		return true;
@@ -248,6 +270,7 @@ public class GroupKeyMapController implements java.io.Serializable
 		    else concatNewGroupKeyMap(group, newGroupKeys, false);
 		}
 
+		saveKeyMap(false);
 		if(engageLock)lock.unlock();
 		return true;
 	}
@@ -263,6 +286,7 @@ public class GroupKeyMapController implements java.io.Serializable
 		tmp.keySet().removeAll(newDateKeyMap.keySet());
 		groupFileKeyMap.get(groupName).putAll(tmp);
 
+		saveKeyMap(false);
 		if(engageLock)lock.unlock();
 		return true;
 	}

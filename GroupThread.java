@@ -13,6 +13,7 @@ public class GroupThread extends ServerThread
 {
 	private GroupServer my_gs;
     private static final String salt = "c1d215a922ad186acbe436e6e2c513128b0aaa23ed6e3a4d48140b4931895384";
+	protected GroupKeyMapController groupFileKeyMap;
 	
 	//These get spun off from GroupServer
 	public GroupThread(Socket _socket, GroupServer _gs)
@@ -38,6 +39,12 @@ public class GroupThread extends ServerThread
 			}
 			System.out.println("\n*** Setup Finished: " + socket.getInetAddress() + ":" + socket.getPort() + " ***");
 			
+//--SET UP KEYMAP-------------------------------------------------------------------------------------------------------
+
+		//grab/create the shared instance of our keymap
+		//grab/create the shared instance of our keymap
+		groupFileKeyMap = GroupKeyMapController.getInstance(my_gs.name, my_gs.resourceFolder);
+
 //----------------------------------------------------------------------------------------------------------------------
 //-- REQUEST HANDLING LOOP
 //----------------------------------------------------------------------------------------------------------------------
@@ -521,8 +528,11 @@ public class GroupThread extends ServerThread
 		{
 			my_gs.createGroup(groupName, yourToken.getSubject());
 
-			//generate the groups file key
-			
+			//generate the groups file key 
+			//no need to make this thread safe, there should only ever be one instance of groupserver
+       		groupFileKeyMap.addNewGroup(groupName, new Date(), cEngine.genAESKeySet(), false);
+       		System.out.println("----map flush after createGroup----\n"+groupFileKeyMap.toString());
+
 			return true;
 		}
 		return false; //requester does not exist
@@ -534,6 +544,11 @@ public class GroupThread extends ServerThread
 		if(groupExists(groupName) && isGroupOwner(groupName, yourToken))
 		{
 			my_gs.deleteGroup(groupName);
+
+			//delete the group keys
+			//no need to make this thread safe, there should only ever be one instance of groupserver
+       		groupFileKeyMap.deleteGroup(groupName, new Date(), cEngine.genAESKeySet(), false);
+       		System.out.println("----map flush after deleteGroup----\n"+groupFileKeyMap.toString());
 			return true;
 		}
 		return false;
@@ -567,6 +582,11 @@ public class GroupThread extends ServerThread
 		if(groupExists(groupName) && isGroupOwner(groupName, yourToken))
 		{
 			my_gs.removeUserFromGroup(groupName, userName);
+
+			//generate the groups file key 
+			//no need to make this thread safe, there should only ever be one instance of groupserver
+       		groupFileKeyMap.addNewKeytoGroup(groupName, new Date(), cEngine.genAESKeySet(), false);
+       		System.out.println("----map flush after removeFromGroup----\n"+groupFileKeyMap.toString());
 			return true;
 		}
 		return false;
