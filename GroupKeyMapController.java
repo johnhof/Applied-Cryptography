@@ -23,7 +23,6 @@ public class GroupKeyMapController implements java.io.Serializable
 	//group file key maps: HashMap<groupName, HashMap<keyID, AESKeySet>>
 	private HashMap<String, HashMap<Date, AESKeySet>> groupFileKeyMap;
 	private String resourceFile;
-	private HashMap<String, Date> newestKeyIDs;
 
 	private  static GroupKeyMapController instance = null;
 	private  static CryptoEngine cEngine;
@@ -54,11 +53,10 @@ public class GroupKeyMapController implements java.io.Serializable
 
 	public synchronized boolean setUpController(String userName, String userFolder)
 	{
-		//lock = new ReentrantLock();
+		lock = new ReentrantLock();
 		cEngine = new CryptoEngine();
 		groupFileKeyMap = new HashMap<String, HashMap<Date, AESKeySet>>();
 		resourceFile = userFolder+"/"+userName+"_group_file_keys.rsc";
-		newestKeyIDs = new HashMap<String, Date>();
 
 		loadKeyMap(false);
 
@@ -143,6 +141,43 @@ public class GroupKeyMapController implements java.io.Serializable
 	public HashMap<String, HashMap<Date, AESKeySet>> getFullMap()
 	{
 		return groupFileKeyMap;
+	}
+
+	public AESKeySet getLatestKey(String groupName, boolean engageLock)
+	{
+		if(engageLock)lock.lock();
+		
+		AESKeySet latestkeySet = null;
+		Date latestdate = null;
+		if(groupFileKeyMap.containsKey(groupName))
+		{
+			HashMap<Date, AESKeySet> keyMap  = groupFileKeyMap.get(groupName);
+
+			for (Map.Entry<Date, AESKeySet> pairEntry : keyMap.entrySet()) 
+            {
+                Date entryDate = pairEntry.getKey();
+                AESKeySet entryKey = pairEntry.getValue();
+
+                //if this is a newer date, set it as the key set
+                if(latestdate==null)
+                {
+                	latestdate = entryDate;
+                	latestkeySet = entryKey;                	
+                }
+                if(entryDate.compareTo(latestdate)>0)
+                {
+                	latestdate = entryDate;
+                	latestkeySet = entryKey;
+                }
+            }
+
+		}
+
+		if(engageLock)lock.unlock();
+
+		System.out.println(cEngine.formatAsSuccess("The most recent key for group ("+groupName+") was set on: "+latestdate.toString()));
+		
+		return latestkeySet;		
 	}
 
 //--MANIPULATION METHODS------------------------------------------------------------------------------------------------
