@@ -5,6 +5,7 @@ public class UserList implements java.io.Serializable
 {
 	private Hashtable<String, User> list = new Hashtable<String, User>();
 	private static final long serialVersionUID = 7600343803563417992L;
+   
 	
 	public synchronized void addUser(String username, String pwd)
 	{
