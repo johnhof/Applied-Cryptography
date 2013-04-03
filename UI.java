@@ -20,7 +20,6 @@ public class UI
 	//shared tools
 	private static String username;
 	private static UserToken token;
-	private static int msgNumber;
 	private static int msgNumberF;
 	private static int msgNumberG;
 
@@ -50,8 +49,6 @@ public class UI
 			System.out.println("\nSomething went wrong during connect. exiting...");
 			return;
 		}
-		msgNumberF = msgNumber;
-		msgNumberG = msgNumber;
 
 		while(true)//loop until the user exits
 		{
@@ -322,7 +319,7 @@ public class UI
 			String pwd = in.nextLine();
 
 			token = gUser.getToken(username, pwd, myPublic);
-			msgNumber = token.getMsgNumber();
+			msgNumberG = token.getMsgNumber();
 			if (token != null)
 			{
 				proceed = true;
