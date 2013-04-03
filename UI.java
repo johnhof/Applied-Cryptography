@@ -127,10 +127,13 @@ public class UI
 						srcFile = in.nextLine();					
 
 						System.out.println("\nEnter destination file path");
-						destFile = in.nextLine();			
+						destFile = in.nextLine();	
+
+						System.out.println("\nEnter source group name");
+						group = in.nextLine();				
 							
 		
-						if(fUser.download(srcFile, destFile, token))
+						if(fUser.download(srcFile, destFile, group, token))
 						{
 							System.out.println("\nSuccessful download");
 						}

@@ -69,7 +69,7 @@ public interface FileClientInterface
      * @return true on success, false on failure
      *
      */
-    public boolean download(final String sourceFile, final String destFile, final UserToken token);
+    public boolean download(final String sourceFile, final String destFile, final String group, final UserToken token);
 
 
     /**

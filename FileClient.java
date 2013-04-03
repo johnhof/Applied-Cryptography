@@ -74,7 +74,7 @@ public class FileClient extends Client implements FileClientInterface
 		return true;
 	}
 
-	public boolean download(String sourceFile, String destFile, UserToken token) 
+	public boolean download(String sourceFile, String destFile, String group, UserToken token) 
 	{
 		//remove the  leading '/' if necessary
 		if (sourceFile.charAt(0)=='/') 
@@ -89,7 +89,6 @@ public class FileClient extends Client implements FileClientInterface
 		    if (!file.exists()) 
 		    {
 			   	file.createNewFile();
-			    FileOutputStream fos = new FileOutputStream(file);
 			    
 			    //create and setup a download envelope
 			    Envelope env = new Envelope("DOWNLOADF"); //Success
@@ -101,23 +100,28 @@ public class FileClient extends Client implements FileClientInterface
 						
 				//retreive the incoming evelope
 			    env = (Envelope)cEngine.readAESEncrypted(aesKey, input);
+			    byte[] encryptedFile = new byte[0];
 						    
 				//read the body of the file one envelope at a time
 				while (env.getMessage().compareTo("CHUNK")==0) 
 				{ 
-					fos.write((byte[])env.getObjContents().get(0), 0, (Integer)env.getObjContents().get(1));
-					System.out.print(".");
+					//fos.write((byte[])env.getObjContents().get(0), 0, (Integer)env.getObjContents().get(1));
+
+					//append the new chunk onto the old
+					byte[] temp = append(encryptedFile, (byte[])env.getObjContents().get(0));
+					encryptedFile = temp;
+
 					env = new Envelope("DOWNLOADF"); //Success
 					cEngine.writeAESEncrypted(env, aesKey, output);
+
 					env = (Envelope)cEngine.readAESEncrypted(aesKey, input);									
-				}										
-				fos.close();
+				}				
+				recoverFileFromDownload(encryptedFile, file, group);
 						
 				//when the end of file is detected, close and display the appropriate message
 				if(env.getMessage().compareTo("EOF")==0) 
 				{
 					System.out.println("<< receiving File Server Response: EOF");
-				    fos.close();
 					System.out.println(cEngine.formatAsSuccess("Transfer successful for file: "+sourceFile));
 					env = new Envelope("OK"); //Success
 					cEngine.writeAESEncrypted(env, aesKey, output);
@@ -204,7 +208,6 @@ public class FileClient extends Client implements FileClientInterface
 			if(env.getMessage().equals("READY"))
 			{ 
 				System.out.println("Meta data upload successful");
-				
 			}
 			 else 
 			{				
@@ -318,12 +321,18 @@ public class FileClient extends Client implements FileClientInterface
 		return msgNumber.intValue();
 	}
 
+
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+//-- TRANSFER UTILITY FUNCTIONS
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 	private byte[] prepareFileForUpload(String sourceFile, String group)
 	{
 		AESKeySet key = groupFileKeyMap.getLatestKey(group, true);
 		Date date = groupFileKeyMap.getLatestDate(group, true);
 
 		byte[] dateBytes = cEngine.serialize(date);
+		System.out.println("Date length: "+dateBytes.length);
 
 		//extract and encrypt the file with the appropriat group key
 		File file = new File(sourceFile);
@@ -339,12 +348,16 @@ public class FileClient extends Client implements FileClientInterface
 		}
 		byte[] encryptedFile = cEngine.AESEncrypt(rawFile, key);
 
-		//concatenate the date to the encrypted file
-		byte[] finalFile = new byte[encryptedFile.length + dateBytes.length];
-		System.arraycopy(dateBytes, 0, finalFile, 0, dateBytes.length);
-		System.arraycopy(encryptedFile, 0, finalFile, dateBytes.length, encryptedFile.length);
+		return append(encryptedFile,dateBytes);
+	}
 
-		return finalFile;
+	public byte[] append(byte[] a, byte[] b)
+	{
+		//concatenate the date to the encrypted file
+		byte[] c = new byte[a.length + b.length];
+		System.arraycopy(b, 0, c, 0, b.length);
+		System.arraycopy(a, 0, c, b.length, a.length);
+		return c;
 	}
 
 	public static byte[] readFile (File file) throws IOException {
@@ -367,5 +380,27 @@ public class FileClient extends Client implements FileClientInterface
             f.close();
         }
     }
+
+	private boolean recoverFileFromDownload(byte[] encryptedfile, File file, String group)
+	{
+		Date date = (Date)cEngine.deserialize(Arrays.copyOfRange(encryptedfile, 0, 46));
+		System.out.println("\n"+groupFileKeyMap.toString());
+		System.out.println("\ngroup being accessed: "+group);
+		System.out.println("\ndate: "+date.toString());
+		byte[] plainFile = cEngine.AESDecrypt(Arrays.copyOfRange(encryptedfile, 46, encryptedfile.length), groupFileKeyMap.getKeyFromNameAndDate(group, date, true));
+
+		try
+		{
+			FileOutputStream out = new FileOutputStream(file);
+			out.write(plainFile);
+			out.close();
+		}
+		catch(Exception e)
+		{
+			System.out.println(cEngine.formatAsError("Exception when writing the file to disk"));		
+		}
+
+		return true;
+	}
 }
 
