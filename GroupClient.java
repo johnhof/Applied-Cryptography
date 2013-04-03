@@ -360,11 +360,9 @@ public class GroupClient extends Client implements GroupClientInterface {
 
 	public boolean handleMapRetrieval(HashMap<String, HashMap<Date, AESKeySet>> newMap)
 	{
-		System.out.println("\n"+newMap.toString()+"\n");
 		if(groupFileKeyMap.syncWithNewKeyMap(newMap, true))
 		{
 			System.out.println(cEngine.formatAsSuccess("Group Key Map retrieval succeeded"));
-			System.out.println(groupFileKeyMap.toString());
 		}
 		else System.out.println(cEngine.formatAsError("Group Key Map retrieval failed"));
 

@@ -318,17 +318,13 @@ public class GroupKeyMapController implements java.io.Serializable
 	{
 		if(engageLock)lock.lock();
 
-		System.out.println("\n\nconcatenating: "+groupName+"\n"+newDateKeyMap.toString());
-
 		//create a temp, set it to our old map, and remove any shared elements. then add the new map
 		HashMap<Date, AESKeySet> tmp = new HashMap(newDateKeyMap);
-		System.out.println("\ntmp: "+tmp.toString());
 		tmp.keySet().removeAll(getKeyMapForGroup(groupName, false).keySet());
-		System.out.println("\ntmp after removal: "+tmp.toString());
 		groupFileKeyMap.get(groupName).putAll(tmp);
 
-		System.out.println("result: "+groupFileKeyMap.get(groupName).toString()+"\n\n");
 		saveKeyMap(false);
+		
 		if(engageLock)lock.unlock();
 		return true;
 	}
