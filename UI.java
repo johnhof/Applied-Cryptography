@@ -73,7 +73,11 @@ public class UI
 				{
 					inputI = Integer.parseInt(in.nextLine());
 				}
-				catch(Exception e){continue;}
+				catch(Exception e)
+				{
+					token.setMsgNumber(--msgNumberF);
+					continue;
+				}
 
 				String srcFile = "";
 				String destFile = "";
@@ -162,6 +166,7 @@ public class UI
 				System.out.print("\n6-Add to a Group\n7-Delete from a Group\n8-See all Users\nPlease enter your selection's");
 				System.out.print(" numeric value.\n");
 				input = in.nextLine();
+				
 				boolean works;
 				if(input.equals("1"))
 				{
@@ -240,6 +245,10 @@ public class UI
 							System.out.println(allUsers.get(i));
 						}
 					}
+				}
+				else
+				{
+					msgNumberG--;
 				}
 			}
 			else if(input.equals("D") || input.equals("d"))

@@ -86,9 +86,9 @@ public class FileThread extends ServerThread
 					msgNumber = reqToken.getMsgNumber();
 					msgNumberSet = true;
 				}
-				else if((++msgNumber != reqToken.getMsgNumber()) || !reqToken.verifyMsgNumberSignature(cEngine))
+				else if(++msgNumber != reqToken.getMsgNumber())
 				{
-					//Either the msgNumbers did not match, or the signature was invalid
+					//the msgNumbers did not match
 					//This could be the result of an attack
 					//We want to terminate the connection now
 					rejectToken(response, output);

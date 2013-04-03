@@ -116,7 +116,7 @@ public class GroupThread extends ServerThread
 					continue;//go back and wait for a new message
 				}
 
-//--AUTHENTICATE TOKEN-------------------------------------------------------------------------------------------------
+//--AUTHENTICATE TOKEN AND MSGNUMBER-------------------------------------------------------------------------------------------------
 								
 				//!!!! Everything this beyond point requires a valid token !!!!
 
@@ -127,7 +127,19 @@ public class GroupThread extends ServerThread
 					continue;//go back and wait for a new message
 				}
         		System.out.println(cEngine.formatAsSuccess("Token Authenticated"));
-
+				if(!msgNumberSet)
+				{
+					msgNumber = reqToken.getMsgNumber();
+					msgNumberSet = true;
+				}
+				else if(++msgNumber != reqToken.getMsgNumber())
+				{
+					//the msgNumbers did not match
+					//This could be the result of an attack
+					//We want to terminate the connection now
+					rejectToken(response, output);
+				}
+				
 //--CREATE USER-------------------------------------------------------------------------------------------------------
 				
 				if(message.getMessage().equals("CUSER")) //Client wants to create a user
