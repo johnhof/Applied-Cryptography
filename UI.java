@@ -60,7 +60,6 @@ public class UI
 			if(input.equals("F") || input.equals("f"))
 			{
 				token.setMsgNumber(++msgNumberF);
-				token.signMsgNumber(myPrivate, cEngine);
 				
 				System.out.print("Would you like to:\n1-List Files\n2-Upload File\n");
 				System.out.print("3-Download File\n4-Delete File\n");
@@ -152,6 +151,7 @@ public class UI
 					
 					default:
 						System.out.println("\ninvalid input\n");
+						msgNumberF--;
 					break;
 				}
 				System.out.println();
@@ -317,7 +317,7 @@ public class UI
 		System.out.println("*** Keys Generated");
 
 
-//--lOGIN & TOKEN RETRIEVAL--------------------------------------------------------------------------------------------
+//--LOGIN & TOKEN RETRIEVAL--------------------------------------------------------------------------------------------
 
 		boolean proceed = false;
 
@@ -361,6 +361,7 @@ public class UI
 		try
 		{
 			fUser.connect(fServer, fPort, username, token); 
+			msgNumberF = fUser.verifyMsgNumber(myPrivate);
 		}
 		catch(Exception e)
 		{

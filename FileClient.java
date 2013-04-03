@@ -278,5 +278,27 @@ public class FileClient extends Client implements FileClientInterface
 		return true;
 	}
 
+	public int verifyMsgNumber(PrivateKey myPrivate)
+	{
+		Integer msgNumber = null;
+		//try
+		//{
+			Envelope response = (Envelope)cEngine.readAESEncrypted(aesKey, input);
+			msgNumber = (Integer)response.getObjContents().get(0);
+			
+			token.setMsgNumber(msgNumber);
+			token.signMsgNumber(myPrivate, cEngine);
+		
+			Envelope message = new Envelope("VERIFY_MN");
+			message.addObject(token);
+			cEngine.writeAESEncrypted(message, aesKey, output);
+		//}
+		/*catch(Exception e)
+		{
+			e.printStackTrace();
+			System.exit(-1);
+		}*/
+		return msgNumber.intValue();
+	}
 }
 

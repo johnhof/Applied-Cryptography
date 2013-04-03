@@ -14,5 +14,8 @@ runFile:
 ui:
 	java -cp .:bcprov-jdk15on-147.jar:./bin UI
 	
+UI:
+	java -cp .:bcprov-jdk15on-147.jar:./bin UI
+	
 clean:
 	rm -r *.class *_Resources* shared_files bin/
