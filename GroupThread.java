@@ -12,6 +12,7 @@ import javax.crypto.spec.IvParameterSpec;
 public class GroupThread extends ServerThread 
 {
 	private GroupServer my_gs;
+    private static final String salt = "c1d215a922ad186acbe436e6e2c513128b0aaa23ed6e3a4d48140b4931895384";
 	
 	//These get spun off from GroupServer
 	public GroupThread(Socket _socket, GroupServer _gs)
@@ -100,7 +101,7 @@ public class GroupThread extends ServerThread
 					// Matt ~ 2013 02 April 
 					// else if(!my_gs.userList.getUserPassword(username).equals(pwd))
 					// else if(!my_gs.userList.getUserPassword(cEngine.hashWithSHA(username)).equals(cEngine.hashWithSHA(pwd)))
-					else if(!my_gs.userList.checkUserPassword(username, cEngine.hashWithSHA(pwd)))
+					else if(!my_gs.userList.checkUserPassword(username, cEngine.hashWithSHA(salt+pwd)))
 					{
 						System.out.println(cEngine.formatAsError("Wrong password"));
 						cEngine.writeAESEncrypted(new Envelope("Login failed"), aesKey, output);
@@ -489,7 +490,7 @@ public class GroupThread extends ServerThread
 				{
 					// Matt ~ 2013 2 April
 					// my_gs.userList.addUser(username, pwd);
-					my_gs.userList.addUser(username, cEngine.hashWithSHA(pwd));
+					my_gs.userList.addUser(username, cEngine.hashWithSHA(salt+pwd));
 					my_gs.addUserToGroup("global", username); // add all users to global by default
 					return true;
 				}
