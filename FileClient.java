@@ -198,7 +198,6 @@ public class FileClient extends Client implements FileClientInterface
 
 			System.out.println(groupFileKeyMap.toString());
 
-			 
 			env = (Envelope)cEngine.readAESEncrypted(aesKey, input);
 			 
 			//If server indicates success, return the member list
@@ -213,14 +212,15 @@ public class FileClient extends Client implements FileClientInterface
 				return false;
 			}
 
-			byte[] fileInBytes = prepareFileForUpload(sourceFile, group);
+			byte[] preparedFile = prepareFileForUpload(sourceFile, group);
 
-			int bytecount = 0;
+			int byteCount=0;
 
 		 	//unless an error occurs, write the file in 4096 byte chunks
-			do 
+			for(byteCount = 0; byteCount+4096<=preparedFile.length; byteCount+=4096)
 			{
-				byte[] buf = new byte[4096];
+				byte [] buf = Arrays.copyOfRange(preparedFile, byteCount, byteCount+4096);
+
 				if (env.getMessage().compareTo("READY")!=0) 
 				{
 					System.out.println("READY EXPECTED");
@@ -236,9 +236,29 @@ public class FileClient extends Client implements FileClientInterface
 						
 				env = (Envelope)cEngine.readAESEncrypted(aesKey, input);
 	        	System.out.println(cEngine.formatAsSuccess("chunk sent..."));
-			 }
-			 while (bytecount < 50);		 
-				
+			}
+
+			//grab the last chunk if necessary (not evenly divisible by 4096)
+			if(preparedFile.length-byteCount!=0) 
+			{
+				byte [] buf = Arrays.copyOfRange(preparedFile, byteCount, preparedFile.length);
+
+				if (env.getMessage().compareTo("READY")!=0) 
+				{
+					System.out.println("READY EXPECTED");
+					System.out.println(env.getMessage());
+					return false;
+				}
+				message = new Envelope("CHUNK");
+					
+				message.addObject(buf);
+				message.addObject(new Integer(preparedFile.length-byteCount));
+					
+				cEngine.writeAESEncrypted(message, aesKey, output);
+						
+				env = (Envelope)cEngine.readAESEncrypted(aesKey, input);
+	        	System.out.println(cEngine.formatAsSuccess("chunk sent..."));
+			}
 
 			 if(env.getMessage().compareTo("READY")==0)
 			 { 
@@ -314,7 +334,7 @@ public class FileClient extends Client implements FileClientInterface
 		}
 		catch(IOException e)
 		{
-			System.out.println(cEngine.formatAsError("Failed to lead file"));
+			System.out.println(cEngine.formatAsError("Failed to read file"));
 			return null;
 		}
 		byte[] encryptedFile = cEngine.AESEncrypt(rawFile, key);
