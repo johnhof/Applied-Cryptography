@@ -52,6 +52,14 @@ class CryptoEngine
 //-- HASH FUNCTIONS
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	
+	// Matt ~ 2013 2 April
+	public String hashWithSHA(String input) throws NoSuchAlgorithmException
+	{
+		MessageDigest md = MessageDigest.getInstance("SHA-1");
+		return new String(input.getBytes()); 
+	}
+	
+	
 	public byte[] hashString(String str)
 	{
 		MessageDigest md = null;

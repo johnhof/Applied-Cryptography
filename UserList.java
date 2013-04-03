@@ -31,6 +31,12 @@ public class UserList implements java.io.Serializable
 		}
 	}
 	
+	// Matt ~ 2013 1 April
+	public synchronized Boolean checkUserPassword(String username, String pwd)
+	{
+		return (list.get(username).password().equals(pwd));
+	}
+	
 	public synchronized String getUserPassword(String username)
 	{
 		return list.get(username).password();
