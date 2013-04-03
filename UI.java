@@ -31,12 +31,17 @@ public class UI
 	protected static PublicKey myPublic;
 	protected static CryptoEngine cEngine;
 
+
+	private static String myPwd;
+
 	public static void main(String[] args)
 	{
 
 		gUser = new GroupClient();
 		fUser = new FileClient();
 		in = new Scanner(System.in);
+
+		myPwd = "";
 
 		//GroupServer is named "ALPHA" and is on 5555
 		//FileServer is named "FilePile" and is on 4444		
@@ -163,7 +168,7 @@ public class UI
 				
 				System.out.print("Would you like to:\n1-Create a User\n2-Delete a User\n");
 				System.out.print("3-Create a Group\n4-Delete a Group\n5-List a Group's Members");
-				System.out.print("\n6-Add to a Group\n7-Delete from a Group\n8-See all Users\nPlease enter your selection's");
+				System.out.print("\n6-Add to a Group\n7-Delete from a Group\n8-See all Users\n9-Refresh Token\nPlease enter your selection's");
 				System.out.print(" numeric value.\n");
 				input = in.nextLine();
 				
@@ -246,6 +251,10 @@ public class UI
 						}
 					}
 				}
+				else if(input.equals("9"))
+				{
+					token = gUser.getToken(username, myPwd, myPublic);
+				}
 				else
 				{
 					msgNumberG--;
@@ -325,9 +334,9 @@ public class UI
 		do
 		{
 			System.out.println("Please enter your password.");
-			String pwd = in.nextLine();
+			myPwd = in.nextLine();
 
-			token = gUser.getToken(username, pwd, myPublic);
+			token = gUser.getToken(username, myPwd, myPublic);
 			msgNumberG = token.getMsgNumber();
 			if (token != null)
 			{

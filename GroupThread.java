@@ -20,6 +20,9 @@ public class GroupThread extends ServerThread
 	{
 		super((Server)_gs,_socket);
 		my_gs = _gs;
+
+		//grab/create the shared instance of our keymap
+		groupFileKeyMap = GroupKeyMapController.getInstance(my_gs.name, my_gs.resourceFolder);
 	}
 	
 	public void run()
@@ -39,11 +42,6 @@ public class GroupThread extends ServerThread
 			}
 			System.out.println("\n*** Setup Finished: " + socket.getInetAddress() + ":" + socket.getPort() + " ***");
 			
-//--SET UP KEYMAP-------------------------------------------------------------------------------------------------------
-
-		//grab/create the shared instance of our keymap
-		//grab/create the shared instance of our keymap
-		groupFileKeyMap = GroupKeyMapController.getInstance(my_gs.name, my_gs.resourceFolder);
 
 //----------------------------------------------------------------------------------------------------------------------
 //-- REQUEST HANDLING LOOP
@@ -84,47 +82,8 @@ public class GroupThread extends ServerThread
 				
 				else if(message.getMessage().equals("TOKEN"))//Client wants a token
 				{
-					String username = (String)message.getObjContents().get(0); //Get the username
-					String pwd = (String)message.getObjContents().get(1);//get 
-					PublicKey key = (PublicKey)message.getObjContents().get(2);
-
-					//NOTE: Its bad practice to tell the user what login error occurred
-					//they could use it to fish for valid usernames
-					if(username == null)
-					{
-						System.out.println(cEngine.formatAsError("No username"));
-						cEngine.writeAESEncrypted(new Envelope("Login failed"), aesKey, output);
-					}
-					else if(!my_gs.userList.checkUser(username))
-					{
-						System.out.println(cEngine.formatAsError("Username not found"));
-						cEngine.writeAESEncrypted(new Envelope("Login failed"), aesKey, output);
-					}
-					else if(pwd == null || pwd.length() == 0)
-					{
-						System.out.println(cEngine.formatAsError("No password"));
-						cEngine.writeAESEncrypted(new Envelope("Login failed"), aesKey, output);
-					}
-					// Matt ~ 2013 02 April 
-					// else if(!my_gs.userList.getUserPassword(username).equals(pwd))
-					// else if(!my_gs.userList.getUserPassword(cEngine.hashWithSHA(username)).equals(cEngine.hashWithSHA(pwd)))
-					else if(!my_gs.userList.checkUserPassword(username, cEngine.hashWithSHA(salt+pwd)))
-					{
-						System.out.println(cEngine.formatAsError("Wrong password"));
-						cEngine.writeAESEncrypted(new Envelope("Login failed"), aesKey, output);
-					}
-					else
-					{
-						UserToken yourToken = createToken(username, key); //Create a token
-						System.out.println(cEngine.formatAsSuccess("Authentication cleared"));
-						
-						//Respond to the client. On error, the client will receive a null token
-						response.addObject(yourToken);
-						System.out.println(">> Sending Reponse: OK");
-						cEngine.writeAESEncrypted(response, aesKey, output);
-						System.out.println(cEngine.formatAsSuccess("Token sent"));
-					}
-					continue;//go back and wait for a new message
+					getTokenHandler(message, response);
+					continue;
 				}
 
 //--AUTHENTICATE TOKEN AND MSGNUMBER-------------------------------------------------------------------------------------------------
@@ -150,6 +109,7 @@ public class GroupThread extends ServerThread
 					//We want to terminate the connection now
 					rejectToken(response, output);
 				}
+        		System.out.println(cEngine.formatAsSuccess("Message number is valid"));
 
 //--VERIFY HMAC----------------------------------------------------------------------------------------------------------------------
 
@@ -200,6 +160,8 @@ public class GroupThread extends ServerThread
 								{
 									my_gs.deleteUser(username);
 									System.out.println(cEngine.formatAsSuccess("User deleted"));
+									response.addObject(getGroupKeysForToken(reqToken));
+
 									error = false;
 								}
 								else errorMsg += "Username not found";	
@@ -225,6 +187,8 @@ public class GroupThread extends ServerThread
 						if(groupName != null && createGroup(groupName, reqToken))
 						{
 							System.out.println(cEngine.formatAsSuccess("Group created"));
+							response.addObject(getGroupKeysForToken(reqToken));
+
 							error = false;
 						}
 						else errorMsg += "Check input before trying again";
@@ -246,6 +210,8 @@ public class GroupThread extends ServerThread
 						if(groupName != null && deleteGroup(groupName, reqToken))
 						{	
 							System.out.println(cEngine.formatAsSuccess("Group deleted"));
+							response.addObject(getGroupKeysForToken(reqToken));
+
 							error = false;
 						}
 						else errorMsg += "Check input before trying again";
@@ -336,6 +302,7 @@ public class GroupThread extends ServerThread
 									if(removeFromGroup(userName, groupName, reqToken))
 									{
 										System.out.println(cEngine.formatAsSuccess("User removed from group"));
+										response.addObject(getGroupKeysForToken(reqToken));
 										error = false;
 									}
 								}
@@ -422,52 +389,85 @@ public class GroupThread extends ServerThread
 		//the AESKey is now set. We need to get the token and deal with the MN
 		Envelope message = (Envelope)cEngine.readAESEncrypted(aesKey, input);
 		Envelope response = new Envelope("OK");
-		
-		if(message.getMessage().equals("TOKEN"))//Client wants a token
-		{
-			String username = (String)message.getObjContents().get(0); //Get the username
-			String pwd = (String)message.getObjContents().get(1);//get 
-			PublicKey key = (PublicKey)message.getObjContents().get(2);
 
+		return getTokenHandler( message,  response);
+		//return true;
+	}
+
+	public boolean getTokenHandler(Envelope message, Envelope response)
+	{
+		String username = (String)message.getObjContents().get(0); //Get the username
+		String pwd = (String)message.getObjContents().get(1);//get 
+		PublicKey key = (PublicKey)message.getObjContents().get(2);
+
+		try
+		{
 			//NOTE: Its bad practice to tell the user what login error occurred
 			//they could use it to fish for valid usernames
 			if(username == null)
 			{
 				System.out.println(cEngine.formatAsError("No username"));
 				cEngine.writeAESEncrypted(new Envelope("Login failed"), aesKey, output);
+				return false;
 			}
 			else if(!my_gs.userList.checkUser(username))
 			{
-				System.out.println(cEngine.formatAsError("Username not found"));
+				System.out.println(cEngine.formatAsError("Username not found: "+username));
 				cEngine.writeAESEncrypted(new Envelope("Login failed"), aesKey, output);
+				return false;
 			}
 			else if(pwd == null || pwd.length() == 0)
 			{
 				System.out.println(cEngine.formatAsError("No password"));
 				cEngine.writeAESEncrypted(new Envelope("Login failed"), aesKey, output);
+				return false;
 			}
 			else if(!my_gs.userList.getUserPassword(username).equals(pwd))
+			//else if(!my_gs.userList.checkUserPassword(username, cEngine.hashWithSHA(salt+pwd)))
 			{
-				System.out.println(cEngine.formatAsError("Wrong password"));
+				System.out.println(cEngine.formatAsError("Wrong password: "+pwd));
 				cEngine.writeAESEncrypted(new Envelope("Login failed"), aesKey, output);
+				return false;
 			}
 			else
 			{
 				UserToken yourToken = createToken(username, key); //Create a token
 				System.out.println(cEngine.formatAsSuccess("Authentication cleared"));
-				
+							
 				//Respond to the client. On error, the client will receive a null token
 				response.addObject(yourToken);
+				response.addObject(getGroupKeysForToken(yourToken));
 				System.out.println(">> Sending Reponse: OK");
 				cEngine.writeAESEncrypted(response, aesKey, output);
+
+				//WARNING: THIS MAY BE INSECURE. LOOK INTO IT - john 4/3
+				msgNumberSet = false;
+
 				System.out.println(cEngine.formatAsSuccess("Token sent"));
 				return true;
 			}
+		}
+		catch(Exception e)
+		{
+			System.out.println(cEngine.formatAsError("Exception thrown during token setup"));
+			e.printStackTrace();
 			return false;
 		}
-		return false;
 	}
-	
+
+	private HashMap<String, HashMap<Date, AESKeySet>> getGroupKeysForToken(UserToken token)
+	{
+		HashMap<String, HashMap<Date, AESKeySet>> fullMap = new HashMap<String, HashMap<Date, AESKeySet>>();
+		List<String> groupList = token.getGroups();
+
+		//add all of the keys that a user has priveledges for
+		for(int i = 0; i < groupList.size(); i++)
+		{
+			fullMap.put(groupList.get(i), groupFileKeyMap.getKeyMapForGroup(groupList.get(i), false));
+		}
+		return fullMap;
+	}
+
 	//Method to check user is admmin
 	private boolean isAdmin(UserToken token)
 	{
@@ -527,12 +527,6 @@ public class GroupThread extends ServerThread
 		if(!groupExists(groupName))
 		{
 			my_gs.createGroup(groupName, yourToken.getSubject());
-
-			//generate the groups file key 
-			//no need to make this thread safe, there should only ever be one instance of groupserver
-       		groupFileKeyMap.addNewGroup(groupName, new Date(), cEngine.genAESKeySet(), false);
-       		System.out.println("----map flush after createGroup----\n"+groupFileKeyMap.toString());
-
 			return true;
 		}
 		return false; //requester does not exist
@@ -545,10 +539,6 @@ public class GroupThread extends ServerThread
 		{
 			my_gs.deleteGroup(groupName);
 
-			//delete the group keys
-			//no need to make this thread safe, there should only ever be one instance of groupserver
-       		groupFileKeyMap.deleteGroup(groupName, new Date(), cEngine.genAESKeySet(), false);
-       		System.out.println("----map flush after deleteGroup----\n"+groupFileKeyMap.toString());
 			return true;
 		}
 		return false;
@@ -583,10 +573,6 @@ public class GroupThread extends ServerThread
 		{
 			my_gs.removeUserFromGroup(groupName, userName);
 
-			//generate the groups file key 
-			//no need to make this thread safe, there should only ever be one instance of groupserver
-       		groupFileKeyMap.addNewKeytoGroup(groupName, new Date(), cEngine.genAESKeySet(), false);
-       		System.out.println("----map flush after removeFromGroup----\n"+groupFileKeyMap.toString());
 			return true;
 		}
 		return false;

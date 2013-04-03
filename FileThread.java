@@ -93,6 +93,7 @@ public class FileThread extends ServerThread
 					//We want to terminate the connection now
 					rejectToken(response, output);
 				}
+        		System.out.println(cEngine.formatAsSuccess("Message number is valid"));
 
 //--VERIFY HMAC----------------------------------------------------------------------------------------------------------------------
 

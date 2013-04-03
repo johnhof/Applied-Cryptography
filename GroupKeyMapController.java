@@ -180,6 +180,43 @@ public class GroupKeyMapController implements java.io.Serializable
 		return latestkeySet;		
 	}
 
+	public Date getLatestDate(String groupName, boolean engageLock)
+	{
+		if(engageLock)lock.lock();
+		
+		AESKeySet latestkeySet = null;
+		Date latestdate = null;
+		if(groupFileKeyMap.containsKey(groupName))
+		{
+			HashMap<Date, AESKeySet> keyMap  = groupFileKeyMap.get(groupName);
+
+			for (Map.Entry<Date, AESKeySet> pairEntry : keyMap.entrySet()) 
+            {
+                Date entryDate = pairEntry.getKey();
+                AESKeySet entryKey = pairEntry.getValue();
+
+                //if this is a newer date, set it as the key set
+                if(latestdate==null)
+                {
+                	latestdate = entryDate;
+                	latestkeySet = entryKey;                	
+                }
+                if(entryDate.compareTo(latestdate)>0)
+                {
+                	latestdate = entryDate;
+                	latestkeySet = entryKey;
+                }
+            }
+
+		}
+
+		if(engageLock)lock.unlock();
+
+		System.out.println(cEngine.formatAsSuccess("The most recent key for group ("+groupName+") was set on: "+latestdate.toString()));
+		
+		return latestdate;		
+	}
+
 //--MANIPULATION METHODS------------------------------------------------------------------------------------------------
 
 	public boolean addNewGroup(String groupName, Date timeIssued, AESKeySet keySet, boolean engageLock)
@@ -281,11 +318,16 @@ public class GroupKeyMapController implements java.io.Serializable
 	{
 		if(engageLock)lock.lock();
 
+		System.out.println("\n\nconcatenating: "+groupName+"\n"+newDateKeyMap.toString());
+
 		//create a temp, set it to our old map, and remove any shared elements. then add the new map
-		HashMap<Date, AESKeySet> tmp = new HashMap(getKeyMapForGroup(groupName, false));
-		tmp.keySet().removeAll(newDateKeyMap.keySet());
+		HashMap<Date, AESKeySet> tmp = new HashMap(newDateKeyMap);
+		System.out.println("\ntmp: "+tmp.toString());
+		tmp.keySet().removeAll(getKeyMapForGroup(groupName, false).keySet());
+		System.out.println("\ntmp after removal: "+tmp.toString());
 		groupFileKeyMap.get(groupName).putAll(tmp);
 
+		System.out.println("result: "+groupFileKeyMap.get(groupName).toString()+"\n\n");
 		saveKeyMap(false);
 		if(engageLock)lock.unlock();
 		return true;

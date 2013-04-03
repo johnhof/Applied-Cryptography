@@ -195,7 +195,12 @@ public class FileClient extends Client implements FileClientInterface
 			message.addObject(group);
 			System.out.println("\n>> Sending File Server Request: UPLOADF");
 			cEngine.writeAESEncrypted(message, aesKey, output);
-			
+
+			System.out.println(groupFileKeyMap.toString());
+
+			//while we're waiting, grab the most recent group key to encrypt the file
+			AESKeySet fileEncryptor = groupFileKeyMap.getLatestKey(group, true);
+			Date date = groupFileKeyMap.getLatestDate(group, true);
 			 
 			FileInputStream fis = new FileInputStream(sourceFile);
 			 
@@ -212,7 +217,24 @@ public class FileClient extends Client implements FileClientInterface
 				System.out.println(cEngine.formatAsError(env.getMessage()));
 				return false;
 			}
-			 
+			 /*
+			//send the date(key ID) as the first chunk of the message
+			if (env.getMessage().compareTo("READY")!=0) 
+			{
+				System.out.println("READY EXPECTED");
+				System.out.println(env.getMessage());
+				return false;
+			}
+			message = new Envelope("CHUNK");
+					
+			message.addObject(date);
+			message.addObject(new Integer(32));
+					
+			cEngine.writeAESEncrypted(message, aesKey, output);
+					
+			env = (Envelope)cEngine.readAESEncrypted(aesKey, input);
+	        System.out.println(cEngine.formatAsSuccess("Date(keyID) sent..."));*/
+
 		 	//unless an error occurs, write the file in 4096 byte chunks
 			do 
 			{
@@ -240,11 +262,10 @@ public class FileClient extends Client implements FileClientInterface
 	        	System.out.println(cEngine.formatAsSuccess("chunk sent..."));
 			 }
 			 while (fis.available()>0);		 
-					 
-			 //If server indicates success, return the member list
+				
+
 			 if(env.getMessage().compareTo("READY")==0)
 			 { 
-				
 				//tell the sever we're done
 				message = new Envelope("EOF");
 				cEngine.writeAESEncrypted(message, aesKey, output);

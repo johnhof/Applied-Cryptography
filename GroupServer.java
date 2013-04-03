@@ -71,12 +71,18 @@ public class GroupServer extends Server
 
 		System.out.println("\nSetting up resources");
 
+
 		//This runs a thread that saves the lists on program exit
 		Runtime runtime = Runtime.getRuntime();
 		runtime.addShutdownHook(new ShutDownListener(this));
 		
 		//set up the authentication key
 		if(!setAuthKey()) System.exit(-1);
+
+//--SET UP KEYMAP-------------------------------------------------------------------------------------------------------
+
+		//grab/create the shared instance of our keymap
+		groupFileKeyMap = GroupKeyMapController.getInstance(name, resourceFolder);
 
 //--RETRIEVE THE SIGNING KEY--------------------------------------------------------------------------------------------
 		try
@@ -187,10 +193,6 @@ public class GroupServer extends Server
 			System.exit(-1);
 		}
 
-//--SET UP KEYMAP-------------------------------------------------------------------------------------------------------
-
-		//grab/create the shared instance of our keymap
-		groupFileKeyMap = GroupKeyMapController.getInstance(name, resourceFolder);
 
 //--SET UP SAVE DEMON---------------------------------------------------------------------------------------------------
 
@@ -244,6 +246,10 @@ public class GroupServer extends Server
 		groupList.addGroup(groupName);
 		groupList.addMember(groupName, creator);
 		groupList.addOwner(groupName, creator);
+
+		//generate the groups file key 
+		//no need to make this thread safe, there should only ever be one instance of groupserver
+       	groupFileKeyMap.addNewGroup(groupName, new Date(), cEngine.genAESKeySet(), true);
 	}
 
 	//does not check if group exists
@@ -264,6 +270,10 @@ public class GroupServer extends Server
 		}
 
 		groupList.deleteGroup(groupName);
+		
+		//delete the group keys
+		//no need to make this thread safe, there should only ever be one instance of groupserver
+       	groupFileKeyMap.deleteGroup(groupName, new Date(), cEngine.genAESKeySet(), false);
 	}
 
 	//does not check if the group or user exists
@@ -278,6 +288,10 @@ public class GroupServer extends Server
 	{
 		userList.removeGroup(user, groupName);
 		groupList.removeMember(groupName, user);
+
+		//generate the groups file key 
+		//no need to make this thread safe, there should only ever be one instance of groupserver
+       	groupFileKeyMap.addNewKeytoGroup(groupName, new Date(), cEngine.genAESKeySet(), false);
 	}
 
 	//does not check if group or user exists, or if user is in group, or if user is the owner
@@ -285,6 +299,10 @@ public class GroupServer extends Server
 	{
 		userList.removeOwnership(owner, groupName);
 		groupList.removeOwner(groupName, owner);
+
+		//generate the groups file key 
+		//no need to make this thread safe, there should only ever be one instance of groupserver
+       	groupFileKeyMap.addNewKeytoGroup(groupName, new Date(), cEngine.genAESKeySet(), false);
 	}
 	
 	//does not check if group or user exists, or if user is in group, or if user is the owner

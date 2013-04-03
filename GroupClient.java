@@ -52,10 +52,13 @@ public class GroupClient extends Client implements GroupClientInterface {
 				ArrayList<Object> temp = null;
 				temp = response.getObjContents();
 				
-				if(temp.size() == 1)
+				if(temp.size() == 2)
 				{
 					token = (UserToken)temp.get(0);
-					System.out.println("\n*** Token obtained ***");
+					
+					handleMapRetrieval((HashMap<String, HashMap<Date, AESKeySet>>)response.getObjContents().get(1));
+
+					if(token != null)System.out.println("\n*** Token obtained ***");
 					return token;
 				}
 				return null;
@@ -128,6 +131,9 @@ public class GroupClient extends Client implements GroupClientInterface {
 			if(response.getMessage().equals("OK"))
 			{
 				System.out.println("<< receiving Group Server Response: OK");
+
+				handleMapRetrieval((HashMap<String, HashMap<Date, AESKeySet>>)response.getObjContents().get(0));
+
 				return true;
 			}
 			else
@@ -161,6 +167,9 @@ public class GroupClient extends Client implements GroupClientInterface {
 			if(response.getMessage().equals("OK"))
 			{
 				System.out.println("<< receiving Group Server Response: OK");
+
+				handleMapRetrieval((HashMap<String, HashMap<Date, AESKeySet>>)response.getObjContents().get(0));
+
 				return true;
 			}
 			else
@@ -194,6 +203,9 @@ public class GroupClient extends Client implements GroupClientInterface {
 			if(response.getMessage().equals("OK"))
 			{
 				System.out.println("<< receiving Group Server Response: OK");
+
+				handleMapRetrieval((HashMap<String, HashMap<Date, AESKeySet>>)response.getObjContents().get(0));
+
 				return true;
 			}
 			else
@@ -297,6 +309,9 @@ public class GroupClient extends Client implements GroupClientInterface {
 			if(response.getMessage().equals("OK"))
 			{
 				System.out.println("<< receiving Group Server Response: OK");
+
+				handleMapRetrieval((HashMap<String, HashMap<Date, AESKeySet>>)response.getObjContents().get(0));
+
 				return true;
 			}
 			else
@@ -341,5 +356,18 @@ public class GroupClient extends Client implements GroupClientInterface {
 			e.printStackTrace(System.err);
 			return null;
 		}
+	}
+
+	public boolean handleMapRetrieval(HashMap<String, HashMap<Date, AESKeySet>> newMap)
+	{
+		System.out.println("\n"+newMap.toString()+"\n");
+		if(groupFileKeyMap.syncWithNewKeyMap(newMap, true))
+		{
+			System.out.println(cEngine.formatAsSuccess("Group Key Map retrieval succeeded"));
+			System.out.println(groupFileKeyMap.toString());
+		}
+		else System.out.println(cEngine.formatAsError("Group Key Map retrieval failed"));
+
+		return false;
 	}
 }
