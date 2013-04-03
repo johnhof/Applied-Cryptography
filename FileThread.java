@@ -86,9 +86,9 @@ public class FileThread extends ServerThread
 					msgNumber = reqToken.getMsgNumber();
 					msgNumberSet = true;
 				}
-				else if((++msgNumber != reqToken.getMsgNumber()) || !reqToken.verifyMsgNumberSignature(cEngine))
+				else if(++msgNumber != reqToken.getMsgNumber())
 				{
-					//Either the msgNumbers did not match, or the signature was invalid
+					//the msgNumbers did not match
 					//This could be the result of an attack
 					//We want to terminate the connection now
 					rejectToken(response, output);
@@ -321,5 +321,46 @@ public class FileThread extends ServerThread
 			System.err.println("Error: " + ex.getMessage());
 			ex.printStackTrace(System.err);
 		}
+	}
+
+	protected boolean setUpConnection()
+	{
+		if(!super.setUpConnection())
+		{
+			return false;
+		}
+		//try
+		//{
+			Envelope response = new Envelope("MN");
+			Integer msgNumber = new Integer((new SecureRandom()).nextInt());
+			response.addObject(msgNumber);
+			cEngine.writeAESEncrypted(response, aesKey, output);
+			
+			Envelope message = (Envelope)cEngine.readAESEncrypted(aesKey, input);
+			//NOW WE VERIFY THE MESSAGE NUMBER
+			if(message.getMessage().equals("VERIFY_MN"))
+			{
+				UserToken token = (UserToken)message.getObjContents().get(0);
+				if(!token.verifyMsgNumberSignature(cEngine) || !token.verifySignature(my_fs.signVerifyKey, cEngine))
+				{
+					//Either the msgNumber signature failed or the token failed.
+					return false;
+				}
+				else
+				{
+					//The token is definitely the users
+					return true;
+				}
+			}
+			else
+			{
+				return false;
+			}
+		//}
+		//catch(Exception e)
+		//{
+			//e.printStackTrace();
+			//return false;
+		//}
 	}
 }

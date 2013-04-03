@@ -20,7 +20,6 @@ public class UI
 	//shared tools
 	private static String username;
 	private static UserToken token;
-	private static int msgNumber;
 	private static int msgNumberF;
 	private static int msgNumberG;
 
@@ -50,8 +49,6 @@ public class UI
 			System.out.println("\nSomething went wrong during connect. exiting...");
 			return;
 		}
-		msgNumberF = msgNumber;
-		msgNumberG = msgNumber;
 
 		while(true)//loop until the user exits
 		{
@@ -63,7 +60,6 @@ public class UI
 			if(input.equals("F") || input.equals("f"))
 			{
 				token.setMsgNumber(++msgNumberF);
-				token.signMsgNumber(myPrivate, cEngine);
 				
 				System.out.print("Would you like to:\n1-List Files\n2-Upload File\n");
 				System.out.print("3-Download File\n4-Delete File\n");
@@ -76,7 +72,11 @@ public class UI
 				{
 					inputI = Integer.parseInt(in.nextLine());
 				}
-				catch(Exception e){continue;}
+				catch(Exception e)
+				{
+					token.setMsgNumber(--msgNumberF);
+					continue;
+				}
 
 				String srcFile = "";
 				String destFile = "";
@@ -151,6 +151,7 @@ public class UI
 					
 					default:
 						System.out.println("\ninvalid input\n");
+						msgNumberF--;
 					break;
 				}
 				System.out.println();
@@ -165,6 +166,7 @@ public class UI
 				System.out.print("\n6-Add to a Group\n7-Delete from a Group\n8-See all Users\nPlease enter your selection's");
 				System.out.print(" numeric value.\n");
 				input = in.nextLine();
+				
 				boolean works;
 				if(input.equals("1"))
 				{
@@ -244,6 +246,10 @@ public class UI
 						}
 					}
 				}
+				else
+				{
+					msgNumberG--;
+				}
 			}
 			else if(input.equals("D") || input.equals("d"))
 			{
@@ -311,7 +317,7 @@ public class UI
 		System.out.println("*** Keys Generated");
 
 
-//--lOGIN & TOKEN RETRIEVAL--------------------------------------------------------------------------------------------
+//--LOGIN & TOKEN RETRIEVAL--------------------------------------------------------------------------------------------
 
 		boolean proceed = false;
 
@@ -322,7 +328,7 @@ public class UI
 			String pwd = in.nextLine();
 
 			token = gUser.getToken(username, pwd, myPublic);
-			msgNumber = token.getMsgNumber();
+			msgNumberG = token.getMsgNumber();
 			if (token != null)
 			{
 				proceed = true;
@@ -355,6 +361,7 @@ public class UI
 		try
 		{
 			fUser.connect(fServer, fPort, username, token); 
+			msgNumberF = fUser.verifyMsgNumber(myPrivate);
 		}
 		catch(Exception e)
 		{

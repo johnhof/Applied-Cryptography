@@ -97,7 +97,10 @@ public class GroupThread extends ServerThread
 						System.out.println(cEngine.formatAsError("No password"));
 						cEngine.writeAESEncrypted(new Envelope("Login failed"), aesKey, output);
 					}
-					else if(!my_gs.userList.getUserPassword(username).equals(pwd))
+					// Matt ~ 2013 02 April 
+					// else if(!my_gs.userList.getUserPassword(username).equals(pwd))
+					// else if(!my_gs.userList.getUserPassword(cEngine.hashWithSHA(username)).equals(cEngine.hashWithSHA(pwd)))
+					else if(!my_gs.userList.checkUserPassword(username, cEngine.hashWithSHA(pwd)))
 					{
 						System.out.println(cEngine.formatAsError("Wrong password"));
 						cEngine.writeAESEncrypted(new Envelope("Login failed"), aesKey, output);
@@ -116,7 +119,7 @@ public class GroupThread extends ServerThread
 					continue;//go back and wait for a new message
 				}
 
-//--AUTHENTICATE TOKEN-------------------------------------------------------------------------------------------------
+//--AUTHENTICATE TOKEN AND MSGNUMBER-------------------------------------------------------------------------------------------------
 								
 				//!!!! Everything this beyond point requires a valid token !!!!
 
@@ -127,7 +130,19 @@ public class GroupThread extends ServerThread
 					continue;//go back and wait for a new message
 				}
         		System.out.println(cEngine.formatAsSuccess("Token Authenticated"));
-
+				if(!msgNumberSet)
+				{
+					msgNumber = reqToken.getMsgNumber();
+					msgNumberSet = true;
+				}
+				else if(++msgNumber != reqToken.getMsgNumber())
+				{
+					//the msgNumbers did not match
+					//This could be the result of an attack
+					//We want to terminate the connection now
+					rejectToken(response, output);
+				}
+				
 //--CREATE USER-------------------------------------------------------------------------------------------------------
 				
 				if(message.getMessage().equals("CUSER")) //Client wants to create a user
@@ -381,6 +396,61 @@ public class GroupThread extends ServerThread
 		}
 	}
 	
+	//Method to setup the connection
+	protected boolean setUpConnection()
+	{
+		if(!super.setUpConnection())
+		{
+			return false;
+		}
+		//the AESKey is now set. We need to get the token and deal with the MN
+		Envelope message = (Envelope)cEngine.readAESEncrypted(aesKey, input);
+		Envelope response = new Envelope("OK");
+		
+		if(message.getMessage().equals("TOKEN"))//Client wants a token
+		{
+			String username = (String)message.getObjContents().get(0); //Get the username
+			String pwd = (String)message.getObjContents().get(1);//get 
+			PublicKey key = (PublicKey)message.getObjContents().get(2);
+
+			//NOTE: Its bad practice to tell the user what login error occurred
+			//they could use it to fish for valid usernames
+			if(username == null)
+			{
+				System.out.println(cEngine.formatAsError("No username"));
+				cEngine.writeAESEncrypted(new Envelope("Login failed"), aesKey, output);
+			}
+			else if(!my_gs.userList.checkUser(username))
+			{
+				System.out.println(cEngine.formatAsError("Username not found"));
+				cEngine.writeAESEncrypted(new Envelope("Login failed"), aesKey, output);
+			}
+			else if(pwd == null || pwd.length() == 0)
+			{
+				System.out.println(cEngine.formatAsError("No password"));
+				cEngine.writeAESEncrypted(new Envelope("Login failed"), aesKey, output);
+			}
+			else if(!my_gs.userList.getUserPassword(username).equals(pwd))
+			{
+				System.out.println(cEngine.formatAsError("Wrong password"));
+				cEngine.writeAESEncrypted(new Envelope("Login failed"), aesKey, output);
+			}
+			else
+			{
+				UserToken yourToken = createToken(username, key); //Create a token
+				System.out.println(cEngine.formatAsSuccess("Authentication cleared"));
+				
+				//Respond to the client. On error, the client will receive a null token
+				response.addObject(yourToken);
+				System.out.println(">> Sending Reponse: OK");
+				cEngine.writeAESEncrypted(response, aesKey, output);
+				System.out.println(cEngine.formatAsSuccess("Token sent"));
+				return true;
+			}
+			return false;
+		}
+		return false;
+	}
 	
 	//Method to check user is admmin
 	private boolean isAdmin(UserToken token)
@@ -398,7 +468,7 @@ public class GroupThread extends ServerThread
 	}
 
 	//Method to create a user
-	private boolean createUser(String username, String pwd, UserToken yourToken)
+	private boolean createUser(String username, String pwd, UserToken yourToken) throws NoSuchAlgorithmException
 	{
 		String requester = yourToken.getSubject();
 		
@@ -417,7 +487,9 @@ public class GroupThread extends ServerThread
 				}
 				else
 				{
-					my_gs.userList.addUser(username, pwd);
+					// Matt ~ 2013 2 April
+					// my_gs.userList.addUser(username, pwd);
+					my_gs.userList.addUser(username, cEngine.hashWithSHA(pwd));
 					my_gs.addUserToGroup("global", username); // add all users to global by default
 					return true;
 				}

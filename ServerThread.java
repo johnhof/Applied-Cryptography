@@ -97,6 +97,7 @@ public class ServerThread extends Thread
 				cEngine.writeAESEncrypted(response, aesKey, output);
 				System.out.println(cEngine.formatAsSuccess("Challenge answered"));
 			}
+					
 			else 
 			{
 				cEngine.writePlainText(genAndPrintErrorEnvelope("Unexpected request"), output);

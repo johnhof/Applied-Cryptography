@@ -1,6 +1,8 @@
 all:
+	rm -rf bin
 	mkdir bin
 	javac -cp .:bcprov-jdk15on-147.jar -d bin *.java
+
 
 setup:
 	java -cp bcprov-jdk15on-147.jar:./bin ResourceGenerator
@@ -11,6 +13,9 @@ runGroup:
 runFile:
 	java -cp .:bcprov-jdk15on-147.jar:./bin RunFileServer
 
+ui:
+	java -cp .:bcprov-jdk15on-147.jar:./bin UI
+	
 UI:
 	java -cp .:bcprov-jdk15on-147.jar:./bin UI
 	
