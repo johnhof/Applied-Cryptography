@@ -198,11 +198,6 @@ public class FileClient extends Client implements FileClientInterface
 
 			System.out.println(groupFileKeyMap.toString());
 
-			//while we're waiting, grab the most recent group key to encrypt the file
-			AESKeySet fileEncryptor = groupFileKeyMap.getLatestKey(group, true);
-			Date date = groupFileKeyMap.getLatestDate(group, true);
-			 
-			FileInputStream fis = new FileInputStream(sourceFile);
 			 
 			env = (Envelope)cEngine.readAESEncrypted(aesKey, input);
 			 
@@ -217,23 +212,10 @@ public class FileClient extends Client implements FileClientInterface
 				System.out.println(cEngine.formatAsError(env.getMessage()));
 				return false;
 			}
-			 /*
-			//send the date(key ID) as the first chunk of the message
-			if (env.getMessage().compareTo("READY")!=0) 
-			{
-				System.out.println("READY EXPECTED");
-				System.out.println(env.getMessage());
-				return false;
-			}
-			message = new Envelope("CHUNK");
-					
-			message.addObject(date);
-			message.addObject(new Integer(32));
-					
-			cEngine.writeAESEncrypted(message, aesKey, output);
-					
-			env = (Envelope)cEngine.readAESEncrypted(aesKey, input);
-	        System.out.println(cEngine.formatAsSuccess("Date(keyID) sent..."));*/
+
+			byte[] fileInBytes = prepareFileForUpload(sourceFile, group);
+
+			int bytecount = 0;
 
 		 	//unless an error occurs, write the file in 4096 byte chunks
 			do 
@@ -246,22 +228,16 @@ public class FileClient extends Client implements FileClientInterface
 					return false;
 				}
 				message = new Envelope("CHUNK");
-				int n = fis.read(buf); //can throw an IOException
-				if (n <= 0) 
-				{
-					System.out.println(cEngine.formatAsError("Read error"));
-					return false;
-				}
 					
 				message.addObject(buf);
-				message.addObject(new Integer(n));
+				message.addObject(new Integer(4096));
 					
 				cEngine.writeAESEncrypted(message, aesKey, output);
 						
 				env = (Envelope)cEngine.readAESEncrypted(aesKey, input);
 	        	System.out.println(cEngine.formatAsSuccess("chunk sent..."));
 			 }
-			 while (fis.available()>0);		 
+			 while (bytecount < 50);		 
 				
 
 			 if(env.getMessage().compareTo("READY")==0)
@@ -321,5 +297,55 @@ public class FileClient extends Client implements FileClientInterface
 		}*/
 		return msgNumber.intValue();
 	}
+
+	private byte[] prepareFileForUpload(String sourceFile, String group)
+	{
+		AESKeySet key = groupFileKeyMap.getLatestKey(group, true);
+		Date date = groupFileKeyMap.getLatestDate(group, true);
+
+		byte[] dateBytes = cEngine.serialize(date);
+
+		//extract and encrypt the file with the appropriat group key
+		File file = new File(sourceFile);
+		byte[] rawFile = null;
+		try
+		{
+			rawFile = readFile(file);
+		}
+		catch(IOException e)
+		{
+			System.out.println(cEngine.formatAsError("Failed to lead file"));
+			return null;
+		}
+		byte[] encryptedFile = cEngine.AESEncrypt(rawFile, key);
+
+		//concatenate the date to the encrypted file
+		byte[] finalFile = new byte[encryptedFile.length + dateBytes.length];
+		System.arraycopy(dateBytes, 0, finalFile, 0, dateBytes.length);
+		System.arraycopy(encryptedFile, 0, finalFile, dateBytes.length, encryptedFile.length);
+
+		return finalFile;
+	}
+
+	public static byte[] readFile (File file) throws IOException {
+        // Open file
+        RandomAccessFile f = new RandomAccessFile(file, "r");
+
+        try 
+        {
+            // Get and check length
+            long longlength = f.length();
+            int length = (int) longlength;
+            if (length != longlength) throw new IOException("File size >= 2 GB");
+
+            // Read file and return data
+            byte[] data = new byte[length];
+            f.readFully(data);
+            return data;
+        }
+        finally {
+            f.close();
+        }
+    }
 }
 
