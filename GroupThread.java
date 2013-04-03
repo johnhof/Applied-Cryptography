@@ -142,6 +142,14 @@ public class GroupThread extends ServerThread
 					//We want to terminate the connection now
 					rejectToken(response, output);
 				}
+
+//--VERIFY HMAC----------------------------------------------------------------------------------------------------------------------
+
+				//get the size of the message
+				//get the last object from the message (SHOULD ALWAYS BE THE HMAC)
+				//gett he other contents and compute their hmac
+				//compare the HMAC
+				//return failure messgae if they dont match and continue around the loop
 				
 //--CREATE USER-------------------------------------------------------------------------------------------------------
 				
@@ -511,6 +519,9 @@ public class GroupThread extends ServerThread
 		if(!groupExists(groupName))
 		{
 			my_gs.createGroup(groupName, yourToken.getSubject());
+
+			//generate the groups file key
+			
 			return true;
 		}
 		return false; //requester does not exist

@@ -94,6 +94,14 @@ public class FileThread extends ServerThread
 					rejectToken(response, output);
 				}
 
+//--VERIFY HMAC----------------------------------------------------------------------------------------------------------------------
+
+				//get the size of the message
+				//get the last object from the message (SHOULD ALWAYS BE THE HMAC)
+				//gett he other contents and compute their hmac
+				//compare the HMAC
+				//return failure messgae if they dont match and continue around the loop
+
 //--LIST FILES---------------------------------------------------------------------------------------------------------
 				
 				if(message.getMessage().equals("LFILES"))
