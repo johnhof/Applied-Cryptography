@@ -64,11 +64,12 @@ public class FileClient extends Client implements FileClientInterface
 		cEngine.writeAESEncrypted(env, aesKey, output);
 
 	    env = (Envelope)cEngine.readAESEncrypted(aesKey, input);
+
+		if(!checkMessagePreReqs(env)) return false;
 		    
 		if (env.getMessage().compareTo("OK")==0) 
 		{
 			System.out.println("<< ("+msgNumber+"): receiving File Server Response: OK");
-			if(!checkMessagePreReqs(env)) return false;
 
 			System.out.println(cEngine.formatAsSuccess("Successfully deleted file: "+filename));				
 		}
@@ -94,15 +95,17 @@ public class FileClient extends Client implements FileClientInterface
 			message.addObject(token); //Add requester's token
 			message.addObject(msgNumber++); //Add the nessage number
 			System.out.println("\n>> ("+msgNumber+"): Sending File Server Request: LFILES");
+			message= cEngine.attachHMAC(message, HMACKey);
 			cEngine.writeAESEncrypted(message, aesKey, output);
 			 
 			e = (Envelope)cEngine.readAESEncrypted(aesKey, input);
+
+			if(!checkMessagePreReqs(e)) return null;
 			 
 			//If server indicates success, return the member list
 			if(e.getMessage().equals("OK"))
 			{ 
 				System.out.println("<< ("+msgNumber+"): receiving File Server Response: OK");
-				if(!checkMessagePreReqs(e)) return null;
 
 				System.out.println(cEngine.formatAsSuccess("Files returned"));
 				return (List<ShareFile>)e.getObjContents().get(0); //This cast creates compiler warnings. Sorry.
@@ -119,7 +122,7 @@ public class FileClient extends Client implements FileClientInterface
 		}
 	}
 
-//--DOWsNLOAD---------------------------------------------------------------------------------------------------------
+//--DOWNLOAD---------------------------------------------------------------------------------------------------------
 
 	public boolean download(String sourceFile, String destFile, String group, UserToken token) 
 	{
@@ -143,6 +146,7 @@ public class FileClient extends Client implements FileClientInterface
 				env.addObject(msgNumber++); //Add the nessage number
 			    env.addObject(sourceFile);
 				System.out.println("\n>> ("+msgNumber+"): Sending File Server Request: DOWNLOADF");
+				env= cEngine.attachHMAC(env, HMACKey);
 			    cEngine.writeAESEncrypted(env, aesKey, output);
 
 						
@@ -225,6 +229,7 @@ public class FileClient extends Client implements FileClientInterface
 			message.addObject(destFile);
 			message.addObject(group);
 			System.out.println("\n>> ("+msgNumber+"): Sending File Server Request: UPLOADF");
+			message= cEngine.attachHMAC(message, HMACKey);
 			cEngine.writeAESEncrypted(message, aesKey, output);
 
 			env = (Envelope)cEngine.readAESEncrypted(aesKey, input);
@@ -235,7 +240,7 @@ public class FileClient extends Client implements FileClientInterface
 			{ 
 				System.out.println(cEngine.formatAsSuccess("Meta data upload successful"));
 			}
-			 else 
+			else 
 			{				
 				System.out.println(cEngine.formatAsError(env.getMessage()));
 				return false;

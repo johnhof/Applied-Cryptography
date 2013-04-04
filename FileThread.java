@@ -76,7 +76,7 @@ public class FileThread extends ServerThread
 				reqToken = checkMessagePreReqs(message, response, my_fs.signVerifyKey);	
 				if(reqToken==null) return;
 
-				//increment and attach the message number to the response
+				///attach the message number to the response
 				response.addObject(msgNumber);
 				//!!!! Everything this beyond point requires a valid token & message number !!!!
 
@@ -106,8 +106,8 @@ public class FileThread extends ServerThread
 					if(message.getObjContents().size() > 2)//size check
 					{
 						//retrieve the contents of the message
-						String remotePath = (String)message.getObjContents().get(1);
-						String groupName = (String)message.getObjContents().get(2);
+						String remotePath = (String)message.getObjContents().get(2);
+						String groupName = (String)message.getObjContents().get(3);
 
 						if(remotePath != null && groupName != null) //integrity check
 						{
@@ -116,7 +116,6 @@ public class FileThread extends ServerThread
 								if (reqToken.getGroups().contains(groupName)) //check for priveledges
 								{
 									//create file and handle upload
-									System.out.println(serverFolder+"shared_files/" + remotePath.replace('/', '_'));
 									File file = new File(serverFolder+"shared_files/" + remotePath.replace('/', '_'));
 									file.createNewFile();
 									FileOutputStream fos = new FileOutputStream(file);
@@ -125,14 +124,19 @@ public class FileThread extends ServerThread
 
 									//request file contents
 									message = new Envelope("READY"); //Success
+									message.addObject(msgNumber);
+									message = cEngine.attachHMAC(message, HMACKey);
 									cEngine.writeAESEncrypted(message, aesKey, output);
 
 									//receive and write the file to the directory
 									message = (Envelope)cEngine.readAESEncrypted(aesKey, input);
 									while (message.getMessage().compareTo("CHUNK") == 0) 
 									{
-										fos.write((byte[])message.getObjContents().get(0), 0, (Integer)message.getObjContents().get(1));
+										if(checkMessagePreReqs(message, response, my_fs.signVerifyKey)==null) break;
+										fos.write((byte[])message.getObjContents().get(2), 0, (Integer)message.getObjContents().get(3));
 										message = new Envelope("READY"); //Success
+										message.addObject(msgNumber);
+										message = cEngine.attachHMAC(message, HMACKey);
 										cEngine.writeAESEncrypted(message, aesKey, output);
 										message = (Envelope)cEngine.readAESEncrypted(aesKey, input);
 									}
@@ -161,10 +165,10 @@ public class FileThread extends ServerThread
 				{
 					errorMsg = "Could not download file; ";
 
-					if(message.getObjContents().size() > 1) //size check
+					if(message.getObjContents().size() > 3) //size check
 					{
 						//retrieve the contents of the message, and attampt to access the requested file
-						String remotePath = (String)message.getObjContents().get(1);
+						String remotePath = (String)message.getObjContents().get(2);
 						ShareFile shareFile = FileServer.fileList.getFile("/" + remotePath);
 
 						if (shareFile != null) //check for file
@@ -192,9 +196,13 @@ public class FileThread extends ServerThread
 												int n = fis.read(buf); //can throw an IOException
 												if (n <=0) errorMsg += "Read error";
 
+												if(checkMessagePreReqs(message, response, my_fs.signVerifyKey)==null) break;
+
 												//tack the chunk onto the message and write it
+												message.addObject(msgNumber);
 												message.addObject(buf);
 												message.addObject(new Integer(n));
+												message = cEngine.attachHMAC(response, HMACKey);
 												cEngine.writeAESEncrypted(message, aesKey, output);
 
 												//get response
@@ -209,6 +217,8 @@ public class FileThread extends ServerThread
 										{
 											//send the end of file identifier
 											message = new Envelope("EOF");
+											message.addObject(msgNumber);
+											message = cEngine.attachHMAC(response, HMACKey);
 											cEngine.writeAESEncrypted(message, aesKey, output);
 
 											//accept response
@@ -240,10 +250,10 @@ public class FileThread extends ServerThread
 				{
 					errorMsg = "Could not delete file; ";
 
-					if(message.getObjContents().size() > 1) //size check
+					if(message.getObjContents().size() > 3) //size check
 					{
 						//retrieve the contents of the message, and attampt to access the requested file
-						String remotePath = (String)message.getObjContents().get(1);
+						String remotePath = (String)message.getObjContents().get(2);
 						ShareFile shareFile = FileServer.fileList.getFile("/"+remotePath);
 
 						if (shareFile != null) //check for file
@@ -296,7 +306,7 @@ public class FileThread extends ServerThread
 				{
 					System.out.println(">> ("+msgNumber+"): Sending Response: OK");
 				}
-
+				response = cEngine.attachHMAC(response, HMACKey);
 				cEngine.writeAESEncrypted(response, aesKey, output);
 
 
@@ -309,13 +319,17 @@ public class FileThread extends ServerThread
 		}
 	}
 
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+//-- SETUP AND MN SIGNATURE CHECKING
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 	protected boolean setUpConnection()
 	{
 		if(!super.setUpConnection())
 		{
 			return false;
 		}
-
+		System.out.println("REMINDER: IMPLEMENT SIGNATURE CODE");
 		//TODO: -MN- signature checking  
 		return true;
 	}
