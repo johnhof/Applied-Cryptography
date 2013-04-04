@@ -352,7 +352,7 @@ public class GroupClient extends Client implements GroupClientInterface {
 			{
 				System.out.println("<< ("+msgNumber+"): receiving Group Server Response: OK");
 
-				handleMapRetrieval((HashMap<String, HashMap<Date, AESKeySet>>)response.getObjContents().get(0));
+				handleMapRetrieval((HashMap<String, HashMap<Date, AESKeySet>>)response.getObjContents().get(1));
 
 				return true;
 			}
