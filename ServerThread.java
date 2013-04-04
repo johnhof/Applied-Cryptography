@@ -213,7 +213,7 @@ public class ServerThread extends Thread
 
 	protected void rejectMessageNumber(Envelope response, Integer reqMsgNumber, ObjectOutputStream output)
 	{
-		cEngine.writeAESEncrypted(genAndPrintErrorEnvelope("Message number does not match: "+reqMsgNumber), aesKey, output);
+		cEngine.writeAESEncrypted(genAndPrintErrorEnvelope("Message number does not match: "+reqMsgNumber+" : "+msgNumber), aesKey, output);
 		try
 		{
 			socket.close();

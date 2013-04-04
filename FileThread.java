@@ -34,7 +34,6 @@ public class FileThread extends ServerThread
 				return;
 			}
 			System.out.println("\n*** Setup Finished: " + socket.getInetAddress() + ":" + socket.getPort() + " ***");
-			
 //----------------------------------------------------------------------------------------------------------------------
 //-- REQUEST HANDLING LOOP
 //----------------------------------------------------------------------------------------------------------------------
@@ -124,26 +123,34 @@ public class FileThread extends ServerThread
 
 									//request file contents
 									message = new Envelope("READY"); //Success
-									message.addObject(msgNumber);
+									System.out.println("\n>> ("+msgNumber+"): Sending File Server Request: READY");
+									message.addObject(msgNumber++);
 									message = cEngine.attachHMAC(message, HMACKey);
 									cEngine.writeAESEncrypted(message, aesKey, output);
 
 									//receive and write the file to the directory
 									message = (Envelope)cEngine.readAESEncrypted(aesKey, input);
+									System.out.println("\n<< ("+msgNumber+"): Request Received: " + message.getMessage());
 									while (message.getMessage().compareTo("CHUNK") == 0) 
 									{
 										if(checkMessagePreReqs(message, response, my_fs.signVerifyKey)==null) break;
 										fos.write((byte[])message.getObjContents().get(2), 0, (Integer)message.getObjContents().get(3));
+										
+										System.out.println("\n>> ("+msgNumber+"): Sending File Server Request: CHUNK");
 										message = new Envelope("READY"); //Success
-										message.addObject(msgNumber);
+										message.addObject(msgNumber++);
 										message = cEngine.attachHMAC(message, HMACKey);
 										cEngine.writeAESEncrypted(message, aesKey, output);
 										message = (Envelope)cEngine.readAESEncrypted(aesKey, input);
+										msgNumber++;
+										System.out.println("\n<< ("+msgNumber+"): Request Received: " + message.getMessage());
 									}
 
 									//end of file identifier expected, inform the user of status
 									if(message.getMessage().compareTo("EOF") == 0) 
 									{
+										response.getObjContents().set(0,msgNumber);
+										response.addObject(msgNumber);
 										System.out.println(cEngine.formatAsSuccess("Transfer successful for file: "+ remotePath.replace('/', '_')));
 										FileServer.fileList.addFile(reqToken.getSubject(), groupName, remotePath);
 										error = false;
@@ -307,8 +314,8 @@ public class FileThread extends ServerThread
 					System.out.println(">> ("+msgNumber+"): Sending Response: OK");
 				}
 				response = cEngine.attachHMAC(response, HMACKey);
-				cEngine.writeAESEncrypted(response, aesKey, output);
 
+				cEngine.writeAESEncrypted(response, aesKey, output);
 
 			} while(true);
 		}
