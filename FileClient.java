@@ -360,15 +360,14 @@ public class FileClient extends Client implements FileClientInterface
 			System.out.println(cEngine.formatAsError("Failed to read file"));
 			return null;
 		}
-		//byte[] encryptedFile = cEngine.AESEncrypt(rawFile, key);
+		byte[] encryptedFile = cEngine.AESEncrypt(rawFile, key);
+		byte[] fileSize = ByteBuffer.allocate(INT_BYTE_SIZE).putInt(encryptedFile.length).array();
 
-		//return append(encryptedFile,dateBytes);
-		System.out.println("File size: "+rawFile.length);
-		byte[] fileSize = ByteBuffer.allocate(INT_BYTE_SIZE).putInt(rawFile.length).array();
-		System.out.println("int size: "+fileSize.length);
+		//byte[] fileSize = ByteBuffer.allocate(INT_BYTE_SIZE).putInt(rawFile.length).array();
 
 		//return (date||file size||file)
-		return append(append(rawFile,fileSize),dateBytes);
+		return append(append(encryptedFile,fileSize),dateBytes);
+		//return append(append(rawFile,fileSize),dateBytes);
 	}
 
 	public byte[] append(byte[] a, byte[] b)
@@ -408,15 +407,14 @@ public class FileClient extends Client implements FileClientInterface
 		//grab the file size and convert it back to an int
 		ByteBuffer sizeBuf = ByteBuffer.allocate(INT_BYTE_SIZE);
 		sizeBuf.put(Arrays.copyOfRange(encryptedfile, DATE_SIZE, DATE_SIZE+INT_BYTE_SIZE));
-		System.out.println("\nsizebuf flush: "+sizeBuf.toString());
 		int fileSize = sizeBuf.getInt(0);
 
 		//System.out.println("\n"+groupFileKeyMap.toString());
 		System.out.println("\nDate: "+date.toString());
 		System.out.println("File size: "+fileSize);
 
-		//byte[] plainFile = cEngine.AESDecrypt(Arrays.copyOfRange(encryptedfile, 46, encryptedfile.length), groupFileKeyMap.getKeyFromNameAndDate(group, date, true));
-		byte[] plainFile =Arrays.copyOfRange(encryptedfile, DATE_SIZE+INT_BYTE_SIZE, DATE_SIZE+INT_BYTE_SIZE+fileSize);
+		byte[] rawEncryptedFile =Arrays.copyOfRange(encryptedfile, DATE_SIZE+INT_BYTE_SIZE, DATE_SIZE+INT_BYTE_SIZE+fileSize);
+		byte[] plainFile = cEngine.AESDecrypt(rawEncryptedFile, groupFileKeyMap.getKeyFromNameAndDate(group, date, true));
 
 		try
 		{
