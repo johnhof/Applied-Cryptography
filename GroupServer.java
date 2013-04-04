@@ -250,6 +250,7 @@ public class GroupServer extends Server
 		//generate the groups file key 
 		//no need to make this thread safe, there should only ever be one instance of groupserver
        	groupFileKeyMap.addNewGroup(groupName, new Date(), cEngine.genAESKeySet(), true);
+		System.out.println(cEngine.formatAsSuccess("New group key generated"));       	
 	}
 
 	//does not check if group exists
@@ -274,6 +275,7 @@ public class GroupServer extends Server
 		//delete the group keys
 		//no need to make this thread safe, there should only ever be one instance of groupserver
        	groupFileKeyMap.deleteGroup(groupName, new Date(), cEngine.genAESKeySet(), false);
+		System.out.println(cEngine.formatAsSuccess("Group keys deleted"));       	
 	}
 
 	//does not check if the group or user exists
@@ -292,17 +294,14 @@ public class GroupServer extends Server
 		//generate the groups file key 
 		//no need to make this thread safe, there should only ever be one instance of groupserver
        	groupFileKeyMap.addNewKeytoGroup(groupName, new Date(), cEngine.genAESKeySet(), false);
+		System.out.println(cEngine.formatAsSuccess("New group key generated"));       	
 	}
 
 	//does not check if group or user exists, or if user is in group, or if user is the owner
 	public void removeOwnerFromGroup(String groupName, String owner)
 	{
 		userList.removeOwnership(owner, groupName);
-		groupList.removeOwner(groupName, owner);
-
-		//generate the groups file key 
-		//no need to make this thread safe, there should only ever be one instance of groupserver
-       	groupFileKeyMap.addNewKeytoGroup(groupName, new Date(), cEngine.genAESKeySet(), false);
+		groupList.removeOwner(groupName, owner);	
 	}
 	
 	//does not check if group or user exists, or if user is in group, or if user is the owner
@@ -329,6 +328,16 @@ public class GroupServer extends Server
 		}
 
 		userList.deleteUser(user);
+	}
+
+	private boolean userInGroup(String userName, String group)
+	{
+		//return false if the user or group doesnt exist, 
+		//or the group donet contain the user, or the user have the group membership
+		if(!groupList.checkGroup(group) || !userList.checkUser(userName) || 
+			!groupList.getGroupMembers(group).contains(userName) || 
+			!userList.getUserGroups(userName).contains(group)) return false;
+		return true;
 	}
 }
 

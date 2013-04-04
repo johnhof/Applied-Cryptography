@@ -20,8 +20,6 @@ public class UI
 	//shared tools
 	private static String username;
 	private static UserToken token;
-	private static int msgNumberF;
-	private static int msgNumberG;
 
 	//utility tools
 	private static Scanner in;
@@ -63,11 +61,9 @@ public class UI
 			String input = in.nextLine();
 			
 			if(input.equals("F") || input.equals("f"))
-			{
-				token.setMsgNumber(++msgNumberF);
-				
+			{				
 				System.out.print("Would you like to:\n1-List Files\n2-Upload File\n");
-				System.out.print("3-Download File\n4-Delete File\n");
+				System.out.print("3-Download File\n4-Delete File\n5-Print Key Map");
 				System.out.print("Please enter your selection's");
 				System.out.print(" numeric value.\n");
 
@@ -79,7 +75,6 @@ public class UI
 				}
 				catch(Exception e)
 				{
-					token.setMsgNumber(--msgNumberF);
 					continue;
 				}
 
@@ -159,20 +154,16 @@ public class UI
 					
 					default:
 						System.out.println("\ninvalid input\n");
-						msgNumberF--;
 					break;
 				}
 				System.out.println();
 			}
 			else if(input.equals("G") || input.equals("g"))
-			{
-				token.setMsgNumber(++msgNumberG);
-				token.signMsgNumber(myPrivate, cEngine);
-				
+			{				
 				System.out.print("Would you like to:\n1-Create a User\n2-Delete a User\n");
 				System.out.print("3-Create a Group\n4-Delete a Group\n5-List a Group's Members");
-				System.out.print("\n6-Add to a Group\n7-Delete from a Group\n8-See all Users\n9-Refresh Token\nPlease enter your selection's");
-				System.out.print(" numeric value.\n");
+				System.out.print("\n6-Add to a Group\n7-Delete from a Group\n8-See all Users\n");
+				System.out.print("9-Refresh Token\n10-Print group keys\nPlease enter your selection's numeric value.\n");
 				input = in.nextLine();
 				
 				boolean works;
@@ -258,9 +249,9 @@ public class UI
 				{
 					token = gUser.getToken(username, myPwd, myPublic);
 				}
-				else
+				else if(input.equals("10"))
 				{
-					msgNumberG--;
+					System.out.println("\nGroup key map:\n"+gUser.getFromattedMapString());
 				}
 			}
 			else if(input.equals("D") || input.equals("d"))
@@ -321,12 +312,12 @@ public class UI
 			return false;
 		}
 		
-		System.out.println("\n*** Generating Keys for Message Number signatures");
+		System.out.println("\nGenerating Keys for Message Number signature");
 		cEngine = new CryptoEngine();
 		KeyPair rsaKeys = cEngine.genRSAKeyPair();
 		myPrivate = rsaKeys.getPrivate();
 		myPublic = rsaKeys.getPublic();
-		System.out.println("*** Keys Generated");
+		System.out.println(CryptoEngine.formatAsSuccess("Keys Generated"));
 
 
 //--LOGIN & TOKEN RETRIEVAL--------------------------------------------------------------------------------------------
@@ -334,24 +325,15 @@ public class UI
 		boolean proceed = false;
 
 		System.out.println("\nAttempting login and token retrieval");
-		do
-		{
-			System.out.println("Please enter your password.");
-			myPwd = in.nextLine();
+		System.out.println("Please enter your password.");
+		myPwd = in.nextLine();
 
-			token = gUser.getToken(username, myPwd, myPublic);
-			msgNumberG = token.getMsgNumber();
-			if (token != null)
-			{
-				proceed = true;
-			}
-			else
-			{
-				System.out.println("Login failed");
-				System.out.println("\nRe-enter your username.");
-				username = in.nextLine();
-			}
-		}while(!proceed);//asks for username again
+		token = gUser.getToken(username, myPwd, myPublic);
+		if (token == null)
+		{
+			System.out.println("Login failed");
+			return false;
+		}
 		
 //--FILE SERVER CONNECT------------------------------------------------------------------------------------------------
 		
@@ -373,7 +355,6 @@ public class UI
 		try
 		{
 			fUser.connect(fServer, fPort, username, token); 
-			msgNumberF = fUser.verifyMsgNumber(myPrivate);
 		}
 		catch(Exception e)
 		{

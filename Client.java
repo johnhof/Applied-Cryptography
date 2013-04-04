@@ -1,6 +1,7 @@
 import java.net.*;
 import java.security.*;
 import javax.crypto.*;
+import javax.crypto.spec.SecretKeySpec;
 import java.io.*;
 import java.util.*;
 import javax.crypto.spec.IvParameterSpec;
@@ -18,6 +19,8 @@ public class Client extends ClientInterface
 	protected String keyFile;
 	private Key serverPublicKey;
 	protected GroupKeyMapController groupFileKeyMap;
+	protected Integer msgNumber = 0;
+	protected SecretKeySpec HMACKey;
 	
 
 
@@ -190,6 +193,12 @@ public class Client extends ClientInterface
 			message.addObject(cEngine.RSAEncrypt(cEngine.serialize(aesKey.getKey()), serverPublicKey));
 			message.addObject(aesKey.getIV().getIV());
 			message.addObject(cEngine.RSAEncrypt(cEngine.serialize(challenge), serverPublicKey));
+
+			//Matt, take note -HMAC-
+			HMACKey = cEngine.genHMACKey();
+			message.addObject(HMACKey);//key
+			message = cEngine.attachHMAC(message, HMACKey);
+
 			System.out.println(cEngine.formatAsSuccess("RSA encryption successful, IV sent in plaintext"));
 		
 			cEngine.writePlainText(message, output);
@@ -199,20 +208,27 @@ public class Client extends ClientInterface
 			response = (Envelope)cEngine.readAESEncrypted(aesKey, input);
 			if(response.getMessage().equals("OK"))
 			{
-				if((challenge.intValue()+1) != ((Integer)response.getObjContents().get(0)).intValue())
+				//cehck message size
+				if(response.getObjContents().size()<3)
+				{
+					System.out.println(cEngine.formatAsError("Message too small"));
+				}
+				else if((challenge.intValue()+1) != ((Integer)response.getObjContents().get(1)).intValue())
 				{
 					System.out.println(cEngine.formatAsError("Challenge failed, server rejected"));
-					return false;
 				}
-				else
+				else if(cEngine.checkHMAC(response, HMACKey))
 				{
 					System.out.println(cEngine.formatAsSuccess("Challenge passed, server authenticated"));
+					msgNumber = (Integer)response.getObjContents().get(0);
+					System.out.println(cEngine.formatAsSuccess("Initial message number set to: "+msgNumber.intValue()));
+					return true;
 				}
+
 			}
 			else
 			{
 				System.out.println(cEngine.formatAsError("Unexpected response: "+response.getMessage()));
-				return false;
 			}
 		}
 		catch(Exception e)
@@ -220,7 +236,7 @@ public class Client extends ClientInterface
 			System.out.println(cEngine.formatAsError("Server failed to authenticate"));
 			return false;
 		}
-		return true;
+		return false;
 	}
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -280,5 +296,31 @@ public class Client extends ClientInterface
 			ex.printStackTrace(System.err);
 			return false;
 		}
+	}
+
+
+	protected boolean checkMessagePreReqs(Envelope message)
+	{
+				//make sure the message has a minimum number of contents
+		if(message.getObjContents().size() < 2)
+		{
+        	System.out.println(cEngine.formatAsError("Message too short"));
+			return false;//go back and wait for a new message
+		}
+		Integer reqMsgNumber = (Integer)message.getObjContents().get(0);
+
+		//Matt, take note -HMAC -
+		if(!cEngine.checkHMAC(message, HMACKey)) return false;
+
+        //check message number
+		if(msgNumber != reqMsgNumber)
+		{
+        	System.out.println(cEngine.formatAsError("Message number does not match: "+reqMsgNumber));
+			return false;
+		}
+        System.out.println(cEngine.formatAsSuccess("Message number matches"));
+		msgNumber++;
+				
+		return true;
 	}
 }

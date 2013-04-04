@@ -23,4 +23,4 @@ clean:
 	rm -r *.class *_Resources* shared_files bin/ t.txt
 
 reset:
-	rm -r *_Resources* shared_files t.txt
+	rm -r *_Resources* shared_files t.txt t2.txt

@@ -51,7 +51,8 @@ public class GroupThread extends ServerThread
 			{
 				System.out.println("\nWaiting for request...");
 				Envelope message = (Envelope)cEngine.readAESEncrypted(aesKey, input);
-				System.out.println("\n<< Request Received: " + message.getMessage());
+				msgNumber++;
+				System.out.println("\n<< ("+msgNumber+"): Request Received: " + message.getMessage());
 				UserToken reqToken = null;
 
 				Envelope response = new Envelope("OK"); // if no error occurs, send OK
@@ -69,15 +70,6 @@ public class GroupThread extends ServerThread
 					return;
 				}
 
-//--CHECK MESSAGE SIZE---------------------------------------------------------------------------------------------------
-				
-				//make sure the message has contents
-				else if(message.getObjContents().size() < 1)
-				{
-					cEngine.writeAESEncrypted(genAndPrintErrorEnvelope("Server received empty message"), aesKey, output);
-					continue;//go back and wait for a new message
-				}
-
 //--GET TOKEN------------------------------------------------------------------------------------------------------------
 				
 				else if(message.getMessage().equals("TOKEN"))//Client wants a token
@@ -86,49 +78,26 @@ public class GroupThread extends ServerThread
 					continue;
 				}
 
-//--AUTHENTICATE TOKEN AND MSGNUMBER-------------------------------------------------------------------------------------------------
-								
-				//!!!! Everything this beyond point requires a valid token !!!!
+//--CHECK: TOKEN, MSGNUMBER, AND HMAC------------------------------------------------------------------------------------------------
+					
+				reqToken = checkMessagePreReqs(message, response, my_gs.signKeys.getPublic());	
+				if(reqToken==null) return;
 
-				reqToken = (UserToken)message.getObjContents().get(0);
-				if(reqToken != null && !reqToken.verifySignature(my_gs.signKeys.getPublic(), cEngine))
-				{
-					rejectToken(response, output);
-					continue;//go back and wait for a new message
-				}
-        		System.out.println(cEngine.formatAsSuccess("Token Authenticated"));
-				if(!msgNumberSet)
-				{
-					msgNumber = reqToken.getMsgNumber();
-					msgNumberSet = true;
-				}
-				else if(++msgNumber != reqToken.getMsgNumber())
-				{
-					//the msgNumbers did not match
-					//This could be the result of an attack
-					//We want to terminate the connection now
-					rejectToken(response, output);
-				}
-        		System.out.println(cEngine.formatAsSuccess("Message number is valid"));
+				//increment and attach the message number to the response
+				response.addObject(msgNumber);
 
-//--VERIFY HMAC----------------------------------------------------------------------------------------------------------------------
+				//!!!! Everything this beyond point requires a valid token & message number !!!!
 
-				//get the size of the message
-				//get the last object from the message (SHOULD ALWAYS BE THE HMAC)
-				//gett he other contents and compute their hmac
-				//compare the HMAC
-				//return failure messgae if they dont match and continue around the loop
-				
 //--CREATE USER-------------------------------------------------------------------------------------------------------
 				
 				if(message.getMessage().equals("CUSER")) //Client wants to create a user
 				{
 					errorMsg = "Could not create user; ";
 
-					if(message.getObjContents().size() > 2)
+					if(message.getObjContents().size() >4)
 					{
-						String username = (String)message.getObjContents().get(1); //Extract the username
-						String pwd = (String)message.getObjContents().get(2); //extract the password
+						String username = (String)message.getObjContents().get(3); //Extract the username
+						String pwd = (String)message.getObjContents().get(4); //extract the password
 
 						//attempt to create the use using the given credentials
 						if(username != null && pwd != null && createUser(username, pwd, reqToken))
@@ -147,9 +116,9 @@ public class GroupThread extends ServerThread
 				{			
 					errorMsg = "Could not delete user; ";
 
-					if(message.getObjContents().size() > 1)
+					if(message.getObjContents().size() > 3)
 					{						
-						String username = (String)message.getObjContents().get(1);
+						String username = (String)message.getObjContents().get(3);
 
 						if(username != null)
 						{
@@ -179,9 +148,9 @@ public class GroupThread extends ServerThread
 				{
 					errorMsg = "Could not create group; ";
 
-					if(message.getObjContents().size() > 1)
+					if(message.getObjContents().size() > 3)
 					{
-						String groupName = (String)message.getObjContents().get(1); //Extract the group name
+						String groupName = (String)message.getObjContents().get(3); //Extract the group name
 
 						//attempt to create the group
 						if(groupName != null && createGroup(groupName, reqToken))
@@ -202,9 +171,9 @@ public class GroupThread extends ServerThread
 				{
 					errorMsg = "Could not delete group; ";
 
-					if(message.getObjContents().size() > 1)
+					if(message.getObjContents().size() > 3)
 					{
-						String groupName = (String)message.getObjContents().get(1); //Extract the group name
+						String groupName = (String)message.getObjContents().get(3); //Extract the group name
 
 						//attempt to delete the group
 						if(groupName != null && deleteGroup(groupName, reqToken))
@@ -225,9 +194,9 @@ public class GroupThread extends ServerThread
 				{
 					errorMsg = "user list could not be generated; ";
 
-					if(message.getObjContents().size() > 1)
+					if(message.getObjContents().size() > 3)
 					{
-						String groupName = (String)message.getObjContents().get(1); //Extract the group name
+						String groupName = (String)message.getObjContents().get(3); //Extract the group name
 
 						if(groupName != null)
 						{
@@ -251,10 +220,10 @@ public class GroupThread extends ServerThread
 				{
 					errorMsg = "Could not add user to group; ";
 
-					if(message.getObjContents().size() > 2)
+					if(message.getObjContents().size() > 4)
 					{
-						String userName = (String)message.getObjContents().get(1); //Extract the user name
-						String groupName = (String)message.getObjContents().get(2); //Extract the group name
+						String userName = (String)message.getObjContents().get(3); //Extract the user name
+						String groupName = (String)message.getObjContents().get(4); //Extract the group name
 
 						if(userName != null && groupName != null)
 						{
@@ -286,10 +255,10 @@ public class GroupThread extends ServerThread
 				{
 					errorMsg = "Could not remove user from group; ";
 
-					if(message.getObjContents().size() > 2)
+					if(message.getObjContents().size() > 3)
 					{
-						String userName = (String)message.getObjContents().get(1); //Extract the user name
-						String groupName = (String)message.getObjContents().get(2); //Extract the group name
+						String userName = (String)message.getObjContents().get(3); //Extract the user name
+						String groupName = (String)message.getObjContents().get(4); //Extract the group name
 
 						if(userName != null && groupName != null)
 						{
@@ -336,15 +305,15 @@ public class GroupThread extends ServerThread
 				if(error)
 				{
 					response = genAndPrintErrorEnvelope(errorMsg);
-					System.out.println(">> Sending error message");
+					System.out.println(">> ("+msgNumber+"): Sending error message");
 				}
 				else 
 				{
-					System.out.println(">> Sending Response: OK");
+					System.out.println(">> ("+msgNumber+"): Sending Response: OK");
 				}
+				response = cEngine.attachHMAC(response, HMACKey);
 
 				cEngine.writeAESEncrypted(response, aesKey, output);
-
 			}
 			while(true);	
 		}
@@ -388,17 +357,38 @@ public class GroupThread extends ServerThread
 		}
 		//the AESKey is now set. We need to get the token and deal with the MN
 		Envelope message = (Envelope)cEngine.readAESEncrypted(aesKey, input);
+		msgNumber++;
 		Envelope response = new Envelope("OK");
+		System.out.println("\n<< ("+msgNumber+"): Request Received: " + message.getMessage());
 
-		return getTokenHandler( message,  response);
-		//return true;
+		return getTokenHandler( message, response);
 	}
 
 	public boolean getTokenHandler(Envelope message, Envelope response)
 	{
-		String username = (String)message.getObjContents().get(0); //Get the username
-		String pwd = (String)message.getObjContents().get(1);//get 
-		PublicKey key = (PublicKey)message.getObjContents().get(2);
+
+		//check the number of contents
+		if(message.getObjContents().size() < 4)
+		{
+			cEngine.writeAESEncrypted(genAndPrintErrorEnvelope("Message too short"), aesKey, output);
+			return false;//go back and wait for a new message
+		}
+
+		Integer reqMsgNumber = (Integer)message.getObjContents().get(0); //Get the username
+		String username = (String)message.getObjContents().get(1); //Get the username
+		String pwd = (String)message.getObjContents().get(2);//get 
+		PublicKey key = (PublicKey)message.getObjContents().get(3);
+
+		//Matt, take Note -HMAC-
+		if(!cEngine.checkHMAC(message, HMACKey)) return false;		
+
+        //check message number
+		if(msgNumber != reqMsgNumber)
+		{
+			rejectMessageNumber(response, reqMsgNumber, output);
+			return false;
+		}
+        System.out.println(cEngine.formatAsSuccess("Message number matches"));
 
 		try
 		{
@@ -433,15 +423,15 @@ public class GroupThread extends ServerThread
 			{
 				UserToken yourToken = createToken(username, key); //Create a token
 				System.out.println(cEngine.formatAsSuccess("Authentication cleared"));
-							
+				
+				msgNumber++;
 				//Respond to the client. On error, the client will receive a null token
+				response.addObject(msgNumber);
 				response.addObject(yourToken);
 				response.addObject(getGroupKeysForToken(yourToken));
-				System.out.println(">> Sending Reponse: OK");
+				response = cEngine.attachHMAC(response, HMACKey);
+				System.out.println(">> ("+msgNumber+"): Sending Reponse: OK");
 				cEngine.writeAESEncrypted(response, aesKey, output);
-
-				//WARNING: THIS MAY BE INSECURE. LOOK INTO IT - john 4/3
-				msgNumberSet = false;
 
 				System.out.println(cEngine.formatAsSuccess("Token sent"));
 				return true;
@@ -569,7 +559,7 @@ public class GroupThread extends ServerThread
 	private boolean removeFromGroup(String userName, String groupName, UserToken yourToken)
 	{
 		//verify that the group exists, and that the user is an owner
-		if(groupExists(groupName) && isGroupOwner(groupName, yourToken))
+		if(groupExists(groupName) && isGroupOwner(groupName, yourToken) && userExists(userName))
 		{
 			my_gs.removeUserFromGroup(groupName, userName);
 
@@ -588,11 +578,15 @@ public class GroupThread extends ServerThread
 //----------------------------------------------------------------------------------------------------------------------
 	
 	//wrappers to cleanup code
-	private boolean userExists(String username)
+	private boolean userExists(String userName)
 	{
-		return my_gs.userList.allUsers().contains(username);
+		return my_gs.userList.allUsers().contains(userName);
 	}
 	private boolean groupExists(String group)
+	{
+		return my_gs.groupList.checkGroup(group);
+	}
+	private boolean userInGroup(String userName, String group)
 	{
 		return my_gs.groupList.checkGroup(group);
 	}

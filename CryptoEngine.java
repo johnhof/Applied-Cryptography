@@ -3,6 +3,7 @@ import java.nio.charset.Charset;
 import java.security.*;
 import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 import java.io.*;
 import java.util.*;
 import java.lang.*;
@@ -277,7 +278,7 @@ class CryptoEngine
     	return ("     !"+input);
     }
 
-    public String formatAsSuccess(String input)
+    public static String formatAsSuccess(String input)
     {
     	return ("     *"+input);
     }
@@ -377,6 +378,42 @@ class CryptoEngine
 			System.out.println(formatAsError("IO/ClassNotFound Exception when reading (Encrypted) data"));
 		}
 		return null;
+	}
+
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+//-- HMAC FUNCTIONS
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+	public SecretKeySpec genHMACKey()
+	{
+		//should this be random? -john 4/3
+		return new SecretKeySpec("qnscAdgRlkIhAUPY44oiexBKtQbGY0orf7OV1I50".getBytes(), "HmacSHA1");
+	}
+
+	public boolean checkHMAC(Envelope message, SecretKeySpec keySpec)
+	{
+		//TODO: -HMAC- : get the last object of the message, and assume its the HMAC
+		//				compute the HMAC using the preceding contents of the message
+		//				return whether or not the message is untampered
+		if(((String)message.getObjContents().get((message.getObjContents().size()-1))).equals("HMAC"))
+		{
+			System.out.println(formatAsSuccess("HMAC valid"));
+		}
+		else
+		{
+			System.out.println(formatAsError("HMAC invalid"));
+			return false;
+		}
+		return true;
+	}
+
+	public Envelope attachHMAC(Envelope message, SecretKeySpec keySpec)
+	{
+		//TODO: -HMAC- : given a message, compute the HMAC on its contents, and add an
+		//				HMAC object to the end of the message
+		message.addObject("HMAC");
+		System.out.println(formatAsSuccess("HMAC computed and added"));
+		return message;
 	}
 }
 

@@ -40,8 +40,6 @@ public class UserToken implements UserTokenInterface, java.io.Serializable
         groups = null;
         signature = null;
 		publicKey = key;
-		msgNumber = new Integer((new SecureRandom()).nextInt());
-		msgNumberSignature = null;
 	}
 
     public UserToken(String Issuer, String Subject, List<String> Groups, PublicKey key)
@@ -51,8 +49,6 @@ public class UserToken implements UserTokenInterface, java.io.Serializable
         groups = Groups;
         signature = null;
 		publicKey = key;
-		msgNumber = new Integer((new SecureRandom()).nextInt());
-		msgNumberSignature = null;
     }
 
     public String getIssuer()
@@ -99,17 +95,6 @@ public class UserToken implements UserTokenInterface, java.io.Serializable
 	{
 		return publicKey;
 	}
-	
-	public int getMsgNumber()
-	{
-		return msgNumber.intValue();
-	}
-	
-	public void setMsgNumber(int replacementMsgNumber)
-	{
-		msgNumber = new Integer(replacementMsgNumber);
-	}
-
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 //-- SIGNING AND VERIFICATION 
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -118,16 +103,6 @@ public class UserToken implements UserTokenInterface, java.io.Serializable
     {
         signature = cEngine.RSASign(getContentsInBytes(cEngine), key);
     }
-
-	public void signMsgNumber(PrivateKey key, CryptoEngine cEngine)
-	{
-		msgNumberSignature = cEngine.RSASign(cEngine.serialize(msgNumber), key);
-	}
-	
-	public boolean verifyMsgNumberSignature(CryptoEngine cEngine)
-	{
-		return cEngine.RSAVerify(cEngine.serialize(msgNumber), msgNumberSignature, publicKey);
-	}
 
     public boolean verifySignature(PublicKey key, CryptoEngine cEngine)
     {

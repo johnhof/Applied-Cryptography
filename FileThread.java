@@ -43,7 +43,8 @@ public class FileThread extends ServerThread
 			{
 				System.out.println("\nWaiting for request...");
 				Envelope message = (Envelope)cEngine.readAESEncrypted(aesKey, input);
-				System.out.println("\n<< Request Received: " + message.getMessage());
+				msgNumber++;
+				System.out.println("\n<< ("+msgNumber+"): Request Received: " + message.getMessage());
 				UserToken reqToken = null;
 
 				Envelope response = new Envelope("OK"); // if no error occurs, send OK
@@ -70,38 +71,14 @@ public class FileThread extends ServerThread
 					continue;//go back and wait for a new message
 				}
 
-//--AUTHENTICATE TOKEN AND MSGNUMBER-------------------------------------------------------------------------------------------------
-								
-				//!!!! Everything this beyond point requires a valid token !!!!
+//--CHECK: TOKEN, MSGNUMBER, AND HMAC------------------------------------------------------------------------------------------------
+						
+				reqToken = checkMessagePreReqs(message, response, my_fs.signVerifyKey);	
+				if(reqToken==null) return;
 
-				reqToken = (UserToken)message.getObjContents().get(0);
-				if(reqToken != null && !reqToken.verifySignature(my_fs.signVerifyKey, cEngine))
-				{
-					rejectToken(response, output);
-					continue;//go back and wait for a new message
-				}
-        		System.out.println(cEngine.formatAsSuccess("Token Authenticated"));
-				if(!msgNumberSet)
-				{
-					msgNumber = reqToken.getMsgNumber();
-					msgNumberSet = true;
-				}
-				else if(++msgNumber != reqToken.getMsgNumber())
-				{
-					//the msgNumbers did not match
-					//This could be the result of an attack
-					//We want to terminate the connection now
-					rejectToken(response, output);
-				}
-        		System.out.println(cEngine.formatAsSuccess("Message number is valid"));
-
-//--VERIFY HMAC----------------------------------------------------------------------------------------------------------------------
-
-				//get the size of the message
-				//get the last object from the message (SHOULD ALWAYS BE THE HMAC)
-				//gett he other contents and compute their hmac
-				//compare the HMAC
-				//return failure messgae if they dont match and continue around the loop
+				//increment and attach the message number to the response
+				response.addObject(msgNumber);
+				//!!!! Everything this beyond point requires a valid token & message number !!!!
 
 //--LIST FILES---------------------------------------------------------------------------------------------------------
 				
@@ -313,11 +290,11 @@ public class FileThread extends ServerThread
 				if(error)
 				{
 					response = genAndPrintErrorEnvelope(errorMsg);
-					System.out.println("\n>> Sending error message");
+					System.out.println(">> ("+msgNumber+"): Sending error message");
 				}
 				else 
 				{
-					System.out.println("\n>> Sending Response: OK");
+					System.out.println(">> ("+msgNumber+"): Sending Response: OK");
 				}
 
 				cEngine.writeAESEncrypted(response, aesKey, output);
@@ -338,38 +315,8 @@ public class FileThread extends ServerThread
 		{
 			return false;
 		}
-		//try
-		//{
-			Envelope response = new Envelope("MN");
-			Integer msgNumber = new Integer((new SecureRandom()).nextInt());
-			response.addObject(msgNumber);
-			cEngine.writeAESEncrypted(response, aesKey, output);
-			
-			Envelope message = (Envelope)cEngine.readAESEncrypted(aesKey, input);
-			//NOW WE VERIFY THE MESSAGE NUMBER
-			if(message.getMessage().equals("VERIFY_MN"))
-			{
-				UserToken token = (UserToken)message.getObjContents().get(0);
-				if(!token.verifyMsgNumberSignature(cEngine) || !token.verifySignature(my_fs.signVerifyKey, cEngine))
-				{
-					//Either the msgNumber signature failed or the token failed.
-					return false;
-				}
-				else
-				{
-					//The token is definitely the users
-					return true;
-				}
-			}
-			else
-			{
-				return false;
-			}
-		//}
-		//catch(Exception e)
-		//{
-			//e.printStackTrace();
-			//return false;
-		//}
+
+		//TODO: -MN- signature checking  
+		return true;
 	}
 }

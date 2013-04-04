@@ -55,18 +55,21 @@ public class FileClient extends Client implements FileClientInterface
 		//create and setup a 'delete' envelope
 		Envelope env = new Envelope("DELETEF"); //Success
 	    env.addObject(token);
+		env.addObject(msgNumber++); //Add the nessage number
 	    env.addObject(remotePath);
 
 	    //send the envelope and output the result
 
-		System.out.println("\n>> Sending File Server Request: DELETEF");
+		System.out.println("\n>> ("+msgNumber+"): Sending File Server Request: DELETEF");
 		cEngine.writeAESEncrypted(env, aesKey, output);
 
 	    env = (Envelope)cEngine.readAESEncrypted(aesKey, input);
 		    
 		if (env.getMessage().compareTo("OK")==0) 
 		{
-			System.out.println("<< receiving File Server Response: OK");
+			System.out.println("<< ("+msgNumber+"): receiving File Server Response: OK");
+			if(!checkMessagePreReqs(env)) return false;
+
 			System.out.println(cEngine.formatAsSuccess("Successfully deleted file: "+filename));				
 		}
 		else 
@@ -89,7 +92,8 @@ public class FileClient extends Client implements FileClientInterface
 			//Tell the server to return the member list
 			message = new Envelope("LFILES");
 			message.addObject(token); //Add requester's token
-			System.out.println("\n>> Sending File Server Request: LFILES");
+			message.addObject(msgNumber++); //Add the nessage number
+			System.out.println("\n>> ("+msgNumber+"): Sending File Server Request: LFILES");
 			cEngine.writeAESEncrypted(message, aesKey, output);
 			 
 			e = (Envelope)cEngine.readAESEncrypted(aesKey, input);
@@ -97,7 +101,9 @@ public class FileClient extends Client implements FileClientInterface
 			//If server indicates success, return the member list
 			if(e.getMessage().equals("OK"))
 			{ 
-				System.out.println("<< receiving File Server Response: OK");
+				System.out.println("<< ("+msgNumber+"): receiving File Server Response: OK");
+				if(!checkMessagePreReqs(e)) return null;
+
 				System.out.println(cEngine.formatAsSuccess("Files returned"));
 				return (List<ShareFile>)e.getObjContents().get(0); //This cast creates compiler warnings. Sorry.
 			}
@@ -134,13 +140,16 @@ public class FileClient extends Client implements FileClientInterface
 			    //create and setup a download envelope
 			    Envelope env = new Envelope("DOWNLOADF"); //Success
 			    env.addObject(token);
+				env.addObject(msgNumber++); //Add the nessage number
 			    env.addObject(sourceFile);
-				System.out.println("\n>> Sending File Server Request: DOWNLOADF");
+				System.out.println("\n>> ("+msgNumber+"): Sending File Server Request: DOWNLOADF");
 			    cEngine.writeAESEncrypted(env, aesKey, output);
 
 						
 				//retreive the incoming evelope
 			    env = (Envelope)cEngine.readAESEncrypted(aesKey, input);
+			    if(!checkMessagePreReqs(env)) return false;
+
 			    byte[] encryptedFile = new byte[0];
 						    
 				//read the body of the file one envelope at a time
@@ -153,18 +162,25 @@ public class FileClient extends Client implements FileClientInterface
 					encryptedFile = temp;
 
 					env = new Envelope("DOWNLOADF"); //Success
+				    env.addObject(token);
+					env.addObject(msgNumber++); //Add the nessage number
+					env = cEngine.attachHMAC(env, HMACKey);
 					cEngine.writeAESEncrypted(env, aesKey, output);
 
-					env = (Envelope)cEngine.readAESEncrypted(aesKey, input);									
+					env = (Envelope)cEngine.readAESEncrypted(aesKey, input);	
+			   		if(!checkMessagePreReqs(env)) return false;								
 				}				
 				recoverFileFromDownload(encryptedFile, file, group);
 						
 				//when the end of file is detected, close and display the appropriate message
 				if(env.getMessage().compareTo("EOF")==0) 
 				{
-					System.out.println("<< receiving File Server Response: EOF");
+					System.out.println("<< ("+msgNumber+"): receiving File Server Response: EOF");
 					System.out.println(cEngine.formatAsSuccess("Transfer successful for file: "+sourceFile));
 					env = new Envelope("OK"); //Success
+				    env.addObject(token);
+					env.addObject(msgNumber++); //Add the nessage number
+					env = cEngine.attachHMAC(env, HMACKey);
 					cEngine.writeAESEncrypted(env, aesKey, output);
 				}
 				else 
@@ -205,12 +221,14 @@ public class FileClient extends Client implements FileClientInterface
 			//Tell the server to return the member list
 			message = new Envelope("UPLOADF");
 			message.addObject(token); //Add requester's token
+			message.addObject(msgNumber++); //Add the nessage number
 			message.addObject(destFile);
 			message.addObject(group);
-			System.out.println("\n>> Sending File Server Request: UPLOADF");
+			System.out.println("\n>> ("+msgNumber+"): Sending File Server Request: UPLOADF");
 			cEngine.writeAESEncrypted(message, aesKey, output);
 
 			env = (Envelope)cEngine.readAESEncrypted(aesKey, input);
+			if(!checkMessagePreReqs(env)) return false;
 			 
 			//If server indicates success, return the member list
 			if(env.getMessage().equals("READY"))
@@ -247,12 +265,16 @@ public class FileClient extends Client implements FileClientInterface
 				}
 				message = new Envelope("CHUNK");
 					
+				message.addObject(token);
+				message.addObject(msgNumber++); //Add the nessage number
 				message.addObject(buf);
 				message.addObject(new Integer(4096));
-					
+				message = cEngine.attachHMAC(env, HMACKey);
 				cEngine.writeAESEncrypted(message, aesKey, output);
 						
 				env = (Envelope)cEngine.readAESEncrypted(aesKey, input);
+			    if(!checkMessagePreReqs(env)) return false;
+
 	        	System.out.println(cEngine.formatAsSuccess("chunk sent..."));
 			}
 
@@ -269,12 +291,17 @@ public class FileClient extends Client implements FileClientInterface
 				}
 				message = new Envelope("CHUNK");
 					
+				message.addObject(token);
+				message.addObject(msgNumber++); //Add the nessage number
 				message.addObject(buf);
 				message.addObject(new Integer(preparedFile.length-byteCount));
+				message = cEngine.attachHMAC(env, HMACKey);
 					
 				cEngine.writeAESEncrypted(message, aesKey, output);
 						
 				env = (Envelope)cEngine.readAESEncrypted(aesKey, input);
+			    if(!checkMessagePreReqs(env)) return false;
+
 	        	System.out.println(cEngine.formatAsSuccess("chunk sent..."));
 			}
 
@@ -282,13 +309,19 @@ public class FileClient extends Client implements FileClientInterface
 			 { 
 				//tell the sever we're done
 				message = new Envelope("EOF");
+				message.addObject(token);
+				message.addObject(msgNumber++); //Add the nessage number
+				message = cEngine.attachHMAC(env, HMACKey);
 				cEngine.writeAESEncrypted(message, aesKey, output);
 	        	System.out.println(cEngine.formatAsSuccess("EOF sent"));
 				
 				env = (Envelope)cEngine.readAESEncrypted(aesKey, input);
+
 				if(env.getMessage().compareTo("OK")==0) 
 				{
-					System.out.println("<< receiving File Server Response: OK");
+					System.out.println("<< ("+msgNumber+"): receiving File Server Response: OK");
+			    	if(!checkMessagePreReqs(env)) return false;
+
 					System.out.println(cEngine.formatAsSuccess("File upload successful: "+sourceFile+" -> "+destFile.substring(1)));
 				}
 				else 
@@ -315,25 +348,7 @@ public class FileClient extends Client implements FileClientInterface
 
 	public int verifyMsgNumber(PrivateKey myPrivate)
 	{
-		Integer msgNumber = null;
-		//try
-		//{
-			Envelope response = (Envelope)cEngine.readAESEncrypted(aesKey, input);
-			msgNumber = (Integer)response.getObjContents().get(0);
-			
-			token.setMsgNumber(msgNumber);
-			token.signMsgNumber(myPrivate, cEngine);
-		
-			Envelope message = new Envelope("VERIFY_MN");
-			message.addObject(token);
-			cEngine.writeAESEncrypted(message, aesKey, output);
-		//}
-		/*catch(Exception e)
-		{
-			e.printStackTrace();
-			System.exit(-1);
-		}*/
-		return msgNumber.intValue();
+		return -1;
 	}
 
 
