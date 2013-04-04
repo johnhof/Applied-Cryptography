@@ -96,8 +96,8 @@ public class GroupThread extends ServerThread
 
 					if(message.getObjContents().size() >4)
 					{
-						String username = (String)message.getObjContents().get(3); //Extract the username
-						String pwd = (String)message.getObjContents().get(4); //extract the password
+						String username = (String)message.getObjContents().get(2); //Extract the username
+						String pwd = (String)message.getObjContents().get(3); //extract the password
 
 						//attempt to create the use using the given credentials
 						if(username != null && pwd != null && createUser(username, pwd, reqToken))
@@ -118,7 +118,7 @@ public class GroupThread extends ServerThread
 
 					if(message.getObjContents().size() > 3)
 					{						
-						String username = (String)message.getObjContents().get(3);
+						String username = (String)message.getObjContents().get(2);
 
 						if(username != null)
 						{
@@ -150,7 +150,7 @@ public class GroupThread extends ServerThread
 
 					if(message.getObjContents().size() > 3)
 					{
-						String groupName = (String)message.getObjContents().get(3); //Extract the group name
+						String groupName = (String)message.getObjContents().get(2); //Extract the group name
 
 						//attempt to create the group
 						if(groupName != null && createGroup(groupName, reqToken))
@@ -173,7 +173,7 @@ public class GroupThread extends ServerThread
 
 					if(message.getObjContents().size() > 3)
 					{
-						String groupName = (String)message.getObjContents().get(3); //Extract the group name
+						String groupName = (String)message.getObjContents().get(2); //Extract the group name
 
 						//attempt to delete the group
 						if(groupName != null && deleteGroup(groupName, reqToken))
@@ -196,7 +196,7 @@ public class GroupThread extends ServerThread
 
 					if(message.getObjContents().size() > 3)
 					{
-						String groupName = (String)message.getObjContents().get(3); //Extract the group name
+						String groupName = (String)message.getObjContents().get(2); //Extract the group name
 
 						if(groupName != null)
 						{
@@ -222,8 +222,8 @@ public class GroupThread extends ServerThread
 
 					if(message.getObjContents().size() > 4)
 					{
-						String userName = (String)message.getObjContents().get(3); //Extract the user name
-						String groupName = (String)message.getObjContents().get(4); //Extract the group name
+						String userName = (String)message.getObjContents().get(2); //Extract the user name
+						String groupName = (String)message.getObjContents().get(3); //Extract the group name
 
 						if(userName != null && groupName != null)
 						{
@@ -257,8 +257,8 @@ public class GroupThread extends ServerThread
 
 					if(message.getObjContents().size() > 3)
 					{
-						String userName = (String)message.getObjContents().get(3); //Extract the user name
-						String groupName = (String)message.getObjContents().get(4); //Extract the group name
+						String userName = (String)message.getObjContents().get(2); //Extract the user name
+						String groupName = (String)message.getObjContents().get(3); //Extract the group name
 
 						if(userName != null && groupName != null)
 						{
@@ -301,7 +301,7 @@ public class GroupThread extends ServerThread
 				}
 
 //--SEND FINAL MESSAGE---------------------------------------------------------------------------------------------------
-				
+
 				if(error)
 				{
 					response = genAndPrintErrorEnvelope(errorMsg);
@@ -496,6 +496,7 @@ public class GroupThread extends ServerThread
 					// Matt ~ 2013 2 April
 					// my_gs.userList.addUser(username, pwd);
 					my_gs.userList.addUser(username, cEngine.hashWithSHA(salt+pwd));
+					System.out.print("User added: "+userExists(username));
 					my_gs.addUserToGroup("global", username); // add all users to global by default
 					return true;
 				}
@@ -548,7 +549,7 @@ public class GroupThread extends ServerThread
 	private boolean addToGroup(String userName, String groupName, UserToken yourToken)
 	{
 		//verify that the group exists, that the user is an owner, and that the user isnt already a member
-		if(groupExists(groupName) && isGroupOwner(groupName, yourToken) && !my_gs.groupList.getGroupMembers(groupName).contains(userName))
+		if(userExists(userName) && groupExists(groupName) && isGroupOwner(groupName, yourToken) && !my_gs.groupList.getGroupMembers(groupName).contains(userName))
 		{
 			my_gs.addUserToGroup(groupName, userName);
 			return true;

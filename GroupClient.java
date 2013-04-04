@@ -102,12 +102,11 @@ public class GroupClient extends Client implements GroupClientInterface {
 			
 			response = (Envelope)cEngine.readAESEncrypted(aesKey, input);
 
+				if(!checkMessagePreReqs(response)) return false;
 			//If server indicates success, return true
 			if(response.getMessage().equals("OK"))
 			{
 				System.out.println("<< ("+msgNumber+"): receiving Group Server Response: OK");
-				if(!checkMessagePreReqs(response)) return false;
-
 				return true;
 			}
 			else
@@ -140,14 +139,15 @@ public class GroupClient extends Client implements GroupClientInterface {
 			cEngine.writeAESEncrypted(message, aesKey, output);
 			
 			response = (Envelope)cEngine.readAESEncrypted(aesKey, input);	
+			
+			if(!checkMessagePreReqs(response)) return false;
 
 			//If server indicates success, return true
 			if(response.getMessage().equals("OK"))
 			{
 				System.out.println("<< ("+msgNumber+"): receiving Group Server Response: OK");
-				if(!checkMessagePreReqs(response)) return false;
 
-				handleMapRetrieval((HashMap<String, HashMap<Date, AESKeySet>>)response.getObjContents().get(0));
+				handleMapRetrieval((HashMap<String, HashMap<Date, AESKeySet>>)response.getObjContents().get(1));
 
 				return true;
 			}
@@ -181,14 +181,15 @@ public class GroupClient extends Client implements GroupClientInterface {
 			
 			response = (Envelope)cEngine.readAESEncrypted(aesKey, input);	
 
+			if(!checkMessagePreReqs(response)) return false;
 
 			//If server indicates success, return true
 			if(response.getMessage().equals("OK"))
 			{
 				System.out.println("<< ("+msgNumber+"): receiving Group Server Response: OK");
-				if(!checkMessagePreReqs(response)) return false;
 
-				handleMapRetrieval((HashMap<String, HashMap<Date, AESKeySet>>)response.getObjContents().get(0));
+
+				handleMapRetrieval((HashMap<String, HashMap<Date, AESKeySet>>)response.getObjContents().get(1));
 
 				return true;
 			}
@@ -222,13 +223,15 @@ public class GroupClient extends Client implements GroupClientInterface {
 			
 			response = (Envelope)cEngine.readAESEncrypted(aesKey, input);	
 
+			if(!checkMessagePreReqs(response)) return false;
+
 			//If server indicates success, return true
 			if(response.getMessage().equals("OK"))
 			{
 				System.out.println("<< ("+msgNumber+"): receiving Group Server Response: OK");
-				if(!checkMessagePreReqs(response)) return false;
 
-				handleMapRetrieval((HashMap<String, HashMap<Date, AESKeySet>>)response.getObjContents().get(0));
+
+				handleMapRetrieval((HashMap<String, HashMap<Date, AESKeySet>>)response.getObjContents().get(1));
 
 				return true;
 			}
@@ -263,13 +266,14 @@ public class GroupClient extends Client implements GroupClientInterface {
 			
 			response = (Envelope)cEngine.readAESEncrypted(aesKey, input);	
 
+			if(!checkMessagePreReqs(response)) return null;
+
 			//If server indicates success, return the member list
 			if(response.getMessage().equals("OK"))
 			{ 
 				System.out.println("<< ("+msgNumber+"): receiving Group Server Response: OK");
-				if(!checkMessagePreReqs(response)) return null;
 
-				return (List<String>)response.getObjContents().get(0); //This cast creates compiler warnings. Sorry.
+				return (List<String>)response.getObjContents().get(1); //This cast creates compiler warnings. Sorry.
 			}
 			else
 			{	
@@ -380,13 +384,13 @@ public class GroupClient extends Client implements GroupClientInterface {
 			
 			response = (Envelope)cEngine.readAESEncrypted(aesKey, input);	
 
+			if(!checkMessagePreReqs(response)) return null;
 
 			if(response.getMessage().equals("OK") && response.getObjContents() != null)
 			{
 				System.out.println("<< ("+msgNumber+"): receiving Group Server Response: OK");
-				if(!checkMessagePreReqs(response)) return null;
 
-				return (ArrayList<String>)response.getObjContents().get(0);
+				return (ArrayList<String>)response.getObjContents().get(1);
 			}
 			else
 			{	
