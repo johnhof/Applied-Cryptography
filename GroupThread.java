@@ -383,7 +383,7 @@ public class GroupThread extends ServerThread
 		if(!cEngine.checkHMAC(message, HMACKey)) return false;		
 
         //check message number
-		if(msgNumber != reqMsgNumber)
+		if(msgNumber.intValue() != reqMsgNumber.intValue())
 		{
 			rejectMessageNumber(response, reqMsgNumber, output);
 			return false;

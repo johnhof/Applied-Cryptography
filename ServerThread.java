@@ -20,7 +20,7 @@ public class ServerThread extends Thread
 	protected Server myServer;
 	protected Key myPrivateKey;
 	protected Key myPublicKey;
-	protected int msgNumber = 0;
+	protected Integer msgNumber = 0;
 	protected SecretKeySpec HMACKey;
 
 	public ServerThread(Server server, Socket _socket)
@@ -187,7 +187,7 @@ public class ServerThread extends Thread
         System.out.println(cEngine.formatAsSuccess("Token Authenticated"));
 
         //check message number
-		if(msgNumber != reqMsgNumber)
+		if(msgNumber.intValue() != reqMsgNumber.intValue())
 		{
 			rejectMessageNumber(response, reqMsgNumber, output);
 			return null;

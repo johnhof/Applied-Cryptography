@@ -32,7 +32,6 @@ public class GroupClient extends Client implements GroupClientInterface {
 		{
 			UserToken token = null;
 			Envelope message = null, response = null;
-			msgNumber++;	 	
 
 			//Tell the server to return a token.
 			message = new Envelope("TOKEN");
@@ -43,6 +42,7 @@ public class GroupClient extends Client implements GroupClientInterface {
 			System.out.println("\n>> ("+msgNumber+"): Sending Group Server Request: TOKEN");
 			message= cEngine.attachHMAC(message, HMACKey);
 			cEngine.writeAESEncrypted(message, aesKey, output);
+			msgNumber++;	 	
 			
 			//Get the response from the server
 			response = (Envelope)cEngine.readAESEncrypted(aesKey, input);

@@ -208,6 +208,7 @@ public class Client extends ClientInterface
 			response = (Envelope)cEngine.readAESEncrypted(aesKey, input);
 			if(response.getMessage().equals("OK"))
 			{
+				msgNumber = (Integer)response.getObjContents().get(0);
 				//cehck message size
 				if(response.getObjContents().size()<3)
 				{
@@ -217,10 +218,9 @@ public class Client extends ClientInterface
 				{
 					System.out.println(cEngine.formatAsError("Challenge failed, server rejected"));
 				}
-				else if(cEngine.checkHMAC(response, HMACKey))
+				else if(checkMessagePreReqs(response))
 				{
 					System.out.println(cEngine.formatAsSuccess("Challenge passed, server authenticated"));
-					msgNumber = (Integer)response.getObjContents().get(0);
 					System.out.println(cEngine.formatAsSuccess("Initial message number set to: "+msgNumber.intValue()));
 					return true;
 				}
@@ -313,9 +313,9 @@ public class Client extends ClientInterface
 		if(!cEngine.checkHMAC(message, HMACKey)) return false;
 
         //check message number
-		if(msgNumber != reqMsgNumber)
+		if(msgNumber.intValue() != reqMsgNumber.intValue())
 		{
-        	System.out.println(cEngine.formatAsError("Message number does not match: "+reqMsgNumber));
+        	System.out.println(cEngine.formatAsError("Message number does not match: "+reqMsgNumber+" : "+msgNumber));
 			return false;
 		}
         System.out.println(cEngine.formatAsSuccess("Message number matches"));
