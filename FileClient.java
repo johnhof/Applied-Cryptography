@@ -5,10 +5,13 @@ import java.security.*;
 import javax.crypto.*;
 import java.io.*;
 import java.util.*;
+import java.nio.ByteBuffer;
 
 public class FileClient extends Client implements FileClientInterface 
 {
 	private UserToken token;
+	public final int INT_BYTE_SIZE = Integer.SIZE/8;
+	public final int DATE_SIZE = 46;
 	
 	public boolean connect(final String server, final int port, String username, UserToken newtoken)
 	{
@@ -34,6 +37,7 @@ public class FileClient extends Client implements FileClientInterface
 		token = newtoken;
 	}
 	
+//--DELETE-----------------------------------------------------------------------------------------------------------
 	
 	public boolean delete(String filename, UserToken token) 
 	{
@@ -73,6 +77,43 @@ public class FileClient extends Client implements FileClientInterface
 	    	
 		return true;
 	}
+
+//--LIST FILES-------------------------------------------------------------------------------------------------------
+
+	@SuppressWarnings("unchecked")
+	public List<ShareFile> listFiles(UserToken token) 
+	{
+		 try
+		 {
+			Envelope message = null, e = null;
+			//Tell the server to return the member list
+			message = new Envelope("LFILES");
+			message.addObject(token); //Add requester's token
+			System.out.println("\n>> Sending File Server Request: LFILES");
+			cEngine.writeAESEncrypted(message, aesKey, output);
+			 
+			e = (Envelope)cEngine.readAESEncrypted(aesKey, input);
+			 
+			//If server indicates success, return the member list
+			if(e.getMessage().equals("OK"))
+			{ 
+				System.out.println("<< receiving File Server Response: OK");
+				System.out.println(cEngine.formatAsSuccess("Files returned"));
+				return (List<ShareFile>)e.getObjContents().get(0); //This cast creates compiler warnings. Sorry.
+			}
+			System.out.println(cEngine.formatAsError(e.getMessage()));
+			return null;
+			 
+		 }
+		 catch(Exception e)
+		{
+			System.err.println(cEngine.formatAsError("Exception encountered"));
+			e.printStackTrace(System.err);
+			return null;
+		}
+	}
+
+//--DOWsNLOAD---------------------------------------------------------------------------------------------------------
 
 	public boolean download(String sourceFile, String destFile, String group, UserToken token) 
 	{
@@ -147,38 +188,7 @@ public class FileClient extends Client implements FileClientInterface
 		return true;
 	}
 
-	@SuppressWarnings("unchecked")
-	public List<ShareFile> listFiles(UserToken token) 
-	{
-		 try
-		 {
-			Envelope message = null, e = null;
-			//Tell the server to return the member list
-			message = new Envelope("LFILES");
-			message.addObject(token); //Add requester's token
-			System.out.println("\n>> Sending File Server Request: LFILES");
-			cEngine.writeAESEncrypted(message, aesKey, output);
-			 
-			e = (Envelope)cEngine.readAESEncrypted(aesKey, input);
-			 
-			//If server indicates success, return the member list
-			if(e.getMessage().equals("OK"))
-			{ 
-				System.out.println("<< receiving File Server Response: OK");
-				System.out.println(cEngine.formatAsSuccess("Files returned"));
-				return (List<ShareFile>)e.getObjContents().get(0); //This cast creates compiler warnings. Sorry.
-			}
-			System.out.println(cEngine.formatAsError(e.getMessage()));
-			return null;
-			 
-		 }
-		 catch(Exception e)
-		{
-			System.err.println(cEngine.formatAsError("Exception encountered"));
-			e.printStackTrace(System.err);
-			return null;
-		}
-	}
+//--UPLOAD-----------------------------------------------------------------------------------------------------------
 
 	public boolean upload(String sourceFile, String destFile, String group,
 			UserToken token) 
@@ -200,14 +210,12 @@ public class FileClient extends Client implements FileClientInterface
 			System.out.println("\n>> Sending File Server Request: UPLOADF");
 			cEngine.writeAESEncrypted(message, aesKey, output);
 
-			System.out.println(groupFileKeyMap.toString());
-
 			env = (Envelope)cEngine.readAESEncrypted(aesKey, input);
 			 
 			//If server indicates success, return the member list
 			if(env.getMessage().equals("READY"))
 			{ 
-				System.out.println("Meta data upload successful");
+				System.out.println(cEngine.formatAsSuccess("Meta data upload successful"));
 			}
 			 else 
 			{				
@@ -216,6 +224,13 @@ public class FileClient extends Client implements FileClientInterface
 			}
 
 			byte[] preparedFile = prepareFileForUpload(sourceFile, group);
+
+			if(preparedFile == null)
+			{
+				message = new Envelope("CANCEL");
+				cEngine.writeAESEncrypted(message, aesKey, output);
+				return false;
+			}
 
 			int byteCount=0;
 
@@ -332,7 +347,6 @@ public class FileClient extends Client implements FileClientInterface
 		Date date = groupFileKeyMap.getLatestDate(group, true);
 
 		byte[] dateBytes = cEngine.serialize(date);
-		System.out.println("Date length: "+dateBytes.length);
 
 		//extract and encrypt the file with the appropriat group key
 		File file = new File(sourceFile);
@@ -346,9 +360,15 @@ public class FileClient extends Client implements FileClientInterface
 			System.out.println(cEngine.formatAsError("Failed to read file"));
 			return null;
 		}
-		byte[] encryptedFile = cEngine.AESEncrypt(rawFile, key);
+		//byte[] encryptedFile = cEngine.AESEncrypt(rawFile, key);
 
-		return append(encryptedFile,dateBytes);
+		//return append(encryptedFile,dateBytes);
+		System.out.println("File size: "+rawFile.length);
+		byte[] fileSize = ByteBuffer.allocate(INT_BYTE_SIZE).putInt(rawFile.length).array();
+		System.out.println("int size: "+fileSize.length);
+
+		//return (date||file size||file)
+		return append(append(rawFile,fileSize),dateBytes);
 	}
 
 	public byte[] append(byte[] a, byte[] b)
@@ -383,11 +403,20 @@ public class FileClient extends Client implements FileClientInterface
 
 	private boolean recoverFileFromDownload(byte[] encryptedfile, File file, String group)
 	{
-		Date date = (Date)cEngine.deserialize(Arrays.copyOfRange(encryptedfile, 0, 46));
-		System.out.println("\n"+groupFileKeyMap.toString());
-		System.out.println("\ngroup being accessed: "+group);
-		System.out.println("\ndate: "+date.toString());
-		byte[] plainFile = cEngine.AESDecrypt(Arrays.copyOfRange(encryptedfile, 46, encryptedfile.length), groupFileKeyMap.getKeyFromNameAndDate(group, date, true));
+		Date date = (Date)cEngine.deserialize(Arrays.copyOfRange(encryptedfile, 0, DATE_SIZE));
+
+		//grab the file size and convert it back to an int
+		ByteBuffer sizeBuf = ByteBuffer.allocate(INT_BYTE_SIZE);
+		sizeBuf.put(Arrays.copyOfRange(encryptedfile, DATE_SIZE, DATE_SIZE+INT_BYTE_SIZE));
+		System.out.println("\nsizebuf flush: "+sizeBuf.toString());
+		int fileSize = sizeBuf.getInt(0);
+
+		//System.out.println("\n"+groupFileKeyMap.toString());
+		System.out.println("\nDate: "+date.toString());
+		System.out.println("File size: "+fileSize);
+
+		//byte[] plainFile = cEngine.AESDecrypt(Arrays.copyOfRange(encryptedfile, 46, encryptedfile.length), groupFileKeyMap.getKeyFromNameAndDate(group, date, true));
+		byte[] plainFile =Arrays.copyOfRange(encryptedfile, DATE_SIZE+INT_BYTE_SIZE, DATE_SIZE+INT_BYTE_SIZE+fileSize);
 
 		try
 		{

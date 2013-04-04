@@ -20,4 +20,7 @@ UI:
 	java -cp .:bcprov-jdk15on-147.jar:./bin UI
 	
 clean:
-	rm -r *.class *_Resources* shared_files bin/
+	rm -r *.class *_Resources* shared_files bin/ t.txt
+
+reset:
+	rm -r *_Resources* shared_files t.txt

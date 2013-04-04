@@ -174,9 +174,6 @@ public class GroupKeyMapController implements java.io.Serializable
 		}
 
 		if(engageLock)lock.unlock();
-
-		System.out.println(cEngine.formatAsSuccess("The most recent key for group ("+groupName+") was set on: "+latestdate.toString()));
-		
 		return latestkeySet;		
 	}
 
