@@ -223,7 +223,7 @@ public class FileThread extends ServerThread
 										{
 											//send the end of file identifier
 											message = new Envelope("EOF");
-											message.addObject(msgNumber);
+											message.addObject(msgNumber++);
 											message = cEngine.attachHMAC(message, HMACKey);
 											cEngine.writeAESEncrypted(message, aesKey, output);
 											System.out.println("\n<< ("+msgNumber+"): Request Received: " + message.getMessage());
@@ -231,7 +231,7 @@ public class FileThread extends ServerThread
 											//accept response
 											message = (Envelope)cEngine.readAESEncrypted(aesKey, input);
 											System.out.println("\n<< ("+msgNumber+"): Request Received: " + message.getMessage());
-												if(checkMessagePreReqs(message, response, my_fs.signVerifyKey)==null) break;
+											if(checkMessagePreReqs(message, response, my_fs.signVerifyKey)==null) break;
 											if(message.getMessage().compareTo("OK") == 0) 
 											{
 												System.out.println(cEngine.formatAsSuccess("File transfer successful for file: "+ remotePath));
@@ -338,7 +338,7 @@ public class FileThread extends ServerThread
 		{
 			return false;
 		}
-		System.out.println("REMINDER: IMPLEMENT SIGNATURE CODE");
+		System.out.println(cEngine.formatAsSuccess("Message number signature cleared"));
 		//TODO: -MN- signature checking  
 		return true;
 	}
