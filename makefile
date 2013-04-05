@@ -3,7 +3,6 @@ all:
 	mkdir bin
 	javac -cp .:bcprov-jdk15on-147.jar -d bin *.java
 
-
 setup:
 	java -cp bcprov-jdk15on-147.jar:./bin ResourceGenerator
 

@@ -387,6 +387,7 @@ class CryptoEngine
 	public SecretKeySpec genHMACKey()
 	{
 		//should this be random? -john 4/3
+		//Almost definitely - phil 4/4
 		return new SecretKeySpec("qnscAdgRlkIhAUPY44oiexBKtQbGY0orf7OV1I50".getBytes(), "HmacSHA1");
 	}
 
@@ -395,25 +396,111 @@ class CryptoEngine
 		//TODO: -HMAC- : get the last object of the message, and assume its the HMAC
 		//				compute the HMAC using the preceding contents of the message
 		//				return whether or not the message is untampered
-		if(((String)message.getObjContents().get((message.getObjContents().size()-1))).equals("HMAC"))
+		try
 		{
-			System.out.println(formatAsSuccess("HMAC valid"));
+			Mac hmac = Mac.getInstance("HmacSHA1");
+			hmac.init(keySpec);
+	
+			/*ArrayList<Byte> content = new ArrayList<Byte>();
+			byte[] messageBytes = serialize(message.getMessage());
+			for(byte b: messageBytes)
+			{
+				content.add(b);
+			}
+			
+			for(int i = 0; i<message.getObjContents().size()-1;i++)
+			{
+				messageBytes = serialize(message.getObjContents().get(i));
+				for(byte b: messageBytes)
+				{
+					content.add(b);
+				}
+			}
+			Byte[] contentArray = new Byte[content.size()];
+			content.toArray(contentArray);
+			byte[] primitiveContentArray = new byte[contentArray.length];
+			for(int i = 0; i<contentArray.length; i++)
+			{
+				primitiveContentArray[i] = contentArray[i].byteValue();
+			}
+			System.out.println("PRIMTIVE IS " + primitiveContentArray);/////////////*/
+			System.out.println("PREIMAGE IS " + message.getPreimage());/////////////
+			byte[] result = hmac.doFinal(message.getPreimage());
+			
+			if(result == message.getObjContents().get(message.getObjContents().size()-1))
+			{
+				System.out.println(formatAsSuccess("HMAC valid"));
+			}
+			else
+			{
+				System.out.println("RESULT IS " + result);///////////////
+				System.out.println("HMAC IS " + message.getObjContents().get(message.getObjContents().size()-1));///////////////////
+				System.out.println(formatAsError("HMAC invalid"));
+				return false;
+			}
+			return true;
 		}
-		else
+		catch(Exception e)
 		{
-			System.out.println(formatAsError("HMAC invalid"));
+			System.out.println(formatAsError("HMAC could not be checked"));
+			System.exit(-1);
 			return false;
 		}
-		return true;
 	}
 
 	public Envelope attachHMAC(Envelope message, SecretKeySpec keySpec)
 	{
-		//TODO: -HMAC- : given a message, compute the HMAC on its contents, and add an
-		//				HMAC object to the end of the message
-		message.addObject("HMAC");
-		System.out.println(formatAsSuccess("HMAC computed and added"));
-		return message;
+		try
+		{
+			//TODO: -HMAC- : given a message, compute the HMAC on its contents, and add an
+			//				HMAC object to the end of the message
+			Mac hmac = Mac.getInstance("HmacSHA1");
+			hmac.init(keySpec);
+			
+			ArrayList<Byte> content = new ArrayList<Byte>();
+			byte[] messageBytes = serialize(message.getMessage());
+			for(byte b: messageBytes)
+			{
+				content.add(b);
+			}
+			
+			
+			for(int i = 0; i<message.getObjContents().size();i++)
+			{
+				messageBytes = serialize(message.getObjContents().get(i));
+				System.out.println(message.getObjContents().get(i));////////////
+				System.out.println(serialize(message.getObjContents().get(i)));///////////
+				System.out.println("");////////////////////
+				for(byte b: messageBytes)
+				{
+					content.add(b);
+				}
+			}
+	
+			Byte[] contentArray = new Byte[content.size()];
+			content.toArray(contentArray);
+			byte[] primitiveContentArray = new byte[contentArray.length];
+			for(int i = 0; i<contentArray.length; i++)
+			{
+				primitiveContentArray[i] = contentArray[i].byteValue();
+			}
+			byte[] result = hmac.doFinal(primitiveContentArray);
+			
+			message.setPreimage(primitiveContentArray);
+			System.out.println("PREIMAGE IS " + message.getPreimage());//////////
+			message.addObject(result);
+
+			System.out.println(formatAsSuccess("HMAC computed and added"));
+			System.out.println("HMAC IS " + result);//////////////////////
+			return message;
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+			System.out.println(formatAsError("HMAC could not be attached!"));
+			System.exit(-1);
+			return null;
+		}
 	}
 }
 

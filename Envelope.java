@@ -10,6 +10,7 @@ public class Envelope implements java.io.Serializable
 	private static final long serialVersionUID = -7726335089122193103L;
 	private String msg;
 	private ArrayList<Object> objContents = new ArrayList<Object>();
+	private byte[] preimage;
 	
 	public Envelope(String text)
 	{
@@ -31,4 +32,13 @@ public class Envelope implements java.io.Serializable
 		objContents.add(object);
 	}
 
+	public void setPreimage(byte[] newPreimage)
+	{
+		preimage = newPreimage;
+	}
+
+	public byte[] getPreimage()
+	{
+		return preimage;
+	}
 }
