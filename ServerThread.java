@@ -164,7 +164,6 @@ public class ServerThread extends Thread
 
 	protected UserToken checkMessagePreReqs(Envelope message, Envelope response, PublicKey sigKey)
 	{
-
 		//make sure the message has a minimum number of contents
 		if(message.getObjContents().size() < 3)
 		{

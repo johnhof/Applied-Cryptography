@@ -156,16 +156,18 @@ public class FileClient extends Client implements FileClientInterface
 					//fos.write((byte[])env.getObjContents().get(0), 0, (Integer)env.getObjContents().get(1));
 
 					//append the new chunk onto the old
-					byte[] temp = append(encryptedFile, (byte[])env.getObjContents().get(0));
+					byte[] temp = append(encryptedFile, (byte[])env.getObjContents().get(1));
 					encryptedFile = temp;
 
 					env = new Envelope("DOWNLOADF"); //Success
+					System.out.println("\n<< ("+msgNumber+"): Request Received: " + env.getMessage());
 				    env.addObject(token);
 					env.addObject(msgNumber++); //Add the nessage number
 					env = cEngine.attachHMAC(env, HMACKey);
 					cEngine.writeAESEncrypted(env, aesKey, output);
 
-					env = (Envelope)cEngine.readAESEncrypted(aesKey, input);	
+					env = (Envelope)cEngine.readAESEncrypted(aesKey, input);
+					System.out.println("\n<< ("+msgNumber+"): Request Received: " + env.getMessage());	
 			   		if(!checkMessagePreReqs(env)) return false;								
 				}				
 				recoverFileFromDownload(encryptedFile, file, group);
@@ -176,6 +178,7 @@ public class FileClient extends Client implements FileClientInterface
 					System.out.println("<< ("+msgNumber+"): receiving File Server Response: EOF");
 					System.out.println(cEngine.formatAsSuccess("Transfer successful for file: "+sourceFile));
 					env = new Envelope("OK"); //Success
+					System.out.println("\n<< ("+msgNumber+"): Request Received: " + env.getMessage());
 				    env.addObject(token);
 					env.addObject(msgNumber++); //Add the nessage number
 					env = cEngine.attachHMAC(env, HMACKey);

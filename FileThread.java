@@ -183,9 +183,7 @@ public class FileThread extends ServerThread
 							if (reqToken.getGroups().contains(shareFile.getGroup()))//check for priviledges
 							{
 								try
-								{
-									System.out.println(serverFolder+"shared_files/_" + remotePath.replace('/', '_'));
-									
+								{					
 									//try to grab the file
 									File f = new File(serverFolder+"shared_files/_" + remotePath.replace('/', '_'));
 									if (f.exists()) 
@@ -202,18 +200,19 @@ public class FileThread extends ServerThread
 												message = new Envelope("CHUNK");
 												int n = fis.read(buf); //can throw an IOException
 												if (n <=0) errorMsg += "Read error";
-
-												if(checkMessagePreReqs(message, response, my_fs.signVerifyKey)==null) break;
+												System.out.println("\n<< ("+msgNumber+"): ending File Server Request: CHUNK: ");
 
 												//tack the chunk onto the message and write it
-												message.addObject(msgNumber);
+												message.addObject(msgNumber++);
 												message.addObject(buf);
 												message.addObject(new Integer(n));
-												message = cEngine.attachHMAC(response, HMACKey);
+												message = cEngine.attachHMAC(message, HMACKey);
 												cEngine.writeAESEncrypted(message, aesKey, output);
 
 												//get response
 												message = (Envelope)cEngine.readAESEncrypted(aesKey, input);
+												System.out.println("\n<< ("+msgNumber+"): Request Received: " + message.getMessage());
+												if(checkMessagePreReqs(message, response, my_fs.signVerifyKey)==null) break;
 											}
 											else errorMsg += "Unexpected chunk respons; ";
 										}
@@ -225,11 +224,14 @@ public class FileThread extends ServerThread
 											//send the end of file identifier
 											message = new Envelope("EOF");
 											message.addObject(msgNumber);
-											message = cEngine.attachHMAC(response, HMACKey);
+											message = cEngine.attachHMAC(message, HMACKey);
 											cEngine.writeAESEncrypted(message, aesKey, output);
+											System.out.println("\n<< ("+msgNumber+"): Request Received: " + message.getMessage());
 
 											//accept response
 											message = (Envelope)cEngine.readAESEncrypted(aesKey, input);
+											System.out.println("\n<< ("+msgNumber+"): Request Received: " + message.getMessage());
+												if(checkMessagePreReqs(message, response, my_fs.signVerifyKey)==null) break;
 											if(message.getMessage().compareTo("OK") == 0) 
 											{
 												System.out.println(cEngine.formatAsSuccess("File transfer successful for file: "+ remotePath));
